@@ -247,6 +247,8 @@ class SylvaNotePad {
     await this.saveCurrentNote();
     this.currentNoteId = noteId;
     this.loadCurrentNote();
+    // Performance: Update only active states, not full re-render
+    this.updateActiveNoteState();
     await this.saveData();
   }
 
