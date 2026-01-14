@@ -39,6 +39,10 @@ class SylvaNotePad {
     ];
     this.shortcutsHelpVisible = false;
 
+    // Theme
+    this.currentTheme = localStorage.getItem("sylva-theme") || "system";
+    this.initializeTheme();
+
     this.initializeElements();
     this.bindEvents();
     this.bindKeyboardShortcuts();
@@ -572,38 +576,74 @@ class SylvaNotePad {
       modal.setAttribute("aria-labelledby", "settingsTitle");
 
       modal.innerHTML = `
-        <div class="bg-white rounded-lg p-4 w-80 mx-4 shadow-xl" role="document">
-          <div class="flex items-center justify-between mb-4">
-            <h3 id="settingsTitle" class="text-base font-semibold text-gray-900">Settings</h3>
-            <button id="closeSettings" class="p-1 hover:bg-gray-100 rounded" aria-label="Close settings">
+        <div class="settings-modal-content" role="document">
+          <div class="settings-header">
+            <h3 id="settingsTitle" class="settings-title">Settings</h3>
+            <button id="closeSettings" class="settings-close-btn" aria-label="Close settings">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
             </button>
           </div>
-          <div class="space-y-2">
-            <button id="settingsExportBtn" class="w-full p-3 text-left hover:bg-gray-50 rounded-lg transition-colors flex items-center space-x-3 border border-gray-200">
-              <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
-              </svg>
-              <div>
-                <div class="text-sm font-medium text-gray-800">Export Notes</div>
-                <div class="text-xs text-gray-500">Download all notes as JSON</div>
-              </div>
-            </button>
-            <button id="settingsImportBtn" class="w-full p-3 text-left hover:bg-gray-50 rounded-lg transition-colors flex items-center space-x-3 border border-gray-200">
-              <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-              </svg>
-              <div>
-                <div class="text-sm font-medium text-gray-800">Import Notes</div>
-                <div class="text-xs text-gray-500">Load notes from a JSON file</div>
-              </div>
-            </button>
+          
+          <!-- Theme Toggle -->
+          <div class="settings-section">
+            <label class="settings-label">Theme</label>
+            <div class="theme-toggle-group">
+              <button id="themeLight" class="theme-btn ${
+                this.currentTheme === "light" ? "active" : ""
+              }" data-theme="light">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+                Light
+              </button>
+              <button id="themeDark" class="theme-btn ${
+                this.currentTheme === "dark" ? "active" : ""
+              }" data-theme="dark">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                </svg>
+                Dark
+              </button>
+              <button id="themeSystem" class="theme-btn ${
+                this.currentTheme === "system" ? "active" : ""
+              }" data-theme="system">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+                System
+              </button>
+            </div>
           </div>
-          <div class="mt-4 pt-4 border-t border-gray-200">
-            <p class="text-xs text-gray-400 text-center">
-              Sylva v2.0 • <button id="settingsShortcutsBtn" class="text-blue-500 hover:underline">Keyboard Shortcuts</button>
+          
+          <div class="settings-section">
+            <label class="settings-label">Data</label>
+            <div class="settings-buttons">
+              <button id="settingsExportBtn" class="settings-action-btn">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                </svg>
+                <div>
+                  <div class="settings-btn-title">Export Notes</div>
+                  <div class="settings-btn-desc">Download all notes as JSON</div>
+                </div>
+              </button>
+              <button id="settingsImportBtn" class="settings-action-btn">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                <div>
+                  <div class="settings-btn-title">Import Notes</div>
+                  <div class="settings-btn-desc">Load notes from a JSON file</div>
+                </div>
+              </button>
+            </div>
+          </div>
+          
+          <div class="settings-footer">
+            <p class="settings-version">
+              Sylva v2.0 • <button id="settingsShortcutsBtn" class="settings-link">Keyboard Shortcuts</button>
             </p>
           </div>
         </div>
@@ -633,6 +673,20 @@ class SylvaNotePad {
           this.hideSettingsModal();
           this.showShortcutsHelp();
         });
+
+      // Theme toggle buttons
+      modal.querySelectorAll(".theme-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const theme = btn.dataset.theme;
+          this.setTheme(theme);
+          // Update active state
+          modal
+            .querySelectorAll(".theme-btn")
+            .forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+        });
+      });
+
       modal.addEventListener("click", (e) => {
         if (e.target === modal) this.hideSettingsModal();
       });
@@ -660,6 +714,39 @@ class SylvaNotePad {
 
     if (this.lastFocusedElement) {
       this.lastFocusedElement.focus();
+    }
+  }
+
+  // Theme: Initialize theme on load
+  initializeTheme() {
+    this.applyTheme(this.currentTheme);
+
+    // Listen for system preference changes
+    window
+      .matchMedia("(prefers-color-scheme: dark)")
+      .addEventListener("change", () => {
+        if (this.currentTheme === "system") {
+          this.applyTheme("system");
+        }
+      });
+  }
+
+  // Theme: Set and persist theme preference
+  setTheme(theme) {
+    this.currentTheme = theme;
+    localStorage.setItem("sylva-theme", theme);
+    this.applyTheme(theme);
+    this.showNotification(`Theme set to ${theme}`, "success");
+  }
+
+  // Theme: Apply theme to document
+  applyTheme(theme) {
+    const root = document.documentElement;
+
+    if (theme === "system") {
+      root.removeAttribute("data-theme");
+    } else {
+      root.setAttribute("data-theme", theme);
     }
   }
 
