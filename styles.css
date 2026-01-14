@@ -1023,3 +1023,106 @@ input:focus {
   opacity: 1;
   visibility: visible;
 }
+
+/* ==========================================================================
+   24. Component: Welcome/Onboarding Modal
+   ========================================================================== */
+
+.rounded-xl {
+  border-radius: 0.75rem;
+}
+
+.rounded-2xl {
+  border-radius: 1rem;
+}
+
+.p-6 {
+  padding: 1.5rem;
+}
+
+.text-xl {
+  font-size: 1.25rem;
+  line-height: 1.75rem;
+}
+
+.text-2xl {
+  font-size: 1.5rem;
+  line-height: 2rem;
+}
+
+.mb-6 {
+  margin-bottom: 1.5rem;
+}
+
+.py-3 {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.shadow-2xl {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Feature icon backgrounds */
+.bg-green-100 {
+  background-color: #dcfce7;
+}
+
+.bg-blue-100 {
+  background-color: #dbeafe;
+}
+
+.bg-purple-100 {
+  background-color: #f3e8ff;
+}
+
+/* Feature icon text colors */
+.text-green-600 {
+  color: #16a34a;
+}
+
+.text-blue-600 {
+  color: #2563eb;
+}
+
+.text-purple-600 {
+  color: #9333ea;
+}
+
+/* Gradient for start button */
+.bg-gradient-to-r {
+  background: linear-gradient(to right, #4ade80, #3b82f6);
+}
+
+/* ==========================================================================
+   25. Component: Empty States
+   ========================================================================== */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--color-gray-500);
+}
+
+.empty-state-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+  color: var(--color-gray-300);
+}
+
+.empty-state-title {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-gray-700);
+  margin-bottom: 0.25rem;
+}
+
+.empty-state-text {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-500);
+}

@@ -558,8 +558,123 @@ class SylvaNotePad {
     }
   }
 
+  // Onboarding: Show welcome screen for first-time users
+  showWelcomeScreen() {
+    let modal = document.getElementById("welcomeModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "welcomeModal";
+      modal.className =
+        "fixed inset-0 bg-black bg-opacity-50 z-60 flex items-center justify-center";
+      modal.setAttribute("role", "dialog");
+      modal.setAttribute("aria-modal", "true");
+      modal.setAttribute("aria-labelledby", "welcomeTitle");
+
+      modal.innerHTML = `
+        <div class="bg-white rounded-xl p-6 w-80 mx-4 shadow-2xl text-center" role="document">
+          <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-400 to-blue-500 rounded-2xl flex items-center justify-center">
+            <span class="text-white text-2xl font-bold">S</span>
+          </div>
+          <h2 id="welcomeTitle" class="text-xl font-semibold text-gray-900 mb-2">Welcome to Sylva</h2>
+          <p class="text-sm text-gray-600 mb-6">Your minimalist notepad for quick thoughts, ideas, and more.</p>
+          
+          <div class="space-y-3 text-left mb-6">
+            <div class="flex items-start space-x-3">
+              <div class="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <p class="text-sm text-gray-600"><strong>Auto-save</strong> - Your notes save automatically as you type</p>
+            </div>
+            <div class="flex items-start space-x-3">
+              <div class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
+                </svg>
+              </div>
+              <p class="text-sm text-gray-600"><strong>Multiple notes</strong> - Create and organize unlimited notes</p>
+            </div>
+            <div class="flex items-start space-x-3">
+              <div class="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                </svg>
+              </div>
+              <p class="text-sm text-gray-600"><strong>Keyboard shortcuts</strong> - Press <kbd class="px-1 bg-gray-100 rounded text-xs">Ctrl+/</kbd> anytime</p>
+            </div>
+          </div>
+          
+          <button id="startWritingBtn" class="w-full py-3 px-4 bg-gradient-to-r from-green-400 to-blue-500 text-white font-medium rounded-lg hover:opacity-90 transition-opacity">
+            Start Writing
+          </button>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      // Bind start button
+      modal.querySelector("#startWritingBtn").addEventListener("click", () => {
+        this.completeOnboarding();
+      });
+    }
+
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+
+    setTimeout(() => modal.querySelector("#startWritingBtn").focus(), 100);
+  }
+
+  // Onboarding: Complete onboarding and create first note
+  completeOnboarding() {
+    localStorage.setItem("sylva-onboarding-complete", "true");
+
+    const modal = document.getElementById("welcomeModal");
+    if (modal) {
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    // Create the first note with welcome content
+    const welcomeNote = {
+      id: Date.now().toString(),
+      title: "Welcome to Sylva! 🌿",
+      content: `Welcome to Sylva! 🌿
+
+This is your first note. Here are some tips to get started:
+
+• Start typing to capture your thoughts
+• Your notes auto-save as you write
+• Click the ☰ menu to see all your notes
+• Click on the note title above to edit it
+
+Keyboard shortcuts:
+• Ctrl+Alt+N - Create new note
+• Ctrl+S - Save note
+• Ctrl+/ - View all shortcuts
+
+Happy writing! ✨`,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.notes.unshift(welcomeNote);
+    this.notesCache.set(welcomeNote.id, welcomeNote);
+    this.currentNoteId = welcomeNote.id;
+    this.saveData();
+    this.loadCurrentNote();
+    this.renderNotesList();
+
+    setTimeout(() => this.noteContent.focus(), 100);
+  }
+
   async loadData() {
     try {
+      // Check if first-time user
+      const hasSeenOnboarding = localStorage.getItem(
+        "sylva-onboarding-complete"
+      );
+
       // Simulating chrome.storage.local with localStorage for this demo
       const notesData = localStorage.getItem("sylva-notes");
       const currentNoteData = localStorage.getItem("sylva-current-note");
@@ -571,7 +686,12 @@ class SylvaNotePad {
       this.rebuildCache();
 
       if (this.notes.length === 0) {
-        this.createNewNote();
+        // First time user or no notes
+        if (!hasSeenOnboarding) {
+          this.showWelcomeScreen();
+        } else {
+          this.createNewNote();
+        }
       } else {
         this.loadCurrentNote();
       }
@@ -1012,6 +1132,20 @@ class SylvaNotePad {
     this.notesList.innerHTML = "";
     // Performance: Clear element tracking
     this.renderedNoteElements.clear();
+
+    // Show empty state if no notes
+    if (this.notes.length === 0) {
+      this.notesList.innerHTML = `
+        <div class="empty-state">
+          <svg class="empty-state-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          <p class="empty-state-title">No notes yet</p>
+          <p class="empty-state-text">Create your first note to get started</p>
+        </div>
+      `;
+      return;
+    }
 
     this.notes.forEach((note) => {
       const noteItem = this.createNoteElement(note);
