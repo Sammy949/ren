@@ -196,6 +196,8 @@ class SylvaNotePad {
     };
 
     this.notes.unshift(newNote);
+    // Performance: Add to cache immediately
+    this.notesCache.set(newNote.id, newNote);
     this.currentNoteId = newNote.id;
     this.saveData();
     this.loadCurrentNote();
@@ -208,7 +210,8 @@ class SylvaNotePad {
   async saveCurrentNote() {
     if (!this.currentNoteId) return;
 
-    const note = this.notes.find((n) => n.id === this.currentNoteId);
+    // Performance: O(1) lookup instead of O(n) find()
+    const note = this.getNoteById(this.currentNoteId);
     if (note) {
       note.content = this.noteContent.value;
       note.updatedAt = new Date().toISOString();
@@ -220,7 +223,8 @@ class SylvaNotePad {
       }
 
       await this.saveData();
-      this.renderNotesList();
+      // Performance: Update only the changed note in DOM
+      this.updateNoteItemInDOM(note);
     }
   }
 
@@ -229,7 +233,8 @@ class SylvaNotePad {
       this.currentNoteId = this.notes[0].id;
     }
 
-    const note = this.notes.find((n) => n.id === this.currentNoteId);
+    // Performance: O(1) lookup instead of O(n) find()
+    const note = this.getNoteById(this.currentNoteId);
     if (note) {
       this.noteContent.value = note.content;
       this.noteTitle.textContent = note.title;
