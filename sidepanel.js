@@ -3,7 +3,13 @@ class SylvaNotePad {
     this.notes = [];
     this.currentNoteId = null;
     this.autoSaveTimeout = null;
+    this.sidebarUpdateTimeout = null; // Separate debounce for UI updates
     this.noteToDelete = null;
+
+    // Performance: Map-based cache for O(1) note lookups
+    this.notesCache = new Map();
+    // Performance: Track rendered DOM elements by note ID
+    this.renderedNoteElements = new Map();
 
     this.initializeElements();
     this.bindEvents();
