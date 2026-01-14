@@ -266,35 +266,47 @@ class SylvaNotePad {
 
   // Keyboard Shortcuts: Handle keyboard shortcut events
   handleKeyboardShortcut(e) {
-    // Don't trigger shortcuts when typing in inputs (except for Escape and specific combos)
-    const isTyping = ["INPUT", "TEXTAREA"].includes(
-      document.activeElement.tagName
-    );
-
     // Build the key combination string
     const combo = [];
     if (e.ctrlKey || e.metaKey) combo.push("Ctrl");
     if (e.shiftKey) combo.push("Shift");
     if (e.altKey) combo.push("Alt");
 
-    // Normalize key
+    // Normalize key - handle special characters properly
     let key = e.key;
     if (key === " ") key = "Space";
-    if (key.length === 1) key = key.toUpperCase();
+    // Keep special keys as-is, uppercase letters
+    if (key.length === 1 && /[a-zA-Z]/.test(key)) {
+      key = key.toUpperCase();
+    }
     combo.push(key);
 
     const pressedCombo = combo.join("+");
 
+    // Debug: uncomment to see what's being pressed
+    // console.log("Pressed:", pressedCombo);
+
     // Find matching shortcut
     const shortcut = this.keyboardShortcuts.find((s) => {
-      const normalizedKeys = s.keys.toUpperCase().replace(/\s/g, "");
-      const normalizedPressed = pressedCombo.toUpperCase();
-      return normalizedKeys === normalizedPressed;
+      const normalizedKeys = s.keys.replace(/\s/g, "");
+      return normalizedKeys.toLowerCase() === pressedCombo.toLowerCase();
     });
 
     if (shortcut) {
-      // Allow Ctrl+S even when typing (common save expectation)
-      if (isTyping && shortcut.action !== "forceSave") {
+      // Check if typing in an input
+      const isTyping = ["INPUT", "TEXTAREA"].includes(
+        document.activeElement.tagName
+      );
+
+      // Always allow these shortcuts, even when typing
+      const alwaysAllowed = [
+        "forceSave",
+        "showShortcutsHelp",
+        "toggleSidebar",
+        "openSettings",
+      ];
+
+      if (isTyping && !alwaysAllowed.includes(shortcut.action)) {
         return;
       }
 
