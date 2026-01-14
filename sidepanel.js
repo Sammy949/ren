@@ -63,6 +63,11 @@ class SylvaNotePad {
     this.importFileInput = document.getElementById("importFileInput");
     this.shortcutsInfoBtn = document.getElementById("shortcutsInfoBtn");
 
+    // Tags elements
+    this.tagsList = document.getElementById("tagsList");
+    this.tagInput = document.getElementById("tagInput");
+    this.tagColors = ["blue", "green", "purple", "orange", "pink"];
+
     // Rename modal elements
     this.renameModal = document.getElementById("renameModal");
     this.renameInput = document.getElementById("renameInput");
@@ -130,6 +135,20 @@ class SylvaNotePad {
           this.cancelEditingTitle();
         }
       });
+    }
+
+    // Tag input events
+    if (this.tagInput) {
+      this.tagInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === ",") {
+          e.preventDefault();
+          this.addTagFromInput();
+        }
+        if (e.key === "Backspace" && this.tagInput.value === "") {
+          this.removeLastTag();
+        }
+      });
+      this.tagInput.addEventListener("blur", () => this.addTagFromInput());
     }
 
     // Rename modal events
@@ -466,6 +485,103 @@ class SylvaNotePad {
     this.noteTitle.classList.remove("hidden");
   }
 
+  // Tags: Add tag from input field
+  addTagFromInput() {
+    if (!this.tagInput) return;
+    const tagText = this.tagInput.value.trim().toLowerCase().replace(/,/g, "");
+    if (tagText) {
+      this.addTag(tagText);
+      this.tagInput.value = "";
+    }
+  }
+
+  // Tags: Add a tag to current note
+  addTag(tagText) {
+    if (!this.currentNoteId || !tagText) return;
+
+    const note = this.getNoteById(this.currentNoteId);
+    if (!note) return;
+
+    // Initialize tags array if needed
+    if (!note.tags) note.tags = [];
+
+    // Don't add duplicate tags
+    if (note.tags.includes(tagText)) {
+      this.showNotification("Tag already exists", "warning");
+      return;
+    }
+
+    note.tags.push(tagText);
+    note.updatedAt = new Date().toISOString();
+    this.saveData();
+    this.renderTags();
+    this.updateNoteItemInDOM(note);
+  }
+
+  // Tags: Remove a tag from current note
+  removeTag(tagText) {
+    if (!this.currentNoteId) return;
+
+    const note = this.getNoteById(this.currentNoteId);
+    if (!note || !note.tags) return;
+
+    note.tags = note.tags.filter((t) => t !== tagText);
+    note.updatedAt = new Date().toISOString();
+    this.saveData();
+    this.renderTags();
+    this.updateNoteItemInDOM(note);
+  }
+
+  // Tags: Remove the last tag (backspace)
+  removeLastTag() {
+    if (!this.currentNoteId) return;
+
+    const note = this.getNoteById(this.currentNoteId);
+    if (!note || !note.tags || note.tags.length === 0) return;
+
+    note.tags.pop();
+    note.updatedAt = new Date().toISOString();
+    this.saveData();
+    this.renderTags();
+    this.updateNoteItemInDOM(note);
+  }
+
+  // Tags: Render tags for current note
+  renderTags() {
+    if (!this.tagsList) return;
+
+    const note = this.getNoteById(this.currentNoteId);
+    const tags = note?.tags || [];
+
+    this.tagsList.innerHTML = tags
+      .map(
+        (tag) => `
+      <span class="tag" data-color="${this.getTagColor(tag)}">
+        ${tag}
+        <button class="tag-remove" data-tag="${tag}" aria-label="Remove tag ${tag}">×</button>
+      </span>
+    `
+      )
+      .join("");
+
+    // Bind remove buttons
+    this.tagsList.querySelectorAll(".tag-remove").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        this.removeTag(btn.dataset.tag);
+      });
+    });
+  }
+
+  // Tags: Get consistent color for a tag
+  getTagColor(tag) {
+    // Simple hash to get consistent color
+    let hash = 0;
+    for (let i = 0; i < tag.length; i++) {
+      hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return this.tagColors[Math.abs(hash) % this.tagColors.length];
+  }
+
   // Settings Modal: Show settings
   showSettingsModal() {
     let modal = document.getElementById("settingsModal");
@@ -659,6 +775,7 @@ This is your first note. Here are some tips to get started:
 • Your notes auto-save as you write
 • Click the ☰ menu to see all your notes
 • Click on the note title above to edit it
+• Add tags to organize your notes
 
 Keyboard shortcuts:
 • Ctrl+Alt+N - Create new note
@@ -666,6 +783,7 @@ Keyboard shortcuts:
 • Ctrl+/ - View all shortcuts
 
 Happy writing! ✨`,
+      tags: ["welcome", "tips"],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -802,6 +920,7 @@ Happy writing! ✨`,
       id: Date.now().toString(),
       title: "Untitled Note",
       content: "",
+      tags: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -850,6 +969,7 @@ Happy writing! ✨`,
       this.noteContent.value = note.content;
       this.noteTitle.textContent = note.title;
       this.updateWordCount();
+      this.renderTags();
       this.autoSaveStatus.textContent = "Ready";
     }
   }
@@ -1186,11 +1306,25 @@ Happy writing! ✨`,
       note.content.substring(0, 40).replace(/\n/g, " ") || "Empty note";
     const updatedDate = new Date(note.updatedAt).toLocaleDateString();
 
+    // Generate mini tags HTML
+    const tagsHtml =
+      note.tags && note.tags.length > 0
+        ? `<div class="note-tags">${note.tags
+            .slice(0, 3)
+            .map((t) => `<span class="note-tag-mini">${t}</span>`)
+            .join("")}${
+            note.tags.length > 3
+              ? `<span class="note-tag-mini">+${note.tags.length - 3}</span>`
+              : ""
+          }</div>`
+        : "";
+
     noteItem.innerHTML = `
       <div class="flex justify-between">
         <div class="flex-1 min-w-0 note-content-area" data-note-id="${note.id}">
           <div class="text-sm font-medium text-gray-800 truncate note-title">${note.title}</div>
           <div class="text-xs text-gray-500 mt-1 truncate subtitle note-preview">${preview}</div>
+          ${tagsHtml}
           <div class="text-xs text-gray-400 mt-1 note-date">${updatedDate}</div>
         </div>
         <div class="flex justify-center items-center gap-2 note-icons ml-2">

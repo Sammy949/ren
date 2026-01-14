@@ -1126,3 +1126,124 @@ input:focus {
   font-size: var(--font-size-xs);
   color: var(--color-gray-500);
 }
+
+/* ==========================================================================
+   26. Component: Tags
+   ========================================================================== */
+
+#tagsBar {
+  min-height: 36px;
+  background-color: var(--color-gray-50);
+}
+
+.tag-input-wrapper {
+  display: inline-flex;
+}
+
+.tag-input {
+  border: none;
+  background: transparent;
+  font-size: 11px;
+  color: var(--color-gray-700);
+  padding: 4px 8px;
+  width: 80px;
+  outline: none;
+}
+
+.tag-input::placeholder {
+  color: var(--color-gray-400);
+}
+
+.tag-input:focus {
+  width: 120px;
+}
+
+/* Tag pill styles */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 12px;
+  background-color: #e0e7ff;
+  color: #4338ca;
+  cursor: default;
+  transition: background-color 0.15s;
+}
+
+.tag:hover {
+  background-color: #c7d2fe;
+}
+
+.tag-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #6366f1;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.tag-remove:hover {
+  background-color: rgba(99, 102, 241, 0.2);
+}
+
+/* Tag colors for variety */
+.tag[data-color="blue"] {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+.tag[data-color="green"] {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.tag[data-color="purple"] {
+  background-color: #f3e8ff;
+  color: #7e22ce;
+}
+
+.tag[data-color="orange"] {
+  background-color: #ffedd5;
+  color: #c2410c;
+}
+
+.tag[data-color="pink"] {
+  background-color: #fce7f3;
+  color: #be185d;
+}
+
+/* Tag in sidebar note list */
+.note-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.note-tag-mini {
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background-color: #e0e7ff;
+  color: #4338ca;
+}
+
+/* Gap utility */
+.gap-1 {
+  gap: 0.25rem;
+}
+
+.gap-2 {
+  gap: 0.5rem;
+}
