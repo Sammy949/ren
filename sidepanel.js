@@ -252,9 +252,19 @@ class SylvaNotePad {
     if (isVisible) {
       this.sidebar.classList.add("-translate-x-full");
       this.sidebarOverlay.classList.add("opacity-0", "pointer-events-none");
+      // a11y: Update ARIA states
+      this.hamburgerBtn.setAttribute("aria-expanded", "false");
+      this.sidebar.setAttribute("aria-hidden", "true");
+      // a11y: Return focus to trigger
+      this.hamburgerBtn.focus();
     } else {
       this.sidebar.classList.remove("-translate-x-full");
       this.sidebarOverlay.classList.remove("opacity-0", "pointer-events-none");
+      // a11y: Update ARIA states
+      this.hamburgerBtn.setAttribute("aria-expanded", "true");
+      this.sidebar.setAttribute("aria-hidden", "false");
+      // a11y: Focus first interactive element in sidebar
+      setTimeout(() => this.newNoteBtn.focus(), 100);
     }
   }
 
@@ -371,15 +381,28 @@ class SylvaNotePad {
     // Performance: O(1) lookup
     const note = this.getNoteById(noteId);
     if (note) {
+      // a11y: Store focus to restore later
+      this.lastFocusedElement = document.activeElement;
       this.noteToDelete = noteId;
       this.deleteNoteTitle.textContent = note.title;
       this.deleteModal.classList.remove("hidden");
+      // a11y: Update ARIA state
+      this.deleteModal.setAttribute("aria-hidden", "false");
+      // a11y: Focus the cancel button (safer default)
+      setTimeout(() => this.cancelDelete.focus(), 100);
     }
   }
 
   hideDeleteModal() {
     this.deleteModal.classList.add("hidden");
+    // a11y: Update ARIA state
+    this.deleteModal.setAttribute("aria-hidden", "true");
     this.noteToDelete = null;
+    // a11y: Restore focus
+    if (this.lastFocusedElement) {
+      this.lastFocusedElement.focus();
+      this.lastFocusedElement = null;
+    }
   }
 
   async confirmDeleteNote() {
@@ -417,9 +440,13 @@ class SylvaNotePad {
     // Performance: O(1) lookup
     const note = this.getNoteById(noteId);
     if (note) {
+      // a11y: Store focus to restore later
+      this.lastFocusedElement = document.activeElement;
       this.renameInput.value = note.title;
       this.renameInput.dataset.noteId = noteId;
       this.renameModal.classList.remove("hidden");
+      // a11y: Update ARIA state
+      this.renameModal.setAttribute("aria-hidden", "false");
       this.renameInput.focus();
       this.renameInput.select();
     }
@@ -427,7 +454,14 @@ class SylvaNotePad {
 
   hideRenameModal() {
     this.renameModal.classList.add("hidden");
+    // a11y: Update ARIA state
+    this.renameModal.setAttribute("aria-hidden", "true");
     delete this.renameInput.dataset.noteId;
+    // a11y: Restore focus
+    if (this.lastFocusedElement) {
+      this.lastFocusedElement.focus();
+      this.lastFocusedElement = null;
+    }
   }
 
   async confirmRenameNote() {
@@ -635,6 +669,13 @@ class SylvaNotePad {
       note.id === this.currentNoteId ? "active border" : "hover:bg-gray-100"
     }`;
     noteItem.dataset.noteId = note.id;
+    // a11y: Make note item focusable and add listbox role
+    noteItem.setAttribute("tabindex", "0");
+    noteItem.setAttribute("role", "option");
+    noteItem.setAttribute(
+      "aria-selected",
+      note.id === this.currentNoteId ? "true" : "false"
+    );
 
     const preview =
       note.content.substring(0, 40).replace(/\n/g, " ") || "Empty note";
@@ -648,13 +689,13 @@ class SylvaNotePad {
           <div class="text-xs text-gray-400 mt-1 note-date">${updatedDate}</div>
         </div>
         <div class="flex justify-center items-center gap-2 note-icons ml-2">
-          <button class="rename-note-btn w-fit p-2 text-left hover:bg-gray-100 rounded-lg transition-colors menu-item flex items-center space-x-2" data-note-id="${note.id}">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button class="rename-note-btn w-fit p-2 text-left hover:bg-gray-100 rounded-lg transition-colors menu-item flex items-center space-x-2" data-note-id="${note.id}" aria-label="Rename note: ${note.title}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
             </svg>
           </button>
-          <button class="delete-note-btn w-fit p-2 text-left hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors menu-item flex items-center space-x-2" data-note-id="${note.id}">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button class="delete-note-btn w-fit p-2 text-left hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors menu-item flex items-center space-x-2" data-note-id="${note.id}" aria-label="Delete note: ${note.title}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
             </svg>
           </button>
