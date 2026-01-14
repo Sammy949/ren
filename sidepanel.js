@@ -61,6 +61,9 @@ class SylvaNotePad {
     this.importNotesBtn = document.getElementById("importNotesBtn");
     this.importFileInput = document.getElementById("importFileInput");
 
+    // Keyboard shortcuts button
+    this.keyboardShortcutsBtn = document.getElementById("keyboardShortcutsBtn");
+
     // Rename modal elements
     this.renameModal = document.getElementById("renameModal");
     this.renameInput = document.getElementById("renameInput");
@@ -98,6 +101,12 @@ class SylvaNotePad {
       this.importFileInput.click()
     );
     this.importFileInput.addEventListener("change", (e) => this.importNotes(e));
+
+    // Keyboard shortcuts button
+    this.keyboardShortcutsBtn.addEventListener("click", () => {
+      this.showShortcutsHelp();
+      this.toggleSidebar();
+    });
 
     // Rename modal events
     this.cancelRename.addEventListener("click", () => this.hideRenameModal());
