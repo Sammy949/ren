@@ -982,3 +982,21 @@ input:focus {
 .mt-4 {
   margin-top: 1rem;
 }
+
+/* Prevent flex items from shrinking */
+.flex-shrink-0 {
+  flex-shrink: 0;
+}
+
+/* Info button in status bar */
+#shortcutsInfoBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+#shortcutsInfoBtn svg {
+  width: 14px;
+  height: 14px;
+}

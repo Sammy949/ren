@@ -97,34 +97,40 @@ class SylvaNotePad {
       this.toggleSidebar();
     });
 
-    // Settings button
-    this.settingsBtn.addEventListener("click", () => {
-      this.showSettingsModal();
-      this.toggleSidebar();
-    });
+    // Settings button (with null check)
+    if (this.settingsBtn) {
+      this.settingsBtn.addEventListener("click", () => {
+        this.showSettingsModal();
+        this.toggleSidebar();
+      });
+    }
 
     // Import file input
     this.importFileInput.addEventListener("change", (e) => this.importNotes(e));
 
-    // Shortcuts info button
-    this.shortcutsInfoBtn.addEventListener("click", () =>
-      this.showShortcutsHelp()
-    );
+    // Shortcuts info button (with null check)
+    if (this.shortcutsInfoBtn) {
+      this.shortcutsInfoBtn.addEventListener("click", () =>
+        this.showShortcutsHelp()
+      );
+    }
 
-    // Editable title - click to edit
-    this.noteTitle.addEventListener("click", () => this.startEditingTitle());
-    this.noteTitleInput.addEventListener("blur", () =>
-      this.finishEditingTitle()
-    );
-    this.noteTitleInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        this.finishEditingTitle();
-      }
-      if (e.key === "Escape") {
-        this.cancelEditingTitle();
-      }
-    });
+    // Editable title - click to edit (with null check)
+    if (this.noteTitle && this.noteTitleInput) {
+      this.noteTitle.addEventListener("click", () => this.startEditingTitle());
+      this.noteTitleInput.addEventListener("blur", () =>
+        this.finishEditingTitle()
+      );
+      this.noteTitleInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          this.finishEditingTitle();
+        }
+        if (e.key === "Escape") {
+          this.cancelEditingTitle();
+        }
+      });
+    }
 
     // Rename modal events
     this.cancelRename.addEventListener("click", () => this.hideRenameModal());
@@ -414,6 +420,7 @@ class SylvaNotePad {
 
   // Editable Title: Start editing the note title
   startEditingTitle() {
+    if (!this.noteTitle || !this.noteTitleInput) return;
     this.noteTitle.classList.add("hidden");
     this.noteTitleInput.classList.remove("hidden");
     this.noteTitleInput.value = this.noteTitle.textContent;
@@ -423,6 +430,7 @@ class SylvaNotePad {
 
   // Editable Title: Finish editing and save
   finishEditingTitle() {
+    if (!this.noteTitle || !this.noteTitleInput) return;
     const newTitle = this.noteTitleInput.value.trim();
     if (newTitle && this.currentNoteId) {
       const note = this.getNoteById(this.currentNoteId);
@@ -441,6 +449,7 @@ class SylvaNotePad {
 
   // Editable Title: Cancel editing
   cancelEditingTitle() {
+    if (!this.noteTitle || !this.noteTitleInput) return;
     this.noteTitleInput.classList.add("hidden");
     this.noteTitle.classList.remove("hidden");
   }
