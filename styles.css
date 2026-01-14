@@ -708,6 +708,11 @@ a:focus:not(:focus-visible) {
   color: var(--color-error-600);
 }
 
+/* Forced white - always white regardless of theme (for colored backgrounds) */
+.text-white {
+  color: #ffffff;
+}
+
 .text-left {
   text-align: left;
 }
@@ -1061,6 +1066,14 @@ input:focus {
    22. Component: Sidebar Layout
    ========================================================================== */
 
+/* Glass panel effect for sidebar */
+.glass-panel {
+  background-color: var(--bg-primary);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-right: 1px solid var(--border-light);
+}
+
 #sidebar>div {
   display: flex;
   flex-direction: column;
@@ -1113,8 +1126,8 @@ input:focus {
 }
 
 .info-tooltip-container button:hover {
-  background-color: #f3f4f6;
-  color: #4b5563;
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
 }
 
 /* Tooltip styling */
@@ -1124,8 +1137,8 @@ input:focus {
   right: 0;
   margin-bottom: 8px;
   padding: 4px 8px;
-  background-color: #1f2937;
-  color: white;
+  background-color: var(--color-gray-800);
+  color: var(--color-gray-100);
   font-size: 11px;
   border-radius: 4px;
   white-space: nowrap;
@@ -1285,8 +1298,8 @@ input:focus {
 .search-input:focus {
   outline: none;
   border-color: var(--color-primary-400);
-  background-color: var(--color-white);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background-color: var(--bg-primary);
+  box-shadow: 0 0 0 3px var(--input-focus-ring);
 }
 
 .clear-search-btn {
