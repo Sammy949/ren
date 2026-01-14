@@ -925,3 +925,60 @@ input:focus {
   margin: var(--spacing-4);
   box-shadow: var(--shadow-xl);
 }
+
+/* ==========================================================================
+   21. Component: Tooltips
+   ========================================================================== */
+
+.shortcuts-tooltip {
+  pointer-events: none;
+  z-index: 100;
+}
+
+.group:hover .shortcuts-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ==========================================================================
+   22. Component: Sidebar Layout
+   ========================================================================== */
+
+#sidebar>div {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* ==========================================================================
+   23. Component: Editable Title
+   ========================================================================== */
+
+#noteTitleInput {
+  width: 8rem;
+}
+
+.min-h-0 {
+  min-height: 0;
+}
+
+.w-3\.5 {
+  width: 0.875rem;
+}
+
+.h-3\.5 {
+  height: 0.875rem;
+}
+
+.py-0\.5 {
+  padding-top: 0.125rem;
+  padding-bottom: 0.125rem;
+}
+
+.pt-4 {
+  padding-top: 1rem;
+}
+
+.mt-4 {
+  margin-top: 1rem;
+}

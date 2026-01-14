@@ -14,7 +14,7 @@ class SylvaNotePad {
     // Keyboard shortcuts configuration
     this.keyboardShortcuts = [
       {
-        keys: "Ctrl+Shift+N",
+        keys: "Ctrl+Alt+N",
         action: "createNewNote",
         description: "Create new note",
       },
@@ -29,6 +29,7 @@ class SylvaNotePad {
         action: "toggleSidebar",
         description: "Open/close sidebar",
       },
+      { keys: "Ctrl+,", action: "openSettings", description: "Open settings" },
       {
         keys: "Ctrl+/",
         action: "showShortcutsHelp",
@@ -50,19 +51,17 @@ class SylvaNotePad {
     this.closeSidebar = document.getElementById("closeSidebar");
     this.noteContent = document.getElementById("noteContent");
     this.noteTitle = document.getElementById("noteTitle");
+    this.noteTitleInput = document.getElementById("noteTitleInput");
     this.wordCount = document.getElementById("wordCount");
     this.charCount = document.getElementById("charCount");
     this.autoSaveStatus = document.getElementById("autoSaveStatus");
     this.notesList = document.getElementById("notesList");
     this.newNoteBtn = document.getElementById("newNoteBtn");
 
-    // Export/Import elements
-    this.exportNotesBtn = document.getElementById("exportNotesBtn");
-    this.importNotesBtn = document.getElementById("importNotesBtn");
+    // Settings and import elements
+    this.settingsBtn = document.getElementById("settingsBtn");
     this.importFileInput = document.getElementById("importFileInput");
-
-    // Keyboard shortcuts button
-    this.keyboardShortcutsBtn = document.getElementById("keyboardShortcutsBtn");
+    this.shortcutsInfoBtn = document.getElementById("shortcutsInfoBtn");
 
     // Rename modal elements
     this.renameModal = document.getElementById("renameModal");
@@ -80,6 +79,9 @@ class SylvaNotePad {
     this.notificationContainer = document.getElementById(
       "notificationContainer"
     );
+
+    // Settings modal state
+    this.settingsModalVisible = false;
   }
 
   bindEvents() {
@@ -95,17 +97,33 @@ class SylvaNotePad {
       this.toggleSidebar();
     });
 
-    // Export/Import events
-    this.exportNotesBtn.addEventListener("click", () => this.exportNotes());
-    this.importNotesBtn.addEventListener("click", () =>
-      this.importFileInput.click()
-    );
+    // Settings button
+    this.settingsBtn.addEventListener("click", () => {
+      this.showSettingsModal();
+      this.toggleSidebar();
+    });
+
+    // Import file input
     this.importFileInput.addEventListener("change", (e) => this.importNotes(e));
 
-    // Keyboard shortcuts button
-    this.keyboardShortcutsBtn.addEventListener("click", () => {
-      this.showShortcutsHelp();
-      this.toggleSidebar();
+    // Shortcuts info button
+    this.shortcutsInfoBtn.addEventListener("click", () =>
+      this.showShortcutsHelp()
+    );
+
+    // Editable title - click to edit
+    this.noteTitle.addEventListener("click", () => this.startEditingTitle());
+    this.noteTitleInput.addEventListener("blur", () =>
+      this.finishEditingTitle()
+    );
+    this.noteTitleInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        this.finishEditingTitle();
+      }
+      if (e.key === "Escape") {
+        this.cancelEditingTitle();
+      }
     });
 
     // Rename modal events
@@ -298,6 +316,9 @@ class SylvaNotePad {
       case "toggleSidebar":
         this.toggleSidebar();
         break;
+      case "openSettings":
+        this.showSettingsModal();
+        break;
       case "showShortcutsHelp":
         this.toggleShortcutsHelp();
         break;
@@ -385,6 +406,143 @@ class SylvaNotePad {
       modal.setAttribute("aria-hidden", "true");
     }
     this.shortcutsHelpVisible = false;
+
+    if (this.lastFocusedElement) {
+      this.lastFocusedElement.focus();
+    }
+  }
+
+  // Editable Title: Start editing the note title
+  startEditingTitle() {
+    this.noteTitle.classList.add("hidden");
+    this.noteTitleInput.classList.remove("hidden");
+    this.noteTitleInput.value = this.noteTitle.textContent;
+    this.noteTitleInput.focus();
+    this.noteTitleInput.select();
+  }
+
+  // Editable Title: Finish editing and save
+  finishEditingTitle() {
+    const newTitle = this.noteTitleInput.value.trim();
+    if (newTitle && this.currentNoteId) {
+      const note = this.getNoteById(this.currentNoteId);
+      if (note && newTitle !== note.title) {
+        note.title = newTitle;
+        note.updatedAt = new Date().toISOString();
+        this.noteTitle.textContent = newTitle;
+        this.saveData();
+        this.updateNoteItemInDOM(note);
+        this.showNotification("Title updated", "success");
+      }
+    }
+    this.noteTitleInput.classList.add("hidden");
+    this.noteTitle.classList.remove("hidden");
+  }
+
+  // Editable Title: Cancel editing
+  cancelEditingTitle() {
+    this.noteTitleInput.classList.add("hidden");
+    this.noteTitle.classList.remove("hidden");
+  }
+
+  // Settings Modal: Show settings
+  showSettingsModal() {
+    let modal = document.getElementById("settingsModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "settingsModal";
+      modal.className =
+        "fixed inset-0 bg-black bg-opacity-50 z-60 flex items-center justify-center";
+      modal.setAttribute("role", "dialog");
+      modal.setAttribute("aria-modal", "true");
+      modal.setAttribute("aria-labelledby", "settingsTitle");
+
+      modal.innerHTML = `
+        <div class="bg-white rounded-lg p-4 w-80 mx-4 shadow-xl" role="document">
+          <div class="flex items-center justify-between mb-4">
+            <h3 id="settingsTitle" class="text-base font-semibold text-gray-900">Settings</h3>
+            <button id="closeSettings" class="p-1 hover:bg-gray-100 rounded" aria-label="Close settings">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="space-y-2">
+            <button id="settingsExportBtn" class="w-full p-3 text-left hover:bg-gray-50 rounded-lg transition-colors flex items-center space-x-3 border border-gray-200">
+              <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+              </svg>
+              <div>
+                <div class="text-sm font-medium text-gray-800">Export Notes</div>
+                <div class="text-xs text-gray-500">Download all notes as JSON</div>
+              </div>
+            </button>
+            <button id="settingsImportBtn" class="w-full p-3 text-left hover:bg-gray-50 rounded-lg transition-colors flex items-center space-x-3 border border-gray-200">
+              <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+              </svg>
+              <div>
+                <div class="text-sm font-medium text-gray-800">Import Notes</div>
+                <div class="text-xs text-gray-500">Load notes from a JSON file</div>
+              </div>
+            </button>
+          </div>
+          <div class="mt-4 pt-4 border-t border-gray-200">
+            <p class="text-xs text-gray-400 text-center">
+              Sylva v2.0 • <button id="settingsShortcutsBtn" class="text-blue-500 hover:underline">Keyboard Shortcuts</button>
+            </p>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      // Bind events
+      modal
+        .querySelector("#closeSettings")
+        .addEventListener("click", () => this.hideSettingsModal());
+      modal
+        .querySelector("#settingsExportBtn")
+        .addEventListener("click", () => {
+          this.exportNotes();
+          this.hideSettingsModal();
+        });
+      modal
+        .querySelector("#settingsImportBtn")
+        .addEventListener("click", () => {
+          this.importFileInput.click();
+          this.hideSettingsModal();
+        });
+      modal
+        .querySelector("#settingsShortcutsBtn")
+        .addEventListener("click", () => {
+          this.hideSettingsModal();
+          this.showShortcutsHelp();
+        });
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) this.hideSettingsModal();
+      });
+      modal.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") this.hideSettingsModal();
+      });
+    }
+
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+    this.settingsModalVisible = true;
+    this.lastFocusedElement = document.activeElement;
+
+    setTimeout(() => modal.querySelector("#closeSettings").focus(), 100);
+  }
+
+  // Settings Modal: Hide settings
+  hideSettingsModal() {
+    const modal = document.getElementById("settingsModal");
+    if (modal) {
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden", "true");
+    }
+    this.settingsModalVisible = false;
 
     if (this.lastFocusedElement) {
       this.lastFocusedElement.focus();

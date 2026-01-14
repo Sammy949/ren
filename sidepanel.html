@@ -39,13 +39,23 @@
           </svg>
         </button>
         <div class="flex items-center space-x-2">
-          <h1
-            id="noteTitle"
-            class="text-xs font-medium text-gray-700 truncate max-w-32"
-            aria-live="polite"
-          >
-            Untitled Note
-          </h1>
+          <!-- Editable Note Title -->
+          <div id="noteTitleContainer" class="relative">
+            <h1
+              id="noteTitle"
+              class="text-xs font-medium text-gray-700 truncate max-w-32 cursor-pointer hover:text-gray-900"
+              aria-live="polite"
+              title="Click to edit title"
+            >
+              Untitled Note
+            </h1>
+            <input
+              type="text"
+              id="noteTitleInput"
+              class="hidden text-xs font-medium text-gray-700 max-w-32 px-1 py-0.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              aria-label="Edit note title"
+            />
+          </div>
           <div
             class="w-5 h-5 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center"
             aria-hidden="true"
@@ -102,8 +112,31 @@
               </button>
             </div>
 
-            <!-- Menu Actions -->
-            <div class="space-y-1 mb-4" role="group" aria-label="Note actions">
+            <!-- Notes List (Full Height) -->
+            <div class="flex-1 flex flex-col min-h-0">
+              <h3
+                id="notesListLabel"
+                class="text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide"
+              >
+                Your Notes
+              </h3>
+              <div
+                id="notesList"
+                class="flex-1 space-y-1 overflow-y-auto"
+                role="listbox"
+                aria-labelledby="notesListLabel"
+                tabindex="0"
+              >
+                <!-- Notes will be populated here -->
+              </div>
+            </div>
+
+            <!-- Sidebar Actions (Bottom) -->
+            <div
+              class="space-y-1 pt-4 border-t border-gray-200 mt-4"
+              role="group"
+              aria-label="Note actions"
+            >
               <button
                 id="newNoteBtn"
                 class="w-full p-2 text-left hover:bg-gray-100 rounded-lg transition-colors menu-item flex items-center space-x-2"
@@ -126,9 +159,9 @@
                 <span class="text-sm font-medium">New Note</span>
               </button>
               <button
-                id="exportNotesBtn"
+                id="settingsBtn"
                 class="w-full p-2 text-left hover:bg-gray-100 rounded-lg transition-colors menu-item flex items-center space-x-2"
-                aria-label="Export all notes to file"
+                aria-label="Open settings"
               >
                 <svg
                   class="w-4 h-4"
@@ -141,32 +174,18 @@
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     stroke-width="2"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
                   ></path>
-                </svg>
-                <span class="text-sm font-medium">Export Notes</span>
-              </button>
-              <button
-                id="importNotesBtn"
-                class="w-full p-2 text-left hover:bg-gray-100 rounded-lg transition-colors menu-item flex items-center space-x-2"
-                aria-label="Import notes from file"
-              >
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
                   <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     stroke-width="2"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                   ></path>
                 </svg>
-                <span class="text-sm font-medium">Import Notes</span>
+                <span class="text-sm font-medium">Settings</span>
               </button>
+              <!-- Hidden file input for import -->
               <input
                 type="file"
                 id="importFileInput"
@@ -174,52 +193,6 @@
                 class="hidden"
                 aria-label="Select notes file to import"
               />
-              <!-- Keyboard Shortcuts Button -->
-              <button
-                id="keyboardShortcutsBtn"
-                class="w-full p-2 text-left hover:bg-gray-100 rounded-lg transition-colors menu-item flex items-center justify-between"
-                aria-label="Show keyboard shortcuts"
-              >
-                <div class="flex items-center space-x-2">
-                  <svg
-                    class="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-                    ></path>
-                  </svg>
-                  <span class="text-sm font-medium">Shortcuts</span>
-                </div>
-                <kbd class="text-xs text-gray-400 bg-gray-50 px-1 rounded"
-                  >Ctrl+/</kbd
-                >
-              </button>
-            </div>
-
-            <!-- Notes List -->
-            <div>
-              <h3
-                id="notesListLabel"
-                class="text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide"
-              >
-                Your Notes
-              </h3>
-              <div
-                id="notesList"
-                class="space-y-1 max-h-80 overflow-y-auto"
-                role="listbox"
-                aria-labelledby="notesListLabel"
-                tabindex="0"
-              >
-                <!-- Notes will be populated here -->
-              </div>
             </div>
           </div>
         </nav>
@@ -251,13 +224,45 @@
             >0 characters</span
           >
         </div>
-        <div
-          id="autoSaveStatus"
-          class="text-xs text-gray-400"
-          role="status"
-          aria-live="polite"
-        >
-          Ready
+        <div class="flex items-center space-x-2">
+          <div
+            id="autoSaveStatus"
+            class="text-xs text-gray-400"
+            role="status"
+            aria-live="polite"
+          >
+            Ready
+          </div>
+          <!-- Info icon with tooltip -->
+          <div class="relative group">
+            <button
+              id="shortcutsInfoBtn"
+              class="p-1 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100"
+              aria-label="Keyboard shortcuts info"
+            >
+              <svg
+                class="w-3.5 h-3.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+            </button>
+            <!-- Tooltip -->
+            <div
+              class="shortcuts-tooltip absolute bottom-full right-0 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity"
+            >
+              Press <kbd class="px-1 bg-gray-700 rounded">Ctrl+/</kbd> for
+              shortcuts
+            </div>
+          </div>
         </div>
       </footer>
     </div>
