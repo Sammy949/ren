@@ -7,20 +7,28 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body class="bg-gray-50 h-screen overflow-hidden">
+    <!-- Skip Link for keyboard users -->
+    <a href="#noteContent" class="skip-link">Skip to editor</a>
+
     <div class="flex flex-col h-full">
       <!-- Top Bar -->
-      <div
+      <header
         class="flex items-center justify-between px-3 py-2 bg-white border-b border-gray-200 shadow-sm"
+        role="banner"
       >
         <button
           id="hamburgerBtn"
           class="p-2 hover:bg-gray-100 rounded-md transition-colors"
+          aria-label="Open notes menu"
+          aria-expanded="false"
+          aria-controls="sidebar"
         >
           <svg
             class="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path
               stroke-linecap="round"
@@ -31,41 +39,58 @@
           </svg>
         </button>
         <div class="flex items-center space-x-2">
-          <span
+          <h1
             id="noteTitle"
             class="text-xs font-medium text-gray-700 truncate max-w-32"
-            >Untitled Note</span
+            aria-live="polite"
           >
+            Untitled Note
+          </h1>
           <div
             class="w-5 h-5 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center"
+            aria-hidden="true"
           >
             <span class="text-white text-xs font-bold">S</span>
           </div>
         </div>
-      </div>
+      </header>
 
       <!-- Main Content Area -->
-      <div class="flex-1 relative">
+      <main class="flex-1 relative" role="main">
         <!-- Sidebar Overlay -->
         <div
           id="sidebarOverlay"
           class="fixed inset-0 bg-black bg-opacity-20 z-40 opacity-0 pointer-events-none sidebar-overlay"
+          aria-hidden="true"
         ></div>
 
         <!-- Glassy Sidebar -->
-        <div
+        <nav
           id="sidebar"
           class="fixed left-0 top-0 h-full w-72 glass-panel z-50 sidebar-transition transform -translate-x-full shadow-lg"
+          role="navigation"
+          aria-label="Notes navigation"
+          aria-hidden="true"
         >
           <div class="p-4">
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-base font-semibold text-gray-800">Sylva Notes</h2>
-              <button id="closeSidebar" class="p-1 hover:bg-gray-100 rounded">
+              <h2
+                class="text-base font-semibold text-gray-800"
+                id="sidebarTitle"
+              >
+                Sylva Notes
+              </h2>
+              <button
+                id="closeSidebar"
+                class="p-1 hover:bg-gray-100 rounded"
+                aria-label="Close notes menu"
+              >
                 <svg
                   class="w-4 h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     stroke-linecap="round"
@@ -78,16 +103,18 @@
             </div>
 
             <!-- Menu Actions -->
-            <div class="space-y-1 mb-4">
+            <div class="space-y-1 mb-4" role="group" aria-label="Note actions">
               <button
                 id="newNoteBtn"
                 class="w-full p-2 text-left hover:bg-gray-100 rounded-lg transition-colors menu-item flex items-center space-x-2"
+                aria-label="Create new note"
               >
                 <svg
                   class="w-4 h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     stroke-linecap="round"
@@ -101,12 +128,14 @@
               <button
                 id="exportNotesBtn"
                 class="w-full p-2 text-left hover:bg-gray-100 rounded-lg transition-colors menu-item flex items-center space-x-2"
+                aria-label="Export all notes to file"
               >
                 <svg
                   class="w-4 h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     stroke-linecap="round"
@@ -120,12 +149,14 @@
               <button
                 id="importNotesBtn"
                 class="w-full p-2 text-left hover:bg-gray-100 rounded-lg transition-colors menu-item flex items-center space-x-2"
+                aria-label="Import notes from file"
               >
                 <svg
                   class="w-4 h-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden="true"
                 >
                   <path
                     stroke-linecap="round"
@@ -141,69 +172,102 @@
                 id="importFileInput"
                 accept=".json"
                 class="hidden"
+                aria-label="Select notes file to import"
               />
             </div>
 
             <!-- Notes List -->
             <div>
               <h3
+                id="notesListLabel"
                 class="text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide"
               >
                 Your Notes
               </h3>
-              <div id="notesList" class="space-y-1 max-h-80 overflow-y-auto">
+              <div
+                id="notesList"
+                class="space-y-1 max-h-80 overflow-y-auto"
+                role="listbox"
+                aria-labelledby="notesListLabel"
+                tabindex="0"
+              >
                 <!-- Notes will be populated here -->
               </div>
             </div>
           </div>
-        </div>
+        </nav>
 
         <!-- Writing Canvas -->
         <div class="h-full flex flex-col">
+          <label for="noteContent" class="sr-only">Note content</label>
           <textarea
             id="noteContent"
             placeholder="Start writing your thoughts..."
             class="flex-1 w-full p-4 border-none resize-none bg-transparent text-gray-800 placeholder-gray-400 leading-relaxed text-sm"
+            aria-label="Note content editor"
+            aria-describedby="editorStatus"
           ></textarea>
         </div>
-      </div>
+      </main>
 
       <!-- Bottom Status Bar -->
-      <div
+      <footer
         class="px-4 py-2 bg-white border-t border-gray-200 flex items-center justify-between text-xs text-gray-600"
+        role="contentinfo"
       >
-        <div class="flex items-center space-x-3">
-          <span id="wordCount">0 words</span>
-          <span class="text-gray-300">•</span>
-          <span id="charCount">0 characters</span>
+        <div class="flex items-center space-x-3" id="editorStatus">
+          <span id="wordCount" aria-live="polite" aria-atomic="true"
+            >0 words</span
+          >
+          <span class="text-gray-300" aria-hidden="true">•</span>
+          <span id="charCount" aria-live="polite" aria-atomic="true"
+            >0 characters</span
+          >
         </div>
-        <div id="autoSaveStatus" class="text-xs text-gray-400">Ready</div>
-      </div>
+        <div
+          id="autoSaveStatus"
+          class="text-xs text-gray-400"
+          role="status"
+          aria-live="polite"
+        >
+          Ready
+        </div>
+      </footer>
     </div>
 
     <!-- Rename Modal -->
     <div
       id="renameModal"
       class="fixed inset-0 bg-black bg-opacity-50 z-60 hidden flex items-center justify-center"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="renameModalTitle"
+      aria-hidden="true"
     >
-      <div class="bg-white rounded-lg p-4 w-80 mx-4 shadow-xl">
-        <h3 class="text-base font-semibold mb-3">Rename Note</h3>
+      <div class="bg-white rounded-lg p-4 w-80 mx-4 shadow-xl" role="document">
+        <h3 id="renameModalTitle" class="text-base font-semibold mb-3">
+          Rename Note
+        </h3>
+        <label for="renameInput" class="sr-only">New note name</label>
         <input
           type="text"
           id="renameInput"
           placeholder="Enter new name..."
           class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          aria-describedby="renameModalTitle"
         />
         <div class="flex justify-end space-x-2 mt-3">
           <button
             id="cancelRename"
             class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
+            aria-label="Cancel rename"
           >
             Cancel
           </button>
           <button
             id="confirmRename"
             class="px-3 py-2 bg-blue-500 text-white hover:bg-blue-600 rounded-lg text-sm"
+            aria-label="Confirm rename"
           >
             Rename
           </button>
@@ -215,17 +279,24 @@
     <div
       id="deleteModal"
       class="fixed inset-0 bg-black bg-opacity-50 z-60 hidden flex items-center justify-center"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="deleteModalTitle"
+      aria-describedby="deleteModalDesc"
+      aria-hidden="true"
     >
-      <div class="bg-white rounded-lg p-4 w-80 mx-4 shadow-xl">
+      <div class="bg-white rounded-lg p-4 w-80 mx-4 shadow-xl" role="document">
         <div class="flex items-center mb-3">
           <div
             class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3"
+            aria-hidden="true"
           >
             <svg
               class="w-4 h-4 text-red-600"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <path
                 stroke-linecap="round"
@@ -235,9 +306,14 @@
               ></path>
             </svg>
           </div>
-          <h3 class="text-base font-semibold text-gray-900">Delete Note</h3>
+          <h3
+            id="deleteModalTitle"
+            class="text-base font-semibold text-gray-900"
+          >
+            Delete Note
+          </h3>
         </div>
-        <p class="text-sm text-gray-600 mb-4">
+        <p id="deleteModalDesc" class="text-sm text-gray-600 mb-4">
           Are you sure you want to delete "<span
             id="deleteNoteTitle"
             class="font-medium"
@@ -248,22 +324,37 @@
           <button
             id="cancelDelete"
             class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
+            aria-label="Cancel delete"
           >
             Cancel
           </button>
           <button
             id="confirmDelete"
             class="px-3 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg text-sm"
+            aria-label="Confirm delete"
           >
             Delete
           </button>
         </div>
       </div>
     </div>
-    <!-- Notification Container -->
+
+    <!-- Notification Container - Screen reader announcements -->
     <div
       id="notificationContainer"
       class="fixed bottom-4 right-4 z-70 space-y-2"
+      role="log"
+      aria-live="polite"
+      aria-label="Notifications"
+    ></div>
+
+    <!-- Screen reader announcements region -->
+    <div
+      id="srAnnouncements"
+      class="sr-only"
+      role="status"
+      aria-live="assertive"
+      aria-atomic="true"
     ></div>
 
     <script src="sidepanel.js"></script>
