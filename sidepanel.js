@@ -11,8 +11,35 @@ class SylvaNotePad {
     // Performance: Track rendered DOM elements by note ID
     this.renderedNoteElements = new Map();
 
+    // Keyboard shortcuts configuration
+    this.keyboardShortcuts = [
+      {
+        keys: "Ctrl+Shift+N",
+        action: "createNewNote",
+        description: "Create new note",
+      },
+      { keys: "Ctrl+S", action: "forceSave", description: "Save current note" },
+      {
+        keys: "Ctrl+Shift+E",
+        action: "exportNotes",
+        description: "Export all notes",
+      },
+      {
+        keys: "Ctrl+Shift+O",
+        action: "toggleSidebar",
+        description: "Open/close sidebar",
+      },
+      {
+        keys: "Ctrl+/",
+        action: "showShortcutsHelp",
+        description: "Show keyboard shortcuts",
+      },
+    ];
+    this.shortcutsHelpVisible = false;
+
     this.initializeElements();
     this.bindEvents();
+    this.bindKeyboardShortcuts();
     this.loadData();
   }
 
@@ -196,6 +223,162 @@ class SylvaNotePad {
       setTimeout(() => {
         announcer.textContent = "";
       }, 1000);
+    }
+  }
+
+  // Keyboard Shortcuts: Bind global keyboard shortcuts
+  bindKeyboardShortcuts() {
+    document.addEventListener("keydown", (e) => this.handleKeyboardShortcut(e));
+  }
+
+  // Keyboard Shortcuts: Handle keyboard shortcut events
+  handleKeyboardShortcut(e) {
+    // Don't trigger shortcuts when typing in inputs (except for Escape and specific combos)
+    const isTyping = ["INPUT", "TEXTAREA"].includes(
+      document.activeElement.tagName
+    );
+
+    // Build the key combination string
+    const combo = [];
+    if (e.ctrlKey || e.metaKey) combo.push("Ctrl");
+    if (e.shiftKey) combo.push("Shift");
+    if (e.altKey) combo.push("Alt");
+
+    // Normalize key
+    let key = e.key;
+    if (key === " ") key = "Space";
+    if (key.length === 1) key = key.toUpperCase();
+    combo.push(key);
+
+    const pressedCombo = combo.join("+");
+
+    // Find matching shortcut
+    const shortcut = this.keyboardShortcuts.find((s) => {
+      const normalizedKeys = s.keys.toUpperCase().replace(/\s/g, "");
+      const normalizedPressed = pressedCombo.toUpperCase();
+      return normalizedKeys === normalizedPressed;
+    });
+
+    if (shortcut) {
+      // Allow Ctrl+S even when typing (common save expectation)
+      if (isTyping && shortcut.action !== "forceSave") {
+        return;
+      }
+
+      e.preventDefault();
+      this.executeShortcutAction(shortcut.action);
+    }
+  }
+
+  // Keyboard Shortcuts: Execute action based on shortcut
+  executeShortcutAction(action) {
+    switch (action) {
+      case "createNewNote":
+        this.createNewNote();
+        this.announceToScreenReader("New note created");
+        break;
+      case "forceSave":
+        this.saveCurrentNote();
+        this.autoSaveStatus.textContent = "Saved";
+        this.showNotification("Note saved", "success");
+        this.announceToScreenReader("Note saved");
+        break;
+      case "exportNotes":
+        this.exportNotes();
+        break;
+      case "toggleSidebar":
+        this.toggleSidebar();
+        break;
+      case "showShortcutsHelp":
+        this.toggleShortcutsHelp();
+        break;
+    }
+  }
+
+  // Keyboard Shortcuts: Toggle shortcuts help modal
+  toggleShortcutsHelp() {
+    if (this.shortcutsHelpVisible) {
+      this.hideShortcutsHelp();
+    } else {
+      this.showShortcutsHelp();
+    }
+  }
+
+  // Keyboard Shortcuts: Show help modal
+  showShortcutsHelp() {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById("shortcutsHelpModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "shortcutsHelpModal";
+      modal.className =
+        "fixed inset-0 bg-black bg-opacity-50 z-60 flex items-center justify-center";
+      modal.setAttribute("role", "dialog");
+      modal.setAttribute("aria-modal", "true");
+      modal.setAttribute("aria-labelledby", "shortcutsHelpTitle");
+
+      const shortcuts = this.keyboardShortcuts
+        .map(
+          (s) => `
+        <div class="flex justify-between items-center py-2 border-b border-gray-100">
+          <span class="text-sm text-gray-700">${s.description}</span>
+          <kbd class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded font-mono">${s.keys}</kbd>
+        </div>
+      `
+        )
+        .join("");
+
+      modal.innerHTML = `
+        <div class="bg-white rounded-lg p-4 w-80 mx-4 shadow-xl" role="document">
+          <div class="flex items-center justify-between mb-4">
+            <h3 id="shortcutsHelpTitle" class="text-base font-semibold text-gray-900">Keyboard Shortcuts</h3>
+            <button id="closeShortcutsHelp" class="p-1 hover:bg-gray-100 rounded" aria-label="Close shortcuts help">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="space-y-1">
+            ${shortcuts}
+          </div>
+          <p class="text-xs text-gray-400 mt-4 text-center">Press Escape to close</p>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      // Bind close events
+      modal
+        .querySelector("#closeShortcutsHelp")
+        .addEventListener("click", () => this.hideShortcutsHelp());
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) this.hideShortcutsHelp();
+      });
+      modal.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") this.hideShortcutsHelp();
+      });
+    }
+
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+    this.shortcutsHelpVisible = true;
+    this.lastFocusedElement = document.activeElement;
+
+    // Focus close button
+    setTimeout(() => modal.querySelector("#closeShortcutsHelp").focus(), 100);
+  }
+
+  // Keyboard Shortcuts: Hide help modal
+  hideShortcutsHelp() {
+    const modal = document.getElementById("shortcutsHelpModal");
+    if (modal) {
+      modal.classList.add("hidden");
+      modal.setAttribute("aria-hidden", "true");
+    }
+    this.shortcutsHelpVisible = false;
+
+    if (this.lastFocusedElement) {
+      this.lastFocusedElement.focus();
     }
   }
 
