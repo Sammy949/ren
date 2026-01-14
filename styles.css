@@ -1126,3 +1126,25 @@ input:focus {
   font-size: var(--font-size-xs);
   color: var(--color-gray-500);
 }
+
+/* ==========================================================================
+   26. Component: Search
+   ========================================================================== */
+
+#searchNotes {
+  background-color: var(--color-white);
+}
+
+#searchNotes:focus {
+  border-color: var(--color-primary-500);
+  box-shadow: 0 0 0 2px var(--color-primary-100);
+}
+
+.search-container svg {
+  color: var(--color-gray-400);
+}
+
+.search-no-results {
+  padding: 2rem 1rem;
+  text-align: center;
+}

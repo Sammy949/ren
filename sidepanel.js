@@ -11,6 +11,8 @@ class SylvaNotePad {
     // Performance: Track rendered DOM elements by note ID
     this.renderedNoteElements = new Map();
 
+    this.searchQuery = "";
+
     // Keyboard shortcuts configuration
     this.keyboardShortcuts = [
       {
@@ -57,6 +59,7 @@ class SylvaNotePad {
     this.autoSaveStatus = document.getElementById("autoSaveStatus");
     this.notesList = document.getElementById("notesList");
     this.newNoteBtn = document.getElementById("newNoteBtn");
+    this.searchNotes = document.getElementById("searchNotes");
 
     // Settings and import elements
     this.settingsBtn = document.getElementById("settingsBtn");
@@ -96,6 +99,11 @@ class SylvaNotePad {
       this.createNewNote();
       this.toggleSidebar();
     });
+
+    // Search input
+    if (this.searchNotes) {
+      this.searchNotes.addEventListener("input", () => this.handleSearch());
+    }
 
     // Settings button (with null check)
     if (this.settingsBtn) {
@@ -257,6 +265,22 @@ class SylvaNotePad {
         announcer.textContent = "";
       }, 1000);
     }
+  }
+
+  // Search: Handle search input
+  handleSearch() {
+    this.searchQuery = this.searchNotes.value.trim().toLowerCase();
+    this.renderNotesList();
+  }
+
+  // Search: Get filtered notes based on search query
+  getFilteredNotes() {
+    if (!this.searchQuery) return this.notes;
+    return this.notes.filter(
+      (note) =>
+        note.title.toLowerCase().includes(this.searchQuery) ||
+        note.content.toLowerCase().includes(this.searchQuery)
+    );
   }
 
   // Keyboard Shortcuts: Bind global keyboard shortcuts
@@ -798,6 +822,12 @@ Happy writing! ✨`,
   }
 
   createNewNote() {
+    // Clear search when creating a new note to ensure it's visible
+    if (this.searchNotes && this.searchQuery) {
+      this.searchNotes.value = "";
+      this.searchQuery = "";
+    }
+
     const newNote = {
       id: Date.now().toString(),
       title: "Untitled Note",
@@ -1145,7 +1175,9 @@ Happy writing! ✨`,
     // Performance: Clear element tracking
     this.renderedNoteElements.clear();
 
-    // Show empty state if no notes
+    const filteredNotes = this.getFilteredNotes();
+
+    // Show empty state if no notes at all
     if (this.notes.length === 0) {
       this.notesList.innerHTML = `
         <div class="empty-state">
@@ -1159,7 +1191,17 @@ Happy writing! ✨`,
       return;
     }
 
-    this.notes.forEach((note) => {
+    // Show "no results" if searching but no match
+    if (filteredNotes.length === 0 && this.searchQuery) {
+      this.notesList.innerHTML = `
+        <div class="search-no-results">
+          <p class="text-xs text-gray-500">No results for "${this.searchQuery}"</p>
+        </div>
+      `;
+      return;
+    }
+
+    filteredNotes.forEach((note) => {
       const noteItem = this.createNoteElement(note);
       // Performance: Track rendered element
       this.renderedNoteElements.set(note.id, noteItem);
