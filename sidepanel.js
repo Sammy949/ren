@@ -87,6 +87,116 @@ class SylvaNotePad {
     this.confirmDelete.addEventListener("click", () =>
       this.confirmDeleteNote()
     );
+
+    // a11y: Delete modal keyboard handling
+    this.deleteModal.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") this.hideDeleteModal();
+      // Focus trap within modal
+      if (e.key === "Tab") {
+        this.trapFocus(e, this.deleteModal);
+      }
+    });
+
+    // a11y: Rename modal focus trap
+    this.renameModal.addEventListener("keydown", (e) => {
+      if (e.key === "Tab") {
+        this.trapFocus(e, this.renameModal);
+      }
+    });
+
+    // a11y: Keyboard navigation for notes list
+    this.notesList.addEventListener("keydown", (e) =>
+      this.handleNotesListKeydown(e)
+    );
+
+    // a11y: Global Escape key to close sidebar
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        if (!this.renameModal.classList.contains("hidden")) {
+          this.hideRenameModal();
+        } else if (!this.deleteModal.classList.contains("hidden")) {
+          this.hideDeleteModal();
+        } else if (!this.sidebar.classList.contains("-translate-x-full")) {
+          this.toggleSidebar();
+        }
+      }
+    });
+  }
+
+  // a11y: Focus trap for modals
+  trapFocus(e, container) {
+    const focusableElements = container.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    if (e.shiftKey && document.activeElement === firstElement) {
+      e.preventDefault();
+      lastElement.focus();
+    } else if (!e.shiftKey && document.activeElement === lastElement) {
+      e.preventDefault();
+      firstElement.focus();
+    }
+  }
+
+  // a11y: Keyboard navigation for notes list
+  handleNotesListKeydown(e) {
+    const noteItems = Array.from(this.notesList.querySelectorAll(".note-item"));
+    const currentIndex = noteItems.findIndex(
+      (item) =>
+        item === document.activeElement || item.contains(document.activeElement)
+    );
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        if (currentIndex < noteItems.length - 1) {
+          noteItems[currentIndex + 1].focus();
+        } else if (noteItems.length > 0) {
+          noteItems[0].focus();
+        }
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        if (currentIndex > 0) {
+          noteItems[currentIndex - 1].focus();
+        } else if (noteItems.length > 0) {
+          noteItems[noteItems.length - 1].focus();
+        }
+        break;
+      case "Enter":
+      case " ":
+        e.preventDefault();
+        if (currentIndex >= 0) {
+          const noteId = noteItems[currentIndex].dataset.noteId;
+          if (noteId) {
+            this.switchToNote(noteId);
+            this.toggleSidebar();
+          }
+        }
+        break;
+      case "Home":
+        e.preventDefault();
+        if (noteItems.length > 0) noteItems[0].focus();
+        break;
+      case "End":
+        e.preventDefault();
+        if (noteItems.length > 0) noteItems[noteItems.length - 1].focus();
+        break;
+    }
+  }
+
+  // a11y: Announce message to screen readers
+  announceToScreenReader(message) {
+    const announcer = document.getElementById("srAnnouncements");
+    if (announcer) {
+      announcer.textContent = message;
+      // Clear after announcement to allow repeat announcements
+      setTimeout(() => {
+        announcer.textContent = "";
+      }, 1000);
+    }
   }
 
   async loadData() {
