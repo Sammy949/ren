@@ -11,8 +11,6 @@ class SylvaNotePad {
     // Performance: Track rendered DOM elements by note ID
     this.renderedNoteElements = new Map();
 
-    this.searchQuery = "";
-
     // Keyboard shortcuts configuration
     this.keyboardShortcuts = [
       {
@@ -32,6 +30,7 @@ class SylvaNotePad {
         description: "Open/close sidebar",
       },
       { keys: "Ctrl+,", action: "openSettings", description: "Open settings" },
+      { keys: "Ctrl+F", action: "focusSearch", description: "Search notes" },
       {
         keys: "Ctrl+/",
         action: "showShortcutsHelp",
@@ -59,12 +58,16 @@ class SylvaNotePad {
     this.autoSaveStatus = document.getElementById("autoSaveStatus");
     this.notesList = document.getElementById("notesList");
     this.newNoteBtn = document.getElementById("newNoteBtn");
-    this.searchNotes = document.getElementById("searchNotes");
 
     // Settings and import elements
     this.settingsBtn = document.getElementById("settingsBtn");
     this.importFileInput = document.getElementById("importFileInput");
     this.shortcutsInfoBtn = document.getElementById("shortcutsInfoBtn");
+
+    // Search elements
+    this.searchInput = document.getElementById("searchInput");
+    this.clearSearchBtn = document.getElementById("clearSearchBtn");
+    this.searchQuery = "";
 
     // Rename modal elements
     this.renameModal = document.getElementById("renameModal");
@@ -100,11 +103,6 @@ class SylvaNotePad {
       this.toggleSidebar();
     });
 
-    // Search input
-    if (this.searchNotes) {
-      this.searchNotes.addEventListener("input", () => this.handleSearch());
-    }
-
     // Settings button (with null check)
     if (this.settingsBtn) {
       this.settingsBtn.addEventListener("click", () => {
@@ -138,6 +136,20 @@ class SylvaNotePad {
           this.cancelEditingTitle();
         }
       });
+    }
+
+    // Search events
+    if (this.searchInput) {
+      this.searchInput.addEventListener("input", () => this.handleSearch());
+      this.searchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          this.clearSearch();
+          this.searchInput.blur();
+        }
+      });
+    }
+    if (this.clearSearchBtn) {
+      this.clearSearchBtn.addEventListener("click", () => this.clearSearch());
     }
 
     // Rename modal events
@@ -267,22 +279,6 @@ class SylvaNotePad {
     }
   }
 
-  // Search: Handle search input
-  handleSearch() {
-    this.searchQuery = this.searchNotes.value.trim().toLowerCase();
-    this.renderNotesList();
-  }
-
-  // Search: Get filtered notes based on search query
-  getFilteredNotes() {
-    if (!this.searchQuery) return this.notes;
-    return this.notes.filter(
-      (note) =>
-        note.title.toLowerCase().includes(this.searchQuery) ||
-        note.content.toLowerCase().includes(this.searchQuery)
-    );
-  }
-
   // Keyboard Shortcuts: Bind global keyboard shortcuts
   bindKeyboardShortcuts() {
     document.addEventListener("keydown", (e) => this.handleKeyboardShortcut(e));
@@ -328,6 +324,7 @@ class SylvaNotePad {
         "showShortcutsHelp",
         "toggleSidebar",
         "openSettings",
+        "focusSearch",
       ];
 
       if (isTyping && !alwaysAllowed.includes(shortcut.action)) {
@@ -360,6 +357,9 @@ class SylvaNotePad {
         break;
       case "openSettings":
         this.showSettingsModal();
+        break;
+      case "focusSearch":
+        this.focusSearch();
         break;
       case "showShortcutsHelp":
         this.toggleShortcutsHelp();
@@ -488,6 +488,75 @@ class SylvaNotePad {
     if (!this.noteTitle || !this.noteTitleInput) return;
     this.noteTitleInput.classList.add("hidden");
     this.noteTitle.classList.remove("hidden");
+  }
+
+  // Search: Handle search input
+  handleSearch() {
+    this.searchQuery = this.searchInput.value.trim().toLowerCase();
+
+    // Show/hide clear button
+    if (this.clearSearchBtn) {
+      if (this.searchQuery) {
+        this.clearSearchBtn.classList.remove("hidden");
+      } else {
+        this.clearSearchBtn.classList.add("hidden");
+      }
+    }
+
+    this.renderNotesList();
+  }
+
+  // Search: Clear search input and results
+  clearSearch() {
+    this.searchQuery = "";
+    if (this.searchInput) {
+      this.searchInput.value = "";
+    }
+    if (this.clearSearchBtn) {
+      this.clearSearchBtn.classList.add("hidden");
+    }
+    this.renderNotesList();
+  }
+
+  // Search: Filter notes based on query
+  filterNotes() {
+    if (!this.searchQuery) {
+      return this.notes;
+    }
+
+    return this.notes.filter((note) => {
+      const titleMatch = note.title.toLowerCase().includes(this.searchQuery);
+      const contentMatch = note.content
+        .toLowerCase()
+        .includes(this.searchQuery);
+      return titleMatch || contentMatch;
+    });
+  }
+
+  // Search: Highlight matching text
+  highlightText(text, query) {
+    if (!query) return text;
+
+    const regex = new RegExp(
+      `(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
+      "gi"
+    );
+    return text.replace(regex, '<span class="search-highlight">$1</span>');
+  }
+
+  // Search: Focus search input (opens sidebar if closed)
+  focusSearch() {
+    // Open sidebar if closed
+    if (this.sidebar.classList.contains("-translate-x-full")) {
+      this.toggleSidebar();
+    }
+    // Focus search input
+    if (this.searchInput) {
+      setTimeout(() => {
+        this.searchInput.focus();
+        this.searchInput.select();
+      }, 150);
+    }
   }
 
   // Settings Modal: Show settings
@@ -822,12 +891,6 @@ Happy writing! ✨`,
   }
 
   createNewNote() {
-    // Clear search when creating a new note to ensure it's visible
-    if (this.searchNotes && this.searchQuery) {
-      this.searchNotes.value = "";
-      this.searchQuery = "";
-    }
-
     const newNote = {
       id: Date.now().toString(),
       title: "Untitled Note",
@@ -1175,9 +1238,7 @@ Happy writing! ✨`,
     // Performance: Clear element tracking
     this.renderedNoteElements.clear();
 
-    const filteredNotes = this.getFilteredNotes();
-
-    // Show empty state if no notes at all
+    // Show empty state if no notes
     if (this.notes.length === 0) {
       this.notesList.innerHTML = `
         <div class="empty-state">
@@ -1191,11 +1252,17 @@ Happy writing! ✨`,
       return;
     }
 
-    // Show "no results" if searching but no match
+    // Filter notes based on search
+    const filteredNotes = this.filterNotes();
+
+    // Show no results state
     if (filteredNotes.length === 0 && this.searchQuery) {
       this.notesList.innerHTML = `
-        <div class="search-no-results">
-          <p class="text-xs text-gray-500">No results for "${this.searchQuery}"</p>
+        <div class="no-results">
+          <svg class="no-results-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <p class="no-results-text">No notes match "${this.searchQuery}"</p>
         </div>
       `;
       return;
@@ -1228,11 +1295,19 @@ Happy writing! ✨`,
       note.content.substring(0, 40).replace(/\n/g, " ") || "Empty note";
     const updatedDate = new Date(note.updatedAt).toLocaleDateString();
 
+    // Highlight search matches
+    const displayTitle = this.searchQuery
+      ? this.highlightText(note.title, this.searchQuery)
+      : note.title;
+    const displayPreview = this.searchQuery
+      ? this.highlightText(preview, this.searchQuery)
+      : preview;
+
     noteItem.innerHTML = `
       <div class="flex justify-between">
         <div class="flex-1 min-w-0 note-content-area" data-note-id="${note.id}">
-          <div class="text-sm font-medium text-gray-800 truncate note-title">${note.title}</div>
-          <div class="text-xs text-gray-500 mt-1 truncate subtitle note-preview">${preview}</div>
+          <div class="text-sm font-medium text-gray-800 truncate note-title">${displayTitle}</div>
+          <div class="text-xs text-gray-500 mt-1 truncate subtitle note-preview">${displayPreview}</div>
           <div class="text-xs text-gray-400 mt-1 note-date">${updatedDate}</div>
         </div>
         <div class="flex justify-center items-center gap-2 note-icons ml-2">
