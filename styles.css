@@ -988,15 +988,38 @@ input:focus {
   flex-shrink: 0;
 }
 
-/* Info button in status bar */
-#shortcutsInfoBtn {
-  display: flex;
+/* Info icon tooltip container */
+.info-tooltip-container {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
-#shortcutsInfoBtn svg {
-  width: 14px;
-  height: 14px;
+.info-tooltip-container button:hover {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+/* Tooltip styling */
+.shortcuts-tooltip {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  background-color: #1f2937;
+  color: white;
+  font-size: 11px;
+  border-radius: 4px;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s, visibility 0.15s;
+  z-index: 100;
+}
+
+.info-tooltip-container:hover .shortcuts-tooltip {
+  opacity: 1;
+  visibility: visible;
 }

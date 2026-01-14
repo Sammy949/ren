@@ -234,14 +234,31 @@
             Ready
           </div>
           <!-- Info icon with tooltip -->
-          <div class="relative group">
+          <div
+            class="info-tooltip-container"
+            style="
+              position: relative;
+              width: 22px;
+              height: 22px;
+              flex-shrink: 0;
+            "
+          >
             <button
               id="shortcutsInfoBtn"
-              class="p-1 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100"
+              style="
+                width: 22px;
+                height: 22px;
+                padding: 4px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                color: #9ca3af;
+              "
               aria-label="Keyboard shortcuts info"
             >
               <svg
-                class="w-3.5 h-3.5"
+                style="width: 14px; height: 14px"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -256,11 +273,13 @@
               </svg>
             </button>
             <!-- Tooltip -->
-            <div
-              class="shortcuts-tooltip absolute bottom-full right-0 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity"
-            >
-              Press <kbd class="px-1 bg-gray-700 rounded">Ctrl+/</kbd> for
-              shortcuts
+            <div class="shortcuts-tooltip">
+              Press
+              <kbd
+                style="padding: 0 4px; background: #374151; border-radius: 2px"
+                >Ctrl+/</kbd
+              >
+              for shortcuts
             </div>
           </div>
         </div>
