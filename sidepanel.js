@@ -256,7 +256,8 @@ class SylvaNotePad {
       return;
     }
 
-    const note = this.notes.find((n) => n.id === noteId);
+    // Performance: O(1) lookup
+    const note = this.getNoteById(noteId);
     if (note) {
       this.noteToDelete = noteId;
       this.deleteNoteTitle.textContent = note.title;
@@ -273,8 +274,15 @@ class SylvaNotePad {
     if (!this.noteToDelete) return;
 
     try {
-      const noteTitle =
-        this.notes.find((n) => n.id === this.noteToDelete)?.title || "Note";
+      // Performance: O(1) lookup
+      const noteTitle = this.getNoteById(this.noteToDelete)?.title || "Note";
+
+      // Performance: Remove from cache
+      this.notesCache.delete(this.noteToDelete);
+
+      // Performance: Remove DOM element directly
+      this.removeNoteItemFromDOM(this.noteToDelete);
+
       this.notes = this.notes.filter((n) => n.id !== this.noteToDelete);
 
       if (this.currentNoteId === this.noteToDelete) {
@@ -283,7 +291,8 @@ class SylvaNotePad {
       }
 
       await this.saveData();
-      this.renderNotesList();
+      // Update active state on remaining notes
+      this.updateActiveNoteState();
       this.showNotification(`"${noteTitle}" deleted successfully`, "success");
     } catch (error) {
       this.showNotification("Error deleting note", "error");
@@ -293,7 +302,8 @@ class SylvaNotePad {
   }
 
   showRenameModal(noteId) {
-    const note = this.notes.find((n) => n.id === noteId);
+    // Performance: O(1) lookup
+    const note = this.getNoteById(noteId);
     if (note) {
       this.renameInput.value = note.title;
       this.renameInput.dataset.noteId = noteId;
@@ -315,13 +325,15 @@ class SylvaNotePad {
     if (!newTitle || !noteId) return;
 
     try {
-      const note = this.notes.find((n) => n.id === noteId);
+      // Performance: O(1) lookup
+      const note = this.getNoteById(noteId);
       if (note) {
         const oldTitle = note.title;
         note.title = newTitle;
         note.updatedAt = new Date().toISOString();
         await this.saveData();
-        this.renderNotesList();
+        // Performance: Update only the changed note in DOM
+        this.updateNoteItemInDOM(note);
 
         if (noteId === this.currentNoteId) {
           this.noteTitle.textContent = newTitle;
@@ -493,62 +505,116 @@ class SylvaNotePad {
 
   renderNotesList() {
     this.notesList.innerHTML = "";
+    // Performance: Clear element tracking
+    this.renderedNoteElements.clear();
 
     this.notes.forEach((note) => {
-      const noteItem = document.createElement("div");
-      noteItem.className = `p-2 rounded-lg cursor-pointer transition-colors note-item ${
-        note.id === this.currentNoteId ? "active border" : "hover:bg-gray-100"
-      }`;
+      const noteItem = this.createNoteElement(note);
+      // Performance: Track rendered element
+      this.renderedNoteElements.set(note.id, noteItem);
+      this.notesList.appendChild(noteItem);
+    });
+  }
 
+  // Performance: Create a single note DOM element (reusable)
+  createNoteElement(note) {
+    const noteItem = document.createElement("div");
+    noteItem.className = `p-2 rounded-lg cursor-pointer transition-colors note-item ${
+      note.id === this.currentNoteId ? "active border" : "hover:bg-gray-100"
+    }`;
+    noteItem.dataset.noteId = note.id;
+
+    const preview =
+      note.content.substring(0, 40).replace(/\n/g, " ") || "Empty note";
+    const updatedDate = new Date(note.updatedAt).toLocaleDateString();
+
+    noteItem.innerHTML = `
+      <div class="flex justify-between">
+        <div class="flex-1 min-w-0 note-content-area" data-note-id="${note.id}">
+          <div class="text-sm font-medium text-gray-800 truncate note-title">${note.title}</div>
+          <div class="text-xs text-gray-500 mt-1 truncate subtitle note-preview">${preview}</div>
+          <div class="text-xs text-gray-400 mt-1 note-date">${updatedDate}</div>
+        </div>
+        <div class="flex justify-center items-center gap-2 note-icons ml-2">
+          <button class="rename-note-btn w-fit p-2 text-left hover:bg-gray-100 rounded-lg transition-colors menu-item flex items-center space-x-2" data-note-id="${note.id}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+          </button>
+          <button class="delete-note-btn w-fit p-2 text-left hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors menu-item flex items-center space-x-2" data-note-id="${note.id}">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+
+    // Bind events
+    const noteContentArea = noteItem.querySelector(".note-content-area");
+    noteContentArea.addEventListener("click", () => {
+      this.switchToNote(note.id);
+      this.toggleSidebar();
+    });
+
+    const renameBtn = noteItem.querySelector(".rename-note-btn");
+    const deleteBtn = noteItem.querySelector(".delete-note-btn");
+
+    renameBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.showRenameModal(note.id);
+      this.toggleSidebar();
+    });
+
+    deleteBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.showDeleteModal(note.id);
+      this.toggleSidebar();
+    });
+
+    return noteItem;
+  }
+
+  // Performance: Update only the specific note's content in DOM
+  updateNoteItemInDOM(note) {
+    const existingElement = this.renderedNoteElements.get(note.id);
+    if (!existingElement) return;
+
+    // Update text content only, not the entire element
+    const titleEl = existingElement.querySelector(".note-title");
+    const previewEl = existingElement.querySelector(".note-preview");
+    const dateEl = existingElement.querySelector(".note-date");
+
+    if (titleEl) titleEl.textContent = note.title;
+    if (previewEl) {
       const preview =
         note.content.substring(0, 40).replace(/\n/g, " ") || "Empty note";
-      const updatedDate = new Date(note.updatedAt).toLocaleDateString();
+      previewEl.textContent = preview;
+    }
+    if (dateEl) {
+      dateEl.textContent = new Date(note.updatedAt).toLocaleDateString();
+    }
+  }
 
-      noteItem.innerHTML = `
-                        <div class="flex justify-between">
-                            <div class="flex-1 min-w-0" data-note-id="${note.id}">
-                                <div class="text-sm font-medium text-gray-800 truncate">${note.title}</div>
-                                <div class="text-xs text-gray-500 mt-1 truncate subtitle">${preview}</div>
-                                <div class="text-xs text-gray-400 mt-1">${updatedDate}</div>
-                            </div>
+  // Performance: Remove a single note from DOM without re-rendering
+  removeNoteItemFromDOM(noteId) {
+    const element = this.renderedNoteElements.get(noteId);
+    if (element) {
+      element.remove();
+      this.renderedNoteElements.delete(noteId);
+    }
+  }
 
-                            <div class="flex justify-center items-center gap-2 note-icons ml-2">
-                                <button class="rename-note-btn w-fit p-2 text-left hover:bg-gray-100 rounded-lg transition-colors menu-item flex items-center space-x-2" data-note-id="${note.id}">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                    </svg>
-                                </button>
-                                <button class="delete-note-btn w-fit p-2 text-left hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors menu-item flex items-center space-x-2" data-note-id="${note.id}">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    `;
-
-      const noteContentArea = noteItem.querySelector("[data-note-id]");
-      noteContentArea.addEventListener("click", () => {
-        this.switchToNote(note.id);
-        this.toggleSidebar();
-      });
-
-      const renameBtn = noteItem.querySelector(".rename-note-btn");
-      const deleteBtn = noteItem.querySelector(".delete-note-btn");
-
-      renameBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.showRenameModal(note.id);
-        this.toggleSidebar();
-      });
-
-      deleteBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        this.showDeleteModal(note.id);
-        this.toggleSidebar();
-      });
-
-      this.notesList.appendChild(noteItem);
+  // Performance: Update active state on all notes (when switching notes)
+  updateActiveNoteState() {
+    this.renderedNoteElements.forEach((element, noteId) => {
+      if (noteId === this.currentNoteId) {
+        element.classList.add("active", "border");
+        element.classList.remove("hover:bg-gray-100");
+      } else {
+        element.classList.remove("active", "border");
+        element.classList.add("hover:bg-gray-100");
+      }
     });
   }
 }
