@@ -98,6 +98,9 @@ class SylvaNotePad {
       this.notes = notesData ? JSON.parse(notesData) : [];
       this.currentNoteId = currentNoteData || null;
 
+      // Performance: Rebuild cache after loading
+      this.rebuildCache();
+
       if (this.notes.length === 0) {
         this.createNewNote();
       } else {
@@ -109,6 +112,17 @@ class SylvaNotePad {
       this.showNotification("Error loading notes", "error");
       this.createNewNote();
     }
+  }
+
+  // Performance: Rebuild the notes cache from the array
+  rebuildCache() {
+    this.notesCache.clear();
+    this.notes.forEach((note) => this.notesCache.set(note.id, note));
+  }
+
+  // Performance: O(1) note lookup instead of O(n) array.find()
+  getNoteById(noteId) {
+    return this.notesCache.get(noteId) || null;
   }
 
   async saveData() {
