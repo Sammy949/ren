@@ -79,6 +79,19 @@ class SylvaNotePad {
     this.notesList = document.getElementById("notesList");
     this.newNoteBtn = document.getElementById("newNoteBtn");
 
+    // Rich editor toolbar
+    this.editorToolbar = document.querySelector(".editor-toolbar");
+
+    // Initialize rich editor
+    if (this.noteContent && typeof SylvaEditor !== "undefined") {
+      this.editor = new SylvaEditor(this.noteContent, {
+        placeholder:
+          "Start writing... (Try # for headings, ** for bold, - for lists)",
+        onInput: () => this.handleInput(),
+        onChange: () => this.scheduleAutoSave(),
+      });
+    }
+
     // Settings and import elements
     this.settingsBtn = document.getElementById("settingsBtn");
     this.importFileInput = document.getElementById("importFileInput");
@@ -115,13 +128,27 @@ class SylvaNotePad {
     this.closeSidebar.addEventListener("click", () => this.toggleSidebar());
     this.sidebarOverlay.addEventListener("click", () => this.toggleSidebar());
 
-    this.noteContent.addEventListener("input", () => this.handleInput());
+    // Note: Input events are handled by SylvaEditor's onChange callback
+    // But we still need keydown for Tab handling etc.
     this.noteContent.addEventListener("keydown", (e) => this.handleKeydown(e));
 
     this.newNoteBtn.addEventListener("click", () => {
       this.createNewNote();
       this.toggleSidebar();
     });
+
+    // Editor toolbar actions
+    if (this.editorToolbar && this.editor) {
+      this.editorToolbar
+        .querySelectorAll(".editor-toolbar-btn")
+        .forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const action = btn.dataset.action;
+            this.handleToolbarAction(action);
+            this.noteContent.focus();
+          });
+        });
+    }
 
     // Settings button (with null check)
     if (this.settingsBtn) {
@@ -957,7 +984,9 @@ Happy writing! ✨`,
   }
 
   handleKeydown(e) {
-    if (e.key === "Tab") {
+    // Tab is handled by the editor itself for contenteditable
+    // This is only for textarea fallback
+    if (!this.editor && e.key === "Tab") {
       e.preventDefault();
       const start = this.noteContent.selectionStart;
       const end = this.noteContent.selectionEnd;
@@ -970,8 +999,55 @@ Happy writing! ✨`,
     }
   }
 
+  // Handle toolbar button actions
+  handleToolbarAction(action) {
+    if (!this.editor) return;
+
+    switch (action) {
+      case "bold":
+        this.editor.execBold();
+        break;
+      case "italic":
+        this.editor.execItalic();
+        break;
+      case "strikethrough":
+        this.editor.execStrikethrough();
+        break;
+      case "h1":
+        this.editor.execHeading(1);
+        break;
+      case "h2":
+        this.editor.execHeading(2);
+        break;
+      case "h3":
+        this.editor.execHeading(3);
+        break;
+      case "bulletList":
+        this.editor.execBulletList();
+        break;
+      case "numberedList":
+        this.editor.execNumberedList();
+        break;
+      case "blockquote":
+        this.editor.execBlockquote();
+        break;
+      case "code":
+        this.editor.execCode();
+        break;
+      case "hr":
+        this.editor.execHR();
+        break;
+    }
+
+    // Trigger save after formatting
+    this.scheduleAutoSave();
+  }
+
   updateWordCount() {
-    const text = this.noteContent.value;
+    // Use textContent for contenteditable, fallback to value for textarea
+    const text = this.editor
+      ? this.noteContent.textContent
+      : this.noteContent.value;
     const words = text.trim() ? text.trim().split(/\s+/).length : 0;
     const chars = text.length;
 
@@ -1016,10 +1092,15 @@ Happy writing! ✨`,
     // Performance: O(1) lookup instead of O(n) find()
     const note = this.getNoteById(this.currentNoteId);
     if (note) {
-      note.content = this.noteContent.value;
+      // Use innerHTML for rich editor, value for textarea
+      note.content = this.editor
+        ? this.noteContent.innerHTML
+        : this.noteContent.value;
       note.updatedAt = new Date().toISOString();
 
-      const firstLine = note.content.split("\n")[0].trim();
+      // Extract title from plain text content
+      const plainText = this.noteContent.textContent || "";
+      const firstLine = plainText.split("\n")[0].trim();
       if (firstLine && firstLine !== note.title && firstLine.length > 0) {
         note.title = firstLine.substring(0, 50) || "Untitled Note";
         this.noteTitle.textContent = note.title;
@@ -1039,7 +1120,12 @@ Happy writing! ✨`,
     // Performance: O(1) lookup instead of O(n) find()
     const note = this.getNoteById(this.currentNoteId);
     if (note) {
-      this.noteContent.value = note.content;
+      // Use innerHTML for rich editor, value for textarea
+      if (this.editor) {
+        this.noteContent.innerHTML = note.content || "";
+      } else {
+        this.noteContent.value = note.content;
+      }
       this.noteTitle.textContent = note.title;
       this.updateWordCount();
       this.autoSaveStatus.textContent = "Ready";
