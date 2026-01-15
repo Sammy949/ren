@@ -11,6 +11,9 @@ class SylvaNotePad {
     // Performance: Track rendered DOM elements by note ID
     this.renderedNoteElements = new Map();
 
+    // Storage module
+    this.storage = sylvaStorage;
+
     // Keyboard shortcuts configuration
     this.keyboardShortcuts = [
       {
@@ -39,14 +42,27 @@ class SylvaNotePad {
     ];
     this.shortcutsHelpVisible = false;
 
-    // Theme
-    this.currentTheme = localStorage.getItem("sylva-theme") || "system";
-    this.initializeTheme();
+    // Theme (will be loaded async)
+    this.currentTheme = "system";
 
     this.initializeElements();
     this.bindEvents();
     this.bindKeyboardShortcuts();
-    this.loadData();
+
+    // Async initialization
+    this.init();
+  }
+
+  async init() {
+    // Initialize storage (handles migration)
+    await this.storage.initialize();
+
+    // Load theme from storage
+    this.currentTheme = await this.storage.getTheme();
+    this.initializeTheme();
+
+    // Load data
+    await this.loadData();
   }
 
   initializeElements() {
@@ -732,9 +748,9 @@ class SylvaNotePad {
   }
 
   // Theme: Set and persist theme preference
-  setTheme(theme) {
+  async setTheme(theme) {
     this.currentTheme = theme;
-    localStorage.setItem("sylva-theme", theme);
+    await this.storage.setTheme(theme);
     this.applyTheme(theme);
     this.showNotification(`Theme set to ${theme}`, "success");
   }
@@ -818,8 +834,8 @@ class SylvaNotePad {
   }
 
   // Onboarding: Complete onboarding and create first note
-  completeOnboarding() {
-    localStorage.setItem("sylva-onboarding-complete", "true");
+  async completeOnboarding() {
+    await this.storage.completeOnboarding();
 
     const modal = document.getElementById("welcomeModal");
     if (modal) {
@@ -839,6 +855,7 @@ This is your first note. Here are some tips to get started:
 • Your notes auto-save as you write
 • Click the ☰ menu to see all your notes
 • Click on the note title above to edit it
+• Your notes sync across devices!
 
 Keyboard shortcuts:
 • Ctrl+Alt+N - Create new note
@@ -853,7 +870,7 @@ Happy writing! ✨`,
     this.notes.unshift(welcomeNote);
     this.notesCache.set(welcomeNote.id, welcomeNote);
     this.currentNoteId = welcomeNote.id;
-    this.saveData();
+    await this.saveData();
     this.loadCurrentNote();
     this.renderNotesList();
 
@@ -863,16 +880,11 @@ Happy writing! ✨`,
   async loadData() {
     try {
       // Check if first-time user
-      const hasSeenOnboarding = localStorage.getItem(
-        "sylva-onboarding-complete"
-      );
+      const hasSeenOnboarding = await this.storage.isOnboardingComplete();
 
-      // Simulating chrome.storage.local with localStorage for this demo
-      const notesData = localStorage.getItem("sylva-notes");
-      const currentNoteData = localStorage.getItem("sylva-current-note");
-
-      this.notes = notesData ? JSON.parse(notesData) : [];
-      this.currentNoteId = currentNoteData || null;
+      // Load notes from chrome.storage
+      this.notes = await this.storage.getAllNotes();
+      this.currentNoteId = await this.storage.getCurrentNoteId();
 
       // Performance: Rebuild cache after loading
       this.rebuildCache();
@@ -882,7 +894,7 @@ Happy writing! ✨`,
         if (!hasSeenOnboarding) {
           this.showWelcomeScreen();
         } else {
-          this.createNewNote();
+          await this.createNewNote();
         }
       } else {
         this.loadCurrentNote();
@@ -891,7 +903,7 @@ Happy writing! ✨`,
     } catch (error) {
       console.error("Error loading data:", error);
       this.showNotification("Error loading notes", "error");
-      this.createNewNote();
+      await this.createNewNote();
     }
   }
 
@@ -908,9 +920,9 @@ Happy writing! ✨`,
 
   async saveData() {
     try {
-      // Simulating chrome.storage.local with localStorage for this demo
-      localStorage.setItem("sylva-notes", JSON.stringify(this.notes));
-      localStorage.setItem("sylva-current-note", this.currentNoteId);
+      // Save to chrome.storage
+      await this.storage.saveAllNotes(this.notes);
+      await this.storage.setCurrentNoteId(this.currentNoteId);
     } catch (error) {
       console.error("Error saving data:", error);
       this.showNotification("Error saving notes", "error");
@@ -1263,7 +1275,6 @@ Happy writing! ✨`,
         `Exported ${this.notes.length} notes successfully!`,
         "success"
       );
-      this.toggleSidebar();
     } catch (error) {
       console.error("Export error:", error);
       this.showNotification("Failed to export notes", "error");
@@ -1278,26 +1289,71 @@ Happy writing! ✨`,
       const text = await file.text();
       const importData = JSON.parse(text);
 
-      // Validate the import data
+      // Validate the import data structure
       if (!importData.notes || !Array.isArray(importData.notes)) {
-        throw new Error("Invalid backup file format");
+        throw new Error("Invalid backup file format: missing notes array");
+      }
+
+      // Validate each note has required fields
+      const validNotes = [];
+      const now = new Date().toISOString();
+
+      for (const note of importData.notes) {
+        if (!note || typeof note !== "object") {
+          console.warn("Skipping invalid note entry:", note);
+          continue;
+        }
+
+        // Ensure required fields exist, provide defaults if missing
+        const validNote = {
+          id:
+            note.id ||
+            Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          title: note.title || "Untitled Note",
+          content: note.content || "",
+          createdAt: note.createdAt || now,
+          updatedAt: note.updatedAt || now,
+        };
+
+        validNotes.push(validNote);
+      }
+
+      if (validNotes.length === 0) {
+        throw new Error("No valid notes found in backup file");
       }
 
       // Confirm before overwriting
-      const noteCount = importData.notes.length;
-      const confirmImport = confirm(
-        `This will import ${noteCount} notes and replace your current notes. Continue?`
-      );
+      const noteCount = validNotes.length;
+      const skippedCount = importData.notes.length - validNotes.length;
+      let confirmMessage = `This will import ${noteCount} notes and replace your current notes. Continue?`;
+
+      if (skippedCount > 0) {
+        confirmMessage = `This will import ${noteCount} notes (${skippedCount} invalid entries skipped) and replace your current notes. Continue?`;
+      }
+
+      const confirmImport = confirm(confirmMessage);
 
       if (!confirmImport) {
         this.importFileInput.value = "";
         return;
       }
 
-      // Import the notes
-      this.notes = importData.notes;
-      this.currentNoteId =
-        importData.currentNoteId || this.notes[0]?.id || null;
+      // Import the validated notes
+      this.notes = validNotes;
+
+      // Set current note ID (validate it exists in imported notes)
+      const importedIds = new Set(validNotes.map((n) => n.id));
+      if (
+        importData.currentNoteId &&
+        importedIds.has(importData.currentNoteId)
+      ) {
+        this.currentNoteId = importData.currentNoteId;
+      } else {
+        this.currentNoteId = validNotes[0]?.id || null;
+      }
+
+      // Rebuild the cache to sync with new notes
+      this.rebuildCache();
 
       await this.saveData();
       this.loadCurrentNote();
@@ -1307,11 +1363,10 @@ Happy writing! ✨`,
         `Imported ${noteCount} notes successfully!`,
         "success"
       );
-      this.toggleSidebar();
     } catch (error) {
       console.error("Import error:", error);
       this.showNotification(
-        "Failed to import notes. Invalid file format.",
+        `Failed to import notes: ${error.message || "Invalid file format"}`,
         "error"
       );
     }
