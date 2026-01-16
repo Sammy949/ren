@@ -17,6 +17,11 @@ class SylvaNotePad {
     // Keyboard shortcuts configuration
     this.keyboardShortcuts = [
       {
+        keys: "Alt+Shift+S",
+        action: "openExtension",
+        description: "Open Sylva",
+      },
+      {
         keys: "Ctrl+Alt+N",
         action: "createNewNote",
         description: "Create new note",
@@ -39,6 +44,13 @@ class SylvaNotePad {
         action: "showShortcutsHelp",
         description: "Show keyboard shortcuts",
       },
+      {
+        keys: "Ctrl+Alt+C",
+        action: "insertCheckbox",
+        description: "Insert checkbox",
+      },
+      { keys: "Ctrl+Z", action: "undo", description: "Undo" },
+      { keys: "Ctrl+Y", action: "redo", description: "Redo" },
     ];
     this.shortcutsHelpVisible = false;
 
@@ -82,15 +94,32 @@ class SylvaNotePad {
     // Rich editor toolbar
     this.editorToolbar = document.querySelector(".editor-toolbar");
 
+    // Undo/Redo buttons
+    this.undoBtn = this.editorToolbar?.querySelector('[data-action="undo"]');
+    this.redoBtn = this.editorToolbar?.querySelector('[data-action="redo"]');
+
+    // Undo/Redo state tracking
+    this.canUndo = false;
+    this.canRedo = false;
+
     // Initialize rich editor
     if (this.noteContent && typeof SylvaEditor !== "undefined") {
       this.editor = new SylvaEditor(this.noteContent, {
         placeholder:
           "Start writing... (Try # for headings, ** for bold, - for lists)",
         onInput: () => this.handleInput(),
-        onChange: () => this.scheduleAutoSave(),
+        onChange: () => {
+          this.scheduleAutoSave();
+          // After any change, undo becomes available, redo is cleared
+          this.canUndo = true;
+          this.canRedo = false;
+          this.updateUndoRedoButtons();
+        },
       });
     }
+
+    // Initialize undo/redo button states
+    this.updateUndoRedoButtons();
 
     // Settings and import elements
     this.settingsBtn = document.getElementById("settingsBtn");
@@ -142,12 +171,68 @@ class SylvaNotePad {
       this.editorToolbar
         .querySelectorAll(".editor-toolbar-btn")
         .forEach((btn) => {
-          btn.addEventListener("click", () => {
+          btn.addEventListener("click", (e) => {
             const action = btn.dataset.action;
+            // Handle the "More" button separately
+            if (btn.id === "toolbarMoreBtn") {
+              e.stopPropagation();
+              this.toggleToolbarDropdown();
+              this.hideHeadingsDropdown(); // Close other dropdown
+              return;
+            }
+            // Handle the "Headings" button separately
+            if (btn.id === "toolbarHeadingsBtn") {
+              e.stopPropagation();
+              this.toggleHeadingsDropdown();
+              this.hideToolbarDropdown(); // Close other dropdown
+              return;
+            }
             this.handleToolbarAction(action);
             this.noteContent.focus();
           });
         });
+
+      // Handle toolbar dropdown items (both More and Headings)
+      const dropdownItems = this.editorToolbar.querySelectorAll(
+        ".toolbar-dropdown-item"
+      );
+      dropdownItems.forEach((item) => {
+        item.addEventListener("click", () => {
+          const action = item.dataset.action;
+          this.handleToolbarAction(action);
+          this.hideToolbarDropdown();
+          this.hideHeadingsDropdown();
+          this.noteContent.focus();
+        });
+      });
+
+      // Close dropdowns when clicking outside
+      document.addEventListener("click", (e) => {
+        const moreBtn = document.getElementById("toolbarMoreBtn");
+        const moreMenu = document.getElementById("toolbarMoreMenu");
+        const headingsBtn = document.getElementById("toolbarHeadingsBtn");
+        const headingsMenu = document.getElementById("toolbarHeadingsMenu");
+
+        // Close More dropdown
+        if (
+          moreBtn &&
+          moreMenu &&
+          !moreBtn.contains(e.target) &&
+          !moreMenu.contains(e.target)
+        ) {
+          this.hideToolbarDropdown();
+        }
+
+        // Close Headings dropdown
+        if (
+          headingsBtn &&
+          headingsMenu &&
+          !headingsBtn.contains(e.target) &&
+          !headingsMenu.contains(e.target)
+        ) {
+          this.hideHeadingsDropdown();
+        }
+      });
     }
 
     // Settings button (with null check)
@@ -372,6 +457,9 @@ class SylvaNotePad {
         "toggleSidebar",
         "openSettings",
         "focusSearch",
+        "insertCheckbox",
+        "undo",
+        "redo",
       ];
 
       if (isTyping && !alwaysAllowed.includes(shortcut.action)) {
@@ -410,6 +498,30 @@ class SylvaNotePad {
         break;
       case "showShortcutsHelp":
         this.toggleShortcutsHelp();
+        break;
+      case "insertCheckbox":
+        if (this.editor) {
+          this.editor.execCheckbox();
+          this.scheduleAutoSave();
+        }
+        break;
+      case "undo":
+        if (this.editor && this.canUndo) {
+          this.editor.execUndo();
+          // After undo, redo becomes available
+          this.canRedo = true;
+          // Check if we can still undo (simplified: assume we can if we had changes)
+          // In real implementation, we'd track undo stack depth
+          this.updateUndoRedoButtons();
+        }
+        break;
+      case "redo":
+        if (this.editor && this.canRedo) {
+          this.editor.execRedo();
+          // After redo, undo is available again
+          this.canUndo = true;
+          this.updateUndoRedoButtons();
+        }
         break;
     }
   }
@@ -983,6 +1095,97 @@ Happy writing! ✨`,
     this.scheduleAutoSave();
   }
 
+  /**
+   * Toggle the toolbar "More" dropdown
+   */
+  toggleToolbarDropdown() {
+    const moreBtn = document.getElementById("toolbarMoreBtn");
+    const moreMenu = document.getElementById("toolbarMoreMenu");
+    if (!moreBtn || !moreMenu) return;
+
+    const isHidden = moreMenu.classList.contains("hidden");
+    if (isHidden) {
+      this.showToolbarDropdown();
+    } else {
+      this.hideToolbarDropdown();
+    }
+  }
+
+  showToolbarDropdown() {
+    const moreBtn = document.getElementById("toolbarMoreBtn");
+    const moreMenu = document.getElementById("toolbarMoreMenu");
+    if (!moreBtn || !moreMenu) return;
+
+    moreMenu.classList.remove("hidden");
+    moreBtn.setAttribute("aria-expanded", "true");
+  }
+
+  hideToolbarDropdown() {
+    const moreBtn = document.getElementById("toolbarMoreBtn");
+    const moreMenu = document.getElementById("toolbarMoreMenu");
+    if (!moreBtn || !moreMenu) return;
+
+    moreMenu.classList.add("hidden");
+    moreBtn.setAttribute("aria-expanded", "false");
+  }
+
+  /**
+   * Toggle the toolbar "Headings" dropdown
+   */
+  toggleHeadingsDropdown() {
+    const headingsBtn = document.getElementById("toolbarHeadingsBtn");
+    const headingsMenu = document.getElementById("toolbarHeadingsMenu");
+    if (!headingsBtn || !headingsMenu) return;
+
+    const isHidden = headingsMenu.classList.contains("hidden");
+    if (isHidden) {
+      this.showHeadingsDropdown();
+    } else {
+      this.hideHeadingsDropdown();
+    }
+  }
+
+  showHeadingsDropdown() {
+    const headingsBtn = document.getElementById("toolbarHeadingsBtn");
+    const headingsMenu = document.getElementById("toolbarHeadingsMenu");
+    if (!headingsBtn || !headingsMenu) return;
+
+    headingsMenu.classList.remove("hidden");
+    headingsBtn.setAttribute("aria-expanded", "true");
+  }
+
+  hideHeadingsDropdown() {
+    const headingsBtn = document.getElementById("toolbarHeadingsBtn");
+    const headingsMenu = document.getElementById("toolbarHeadingsMenu");
+    if (!headingsBtn || !headingsMenu) return;
+
+    headingsMenu.classList.add("hidden");
+    headingsBtn.setAttribute("aria-expanded", "false");
+  }
+
+  /**
+   * Update undo/redo button states based on availability
+   */
+  updateUndoRedoButtons() {
+    if (this.undoBtn) {
+      this.undoBtn.disabled = !this.canUndo;
+      this.undoBtn.classList.toggle("disabled", !this.canUndo);
+    }
+    if (this.redoBtn) {
+      this.redoBtn.disabled = !this.canRedo;
+      this.redoBtn.classList.toggle("disabled", !this.canRedo);
+    }
+  }
+
+  /**
+   * Reset undo/redo state (called when switching notes)
+   */
+  resetUndoRedoState() {
+    this.canUndo = false;
+    this.canRedo = false;
+    this.updateUndoRedoButtons();
+  }
+
   handleKeydown(e) {
     // Tab is handled by the editor itself for contenteditable
     // This is only for textarea fallback
@@ -1004,11 +1207,28 @@ Happy writing! ✨`,
     if (!this.editor) return;
 
     switch (action) {
+      case "undo":
+        if (this.canUndo) {
+          this.editor.execUndo();
+          this.canRedo = true;
+          this.updateUndoRedoButtons();
+        }
+        return; // Don't schedule auto-save for undo
+      case "redo":
+        if (this.canRedo) {
+          this.editor.execRedo();
+          this.canUndo = true;
+          this.updateUndoRedoButtons();
+        }
+        return; // Don't schedule auto-save for redo
       case "bold":
         this.editor.execBold();
         break;
       case "italic":
         this.editor.execItalic();
+        break;
+      case "underline":
+        this.editor.execUnderline();
         break;
       case "strikethrough":
         this.editor.execStrikethrough();
@@ -1106,9 +1326,22 @@ Happy writing! ✨`,
         this.noteTitle.textContent = note.title;
       }
 
+      // Move the note to the top of the list (most recently edited first)
+      const currentIndex = this.notes.findIndex(
+        (n) => n.id === this.currentNoteId
+      );
+      if (currentIndex > 0) {
+        // Remove from current position and add to the beginning
+        this.notes.splice(currentIndex, 1);
+        this.notes.unshift(note);
+        // Re-render the notes list to reflect new order
+        this.renderNotesList();
+      } else {
+        // Just update the DOM for this note
+        this.updateNoteItemInDOM(note);
+      }
+
       await this.saveData();
-      // Performance: Update only the changed note in DOM
-      this.updateNoteItemInDOM(note);
     }
   }
 
@@ -1139,6 +1372,8 @@ Happy writing! ✨`,
     await this.saveCurrentNote();
     this.currentNoteId = noteId;
     this.loadCurrentNote();
+    // Reset undo/redo state for the new note
+    this.resetUndoRedoState();
     // Performance: Update only active states, not full re-render
     this.updateActiveNoteState();
     await this.saveData();
