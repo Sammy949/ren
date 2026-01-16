@@ -252,190 +252,436 @@
             role="toolbar"
             aria-label="Text formatting"
           >
-            <button
-              class="editor-toolbar-btn"
-              data-action="bold"
-              title="Bold (Ctrl+B)"
-              aria-label="Bold"
-            >
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <!-- Primary actions - always visible -->
+            <div class="toolbar-primary">
+              <button
+                class="editor-toolbar-btn"
+                data-action="undo"
+                title="Undo (Ctrl+Z)"
+                aria-label="Undo"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"
-                ></path>
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"
-                ></path>
-              </svg>
-            </button>
-            <button
-              class="editor-toolbar-btn"
-              data-action="italic"
-              title="Italic (Ctrl+I)"
-              aria-label="Italic"
-            >
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 10h10a5 5 0 015 5v2M3 10l4-4m-4 4l4 4"
+                  ></path>
+                </svg>
+              </button>
+              <button
+                class="editor-toolbar-btn"
+                data-action="redo"
+                title="Redo (Ctrl+Y)"
+                aria-label="Redo"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M10 4h4m-2 0v16m-4 0h8"
-                ></path>
-              </svg>
-            </button>
-            <button
-              class="editor-toolbar-btn"
-              data-action="strikethrough"
-              title="Strikethrough"
-              aria-label="Strikethrough"
-            >
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 10h-10a5 5 0 00-5 5v2M21 10l-4-4m4 4l-4 4"
+                  ></path>
+                </svg>
+              </button>
+              <div class="editor-toolbar-divider" aria-hidden="true"></div>
+              <button
+                class="editor-toolbar-btn"
+                data-action="bold"
+                title="Bold (Ctrl+B)"
+                aria-label="Bold"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 3v6m0 6v6M5 12h14"
-                ></path>
-              </svg>
-            </button>
-            <div class="editor-toolbar-divider" aria-hidden="true"></div>
-            <button
-              class="editor-toolbar-btn"
-              data-action="h1"
-              title="Heading 1"
-              aria-label="Heading 1"
-            >
-              <span class="text-xs font-bold">H1</span>
-            </button>
-            <button
-              class="editor-toolbar-btn"
-              data-action="h2"
-              title="Heading 2"
-              aria-label="Heading 2"
-            >
-              <span class="text-xs font-bold">H2</span>
-            </button>
-            <button
-              class="editor-toolbar-btn"
-              data-action="h3"
-              title="Heading 3"
-              aria-label="Heading 3"
-            >
-              <span class="text-xs font-bold">H3</span>
-            </button>
-            <div class="editor-toolbar-divider" aria-hidden="true"></div>
-            <button
-              class="editor-toolbar-btn"
-              data-action="bulletList"
-              title="Bullet List"
-              aria-label="Bullet List"
-            >
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"
+                  ></path>
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"
+                  ></path>
+                </svg>
+              </button>
+              <button
+                class="editor-toolbar-btn"
+                data-action="italic"
+                title="Italic (Ctrl+I)"
+                aria-label="Italic"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                ></path>
-              </svg>
-            </button>
-            <button
-              class="editor-toolbar-btn"
-              data-action="numberedList"
-              title="Numbered List"
-              aria-label="Numbered List"
-            >
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M10 4h4m-2 0v16m-4 0h8"
+                  ></path>
+                </svg>
+              </button>
+              <button
+                class="editor-toolbar-btn"
+                data-action="underline"
+                title="Underline (Ctrl+U)"
+                aria-label="Underline"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M7 8h10M7 12h10M7 16h10M3 8h.01M3 12h.01M3 16h.01"
-                ></path>
-              </svg>
-            </button>
-            <button
-              class="editor-toolbar-btn"
-              data-action="blockquote"
-              title="Quote"
-              aria-label="Blockquote"
-            >
-              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path
-                  d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179z"
-                ></path>
-              </svg>
-            </button>
-            <button
-              class="editor-toolbar-btn"
-              data-action="code"
-              title="Code"
-              aria-label="Inline Code"
-            >
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M7 4v7a5 5 0 0010 0V4M5 21h14"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Headings - individual buttons on wide screens -->
+            <div class="toolbar-headings-expanded">
+              <div class="editor-toolbar-divider" aria-hidden="true"></div>
+              <button
+                class="editor-toolbar-btn"
+                data-action="h1"
+                title="Heading 1"
+                aria-label="Heading 1"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                ></path>
-              </svg>
-            </button>
-            <button
-              class="editor-toolbar-btn"
-              data-action="hr"
-              title="Horizontal Line"
-              aria-label="Horizontal Line"
-            >
-              <svg
-                class="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                <span class="text-xs font-bold">H1</span>
+              </button>
+              <button
+                class="editor-toolbar-btn"
+                data-action="h2"
+                title="Heading 2"
+                aria-label="Heading 2"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M5 12h14"
-                ></path>
-              </svg>
-            </button>
+                <span class="text-xs font-bold">H2</span>
+              </button>
+              <button
+                class="editor-toolbar-btn"
+                data-action="h3"
+                title="Heading 3"
+                aria-label="Heading 3"
+              >
+                <span class="text-xs font-bold">H3</span>
+              </button>
+            </div>
+
+            <!-- Headings dropdown - visible on narrow screens -->
+            <div class="toolbar-headings-compact">
+              <div class="editor-toolbar-divider" aria-hidden="true"></div>
+              <button
+                id="toolbarHeadingsBtn"
+                class="editor-toolbar-btn"
+                title="Headings"
+                aria-label="Headings"
+                aria-expanded="false"
+                aria-haspopup="true"
+              >
+                <span class="text-xs font-bold">H</span>
+              </button>
+              <!-- Headings dropdown -->
+              <div
+                id="toolbarHeadingsMenu"
+                class="toolbar-dropdown hidden"
+                role="menu"
+              >
+                <button
+                  class="toolbar-dropdown-item"
+                  data-action="h1"
+                  role="menuitem"
+                >
+                  <span class="dropdown-icon-text">H1</span>
+                  <span>Heading 1</span>
+                </button>
+                <button
+                  class="toolbar-dropdown-item"
+                  data-action="h2"
+                  role="menuitem"
+                >
+                  <span class="dropdown-icon-text">H2</span>
+                  <span>Heading 2</span>
+                </button>
+                <button
+                  class="toolbar-dropdown-item"
+                  data-action="h3"
+                  role="menuitem"
+                >
+                  <span class="dropdown-icon-text">H3</span>
+                  <span>Heading 3</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Block actions - only in dropdown on narrow screens -->
+            <div class="toolbar-blocks">
+              <div class="editor-toolbar-divider" aria-hidden="true"></div>
+              <button
+                class="editor-toolbar-btn"
+                data-action="bulletList"
+                title="Bullet List"
+                aria-label="Bullet List"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  ></path>
+                </svg>
+              </button>
+              <button
+                class="editor-toolbar-btn"
+                data-action="numberedList"
+                title="Numbered List"
+                aria-label="Numbered List"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M7 8h10M7 12h10M7 16h10M3 8h.01M3 12h.01M3 16h.01"
+                  ></path>
+                </svg>
+              </button>
+              <button
+                class="editor-toolbar-btn"
+                data-action="blockquote"
+                title="Quote"
+                aria-label="Blockquote"
+              >
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path
+                    d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179z"
+                  ></path>
+                </svg>
+              </button>
+              <button
+                class="editor-toolbar-btn"
+                data-action="code"
+                title="Code"
+                aria-label="Inline Code"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                  ></path>
+                </svg>
+              </button>
+              <button
+                class="editor-toolbar-btn"
+                data-action="hr"
+                title="Horizontal Line"
+                aria-label="Horizontal Line"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 12h14"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+
+            <!-- More menu - visible on narrow screens -->
+            <div class="toolbar-more">
+              <button
+                id="toolbarMoreBtn"
+                class="editor-toolbar-btn"
+                title="More formatting options"
+                aria-label="More formatting options"
+                aria-expanded="false"
+                aria-haspopup="true"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
+                  ></path>
+                </svg>
+              </button>
+
+              <!-- Dropdown menu - strikethrough + block elements -->
+              <div
+                id="toolbarMoreMenu"
+                class="toolbar-dropdown hidden"
+                role="menu"
+              >
+                <button
+                  class="toolbar-dropdown-item"
+                  data-action="strikethrough"
+                  role="menuitem"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 3v6m0 6v6M5 12h14"
+                    ></path>
+                  </svg>
+                  <span>Strikethrough</span>
+                </button>
+                <div class="toolbar-dropdown-divider"></div>
+                <button
+                  class="toolbar-dropdown-item"
+                  data-action="bulletList"
+                  role="menuitem"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M4 6h16M4 12h16M4 18h16"
+                    ></path>
+                  </svg>
+                  <span>Bullet List</span>
+                </button>
+                <button
+                  class="toolbar-dropdown-item"
+                  data-action="numberedList"
+                  role="menuitem"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M7 8h10M7 12h10M7 16h10M3 8h.01M3 12h.01M3 16h.01"
+                    ></path>
+                  </svg>
+                  <span>Numbered List</span>
+                </button>
+                <div class="toolbar-dropdown-divider"></div>
+                <button
+                  class="toolbar-dropdown-item"
+                  data-action="blockquote"
+                  role="menuitem"
+                >
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                      d="M4.583 17.321C3.553 16.227 3 15 3 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179zm10 0C13.553 16.227 13 15 13 13.011c0-3.5 2.457-6.637 6.03-8.188l.893 1.378c-3.335 1.804-3.987 4.145-4.247 5.621.537-.278 1.24-.375 1.929-.311 1.804.167 3.226 1.648 3.226 3.489a3.5 3.5 0 01-3.5 3.5c-1.073 0-2.099-.49-2.748-1.179z"
+                    ></path>
+                  </svg>
+                  <span>Quote</span>
+                </button>
+                <button
+                  class="toolbar-dropdown-item"
+                  data-action="code"
+                  role="menuitem"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                    ></path>
+                  </svg>
+                  <span>Code</span>
+                </button>
+                <button
+                  class="toolbar-dropdown-item"
+                  data-action="hr"
+                  role="menuitem"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M5 12h14"
+                    ></path>
+                  </svg>
+                  <span>Horizontal Line</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- Rich Text Editor -->
