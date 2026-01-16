@@ -232,35 +232,66 @@ class SylvaEditor {
     const before = text.substring(0, start);
     const after = text.substring(end);
 
-    const label = document.createElement("label");
-    label.className = "editor-checkbox";
-
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = checked;
-
-    const span = document.createElement("span");
-    span.innerHTML = "<br>";
-
-    label.appendChild(checkbox);
-    label.appendChild(span);
+    // Create new checkbox structure
+    const checkboxItem = this.createCheckboxElement(checked, "");
 
     const parent = textNode.parentNode;
 
     if (before) {
       textNode.textContent = before;
-      parent.insertBefore(label, textNode.nextSibling);
+      parent.insertBefore(checkboxItem, textNode.nextSibling);
     } else {
-      parent.insertBefore(label, textNode);
+      parent.insertBefore(checkboxItem, textNode);
       textNode.textContent = "";
     }
 
     if (after.trim()) {
       const afterNode = document.createTextNode(after);
-      parent.insertBefore(afterNode, label.nextSibling);
+      parent.insertBefore(afterNode, checkboxItem.nextSibling);
     }
 
-    this.focusElement(span);
+    // Focus the text span
+    const textSpan = checkboxItem.querySelector(".checkbox-text");
+    this.focusElement(textSpan);
+  }
+
+  /**
+   * Creates a checkbox element with consistent structure
+   * @param {boolean} checked - Whether the checkbox is checked
+   * @param {string} text - The text content for the checkbox
+   * @returns {HTMLElement} The checkbox container element
+   */
+  createCheckboxElement(checked, text) {
+    const container = document.createElement("div");
+    container.className = "editor-checkbox-item";
+    container.setAttribute("contenteditable", "false");
+
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = checked;
+    checkbox.className = "checkbox-input";
+
+    // Make checkbox toggle work
+    checkbox.addEventListener("change", () => {
+      container.classList.toggle("checked", checkbox.checked);
+    });
+
+    const textSpan = document.createElement("span");
+    textSpan.className = "checkbox-text";
+    textSpan.setAttribute("contenteditable", "true");
+    textSpan.textContent = text || "";
+    if (!text) {
+      textSpan.innerHTML = "<br>"; // Placeholder for empty checkbox
+    }
+
+    container.appendChild(checkbox);
+    container.appendChild(textSpan);
+
+    if (checked) {
+      container.classList.add("checked");
+    }
+
+    return container;
   }
 
   convertToHR(textNode) {
@@ -332,10 +363,24 @@ class SylvaEditor {
       document.execCommand("insertText", false, "    ");
     }
 
-    // Handle Enter in lists
+    // Handle Enter in checkboxes - create a new line after
     if (e.key === "Enter") {
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
+
+      // Check if we're inside a checkbox
+      const checkboxItem = selection.anchorNode.parentElement?.closest(
+        ".editor-checkbox-item"
+      );
+      if (checkboxItem) {
+        e.preventDefault();
+        // Insert a new paragraph after the checkbox
+        const p = document.createElement("div");
+        p.innerHTML = "<br>";
+        checkboxItem.parentNode.insertBefore(p, checkboxItem.nextSibling);
+        this.focusElement(p);
+        return;
+      }
 
       const li = selection.anchorNode.parentElement?.closest("li");
       if (li && li.textContent.trim() === "") {
@@ -353,13 +398,55 @@ class SylvaEditor {
       }
     }
 
-    // Handle Backspace at start of formatted block
+    // Handle Backspace
     if (e.key === "Backspace") {
       const selection = window.getSelection();
       if (!selection.rangeCount) return;
 
       const range = selection.getRangeAt(0);
+
+      // Check if we're at the start of a checkbox text area
+      const checkboxItem = selection.anchorNode.parentElement?.closest(
+        ".editor-checkbox-item"
+      );
+      if (checkboxItem) {
+        const textSpan = checkboxItem.querySelector(".checkbox-text");
+        // If we're in the text span and at the start, or the text is empty, delete the whole checkbox
+        if (
+          textSpan &&
+          (range.startOffset === 0 || textSpan.textContent.trim() === "")
+        ) {
+          e.preventDefault();
+          // Create a paragraph with any remaining text
+          const remainingText = textSpan.textContent.trim();
+          const p = document.createElement("div");
+          p.innerHTML = remainingText || "<br>";
+          checkboxItem.parentNode.insertBefore(p, checkboxItem);
+          checkboxItem.remove();
+          this.focusElement(p);
+          return;
+        }
+      }
+
+      // Check if we're right after a checkbox (previous sibling is a checkbox)
       if (range.startOffset === 0) {
+        const node = selection.anchorNode;
+        let prevSibling = node.previousSibling;
+
+        // If the current node is inside an element, check the element's previous sibling
+        if (!prevSibling && node.parentElement) {
+          prevSibling = node.parentElement.previousSibling;
+        }
+
+        if (
+          prevSibling &&
+          prevSibling.classList?.contains("editor-checkbox-item")
+        ) {
+          e.preventDefault();
+          prevSibling.remove();
+          return;
+        }
+
         const block = selection.anchorNode.parentElement?.closest(
           "h1, h2, h3, blockquote"
         );
@@ -411,6 +498,14 @@ class SylvaEditor {
   }
 
   // Toolbar actions (can be called from external toolbar)
+  execUndo() {
+    document.execCommand("undo", false, null);
+  }
+
+  execRedo() {
+    document.execCommand("redo", false, null);
+  }
+
   execBold() {
     document.execCommand("bold", false, null);
   }
@@ -460,6 +555,66 @@ class SylvaEditor {
 
   execHR() {
     document.execCommand("insertHorizontalRule", false, null);
+  }
+
+  /**
+   * Convert the current line to a checkbox (Ctrl+Alt+C)
+   */
+  execCheckbox() {
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+
+    const range = selection.getRangeAt(0);
+    let node = range.startContainer;
+
+    // If we're in a text node, get its content
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent;
+      const cursorPos = range.startOffset;
+
+      // Find line boundaries
+      let lineStart = text.lastIndexOf("\n", cursorPos - 1) + 1;
+      let lineEnd = text.indexOf("\n", cursorPos);
+      if (lineEnd === -1) lineEnd = text.length;
+
+      const lineContent = text.substring(lineStart, lineEnd).trim();
+
+      // Create the checkbox using the helper
+      const checkboxItem = this.createCheckboxElement(false, lineContent);
+
+      // Replace the line content
+      const before = text.substring(0, lineStart);
+      const after = text.substring(lineEnd);
+      const parent = node.parentNode;
+
+      if (before) {
+        node.textContent = before;
+        parent.insertBefore(checkboxItem, node.nextSibling);
+        if (after.trim()) {
+          const afterNode = document.createTextNode(after);
+          parent.insertBefore(afterNode, checkboxItem.nextSibling);
+        }
+      } else {
+        parent.insertBefore(checkboxItem, node);
+        if (after.trim()) {
+          node.textContent = after;
+        } else {
+          node.textContent = "";
+        }
+      }
+
+      // Focus the text span
+      const textSpan = checkboxItem.querySelector(".checkbox-text");
+      this.focusElement(textSpan);
+    } else {
+      // We're in an element node - insert checkbox at cursor
+      const checkboxItem = this.createCheckboxElement(false, "");
+      range.insertNode(checkboxItem);
+
+      // Focus the text span
+      const textSpan = checkboxItem.querySelector(".checkbox-text");
+      this.focusElement(textSpan);
+    }
   }
 }
 
