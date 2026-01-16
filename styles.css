@@ -1080,6 +1080,50 @@ input:focus {
   height: 100%;
 }
 
+/* Notes list container - needs proper height constraints for scrolling */
+#notesList {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: calc(100vh - 280px);
+  /* Account for header, search, actions */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-300) transparent;
+}
+
+#notesList::-webkit-scrollbar {
+  width: 6px;
+}
+
+#notesList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#notesList::-webkit-scrollbar-thumb {
+  background-color: var(--color-gray-300);
+  border-radius: 3px;
+}
+
+#notesList::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-gray-400);
+}
+
+/* Main content area - needs to be a scroll container */
+main[role="main"] {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Writing canvas container - flex child that fills available space */
+main[role="main"]>.h-full.flex.flex-col {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* ==========================================================================
    23. Component: Editable Title
    ========================================================================== */

@@ -1121,8 +1121,11 @@ Happy writing! ✨`,
     const note = this.getNoteById(this.currentNoteId);
     if (note) {
       // Use innerHTML for rich editor, value for textarea
+      // Convert plain text to HTML to preserve line breaks
       if (this.editor) {
-        this.noteContent.innerHTML = note.content || "";
+        this.noteContent.innerHTML = this.convertPlainTextToHTML(
+          note.content || ""
+        );
       } else {
         this.noteContent.value = note.content;
       }
@@ -1333,6 +1336,38 @@ Happy writing! ✨`,
     }, 300);
   }
 
+  /**
+   * Convert plain text content to HTML-safe format
+   * Detects if content is plain text (no HTML tags) and converts newlines to <br> tags
+   * This preserves line spacing when importing notes from older exports or plain text
+   * @param {string} content - The content to convert
+   * @returns {string} - HTML-formatted content
+   */
+  convertPlainTextToHTML(content) {
+    if (!content) return "";
+
+    // Check if content appears to be HTML (contains HTML tags)
+    // Look for common HTML tags used by the editor
+    const htmlTagPattern =
+      /<(p|div|br|h[1-6]|ul|ol|li|blockquote|strong|em|code|s|hr|span|a)[^>]*>/i;
+
+    if (htmlTagPattern.test(content)) {
+      // Content is already HTML, return as-is
+      return content;
+    }
+
+    // Content is plain text - convert newlines to <br> tags
+    // First escape any HTML entities to prevent XSS
+    const escaped = content
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+    // Convert newlines to <br> tags
+    // Handle both \r\n (Windows) and \n (Unix) line endings
+    return escaped.replace(/\r\n/g, "<br>").replace(/\n/g, "<br>");
+  }
+
   exportNotes() {
     try {
       const exportData = {
@@ -1396,7 +1431,7 @@ Happy writing! ✨`,
             note.id ||
             Date.now().toString() + Math.random().toString(36).substr(2, 9),
           title: note.title || "Untitled Note",
-          content: note.content || "",
+          content: this.convertPlainTextToHTML(note.content || ""),
           createdAt: note.createdAt || now,
           updatedAt: note.updatedAt || now,
         };
