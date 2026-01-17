@@ -94,69 +94,63 @@ class SylvaEditor {
     const lineStart = text.lastIndexOf("\n", cursorPos - 2) + 1;
     const lineText = text.substring(lineStart, cursorPos);
 
-    // Debug: log what we're checking
+    // Debug: log what we're checking with character codes
     console.log("[SylvaEditor] processBlockShortcuts:", {
       text: text,
       cursorPos: cursorPos,
       lineStart: lineStart,
       lineText: lineText,
       lineTextQuoted: JSON.stringify(lineText),
+      charCodes: [...lineText].map((c) => c.charCodeAt(0)),
+      expectedCharCodes: [35, 32], // # = 35, space = 32
+      matchesH1: lineText === "# ",
+      length: lineText.length,
     });
 
+    // Normalize: replace non-breaking space (160) with regular space (32)
+    // contenteditable often inserts NBSP instead of regular space
+    const normalizedLineText = lineText.replace(/\u00A0/g, " ");
+
     // Heading patterns
-    if (lineText === "# ") {
-      console.log("[SylvaEditor] MATCHED H1 pattern, calling convertToBlock");
-      try {
-        this.convertToBlock(node, lineStart, cursorPos, "h1");
-        console.log("[SylvaEditor] convertToBlock completed for H1");
-      } catch (err) {
-        console.error("[SylvaEditor] Error in convertToBlock:", err);
-      }
+    if (normalizedLineText === "# ") {
+      this.convertToBlock(node, lineStart, cursorPos, "h1");
       return;
     }
-    if (lineText === "## ") {
-      console.log("[SylvaEditor] MATCHED H2 pattern");
+    if (normalizedLineText === "## ") {
       this.convertToBlock(node, lineStart, cursorPos, "h2");
       return;
     }
-    if (lineText === "### ") {
-      console.log("[SylvaEditor] MATCHED H3 pattern");
+    if (normalizedLineText === "### ") {
       this.convertToBlock(node, lineStart, cursorPos, "h3");
       return;
     }
 
     // Bullet list
-    if (lineText === "- " || lineText === "* ") {
-      console.log("[SylvaEditor] MATCHED bullet list pattern");
-      try {
-        this.convertToList(node, lineStart, cursorPos, "ul");
-        console.log("[SylvaEditor] convertToList completed for UL");
-      } catch (err) {
-        console.error("[SylvaEditor] Error in convertToList:", err);
-      }
+    if (normalizedLineText === "- " || normalizedLineText === "* ") {
+      this.convertToList(node, lineStart, cursorPos, "ul");
       return;
     }
 
     // Numbered list
-    if (/^\d+\. $/.test(lineText)) {
+    if (/^\d+\. $/.test(normalizedLineText)) {
       this.convertToList(node, lineStart, cursorPos, "ol");
       return;
     }
 
     // Blockquote
-    if (lineText === "> ") {
+    if (normalizedLineText === "> ") {
       this.convertToBlock(node, lineStart, cursorPos, "blockquote");
       return;
     }
 
     // Checkbox unchecked
-    if (lineText === "[] ") {
+    if (normalizedLineText === "[] ") {
       this.convertToCheckbox(node, lineStart, cursorPos, false);
       return;
     }
 
     // Checkbox checked
-    if (lineText === "[x] " || lineText === "[X] ") {
+    if (normalizedLineText === "[x] " || normalizedLineText === "[X] ") {
       this.convertToCheckbox(node, lineStart, cursorPos, true);
       return;
     }
