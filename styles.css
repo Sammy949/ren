@@ -1756,7 +1756,10 @@ main[role="main"]>.h-full.flex.flex-col {
   border-bottom: 1px solid var(--border-light);
   background-color: var(--bg-secondary);
   flex-wrap: nowrap;
-  overflow: hidden;
+  overflow: visible;
+  /* Allow dropdowns to render outside toolbar */
+  position: relative;
+  /* Establish stacking context for dropdowns */
 }
 
 .editor-toolbar-btn {
@@ -1830,7 +1833,7 @@ main[role="main"]>.h-full.flex.flex-col {
 .toolbar-dropdown {
   position: absolute;
   top: 100%;
-  right: 0;
+  left: 0;
   margin-top: 4px;
   min-width: 180px;
   background-color: var(--bg-primary);
@@ -1838,7 +1841,13 @@ main[role="main"]>.h-full.flex.flex-col {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   padding: var(--spacing-1);
-  z-index: var(--z-dropdown);
+  z-index: 9999;
+}
+
+/* More dropdown aligns to right edge */
+.toolbar-more .toolbar-dropdown {
+  left: auto;
+  right: 0;
 }
 
 .toolbar-dropdown.hidden {
