@@ -1922,8 +1922,8 @@ main[role="main"]>.h-full.flex.flex-col {
   flex-shrink: 0;
 }
 
-/* Responsive breakpoint at 500px - switch to H dropdown, hide block buttons */
-@media (max-width: 500px) {
+/* Responsive breakpoint at 600px - switch to H dropdown, hide block buttons */
+@media (max-width: 600px) {
 
   /* Hide individual heading buttons */
   .toolbar-headings-expanded {
