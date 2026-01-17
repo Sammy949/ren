@@ -304,6 +304,93 @@ a:focus:not(:focus-visible) {
 }
 
 /* ==========================================================================
+   Note Card Styles - Consistent layout for sidebar notes list
+   ========================================================================== */
+
+.note-item {
+  display: flex;
+  padding: var(--spacing-2);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.note-item:hover {
+  background-color: var(--bg-hover);
+}
+
+.note-item.active {
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-light);
+}
+
+.note-content-area {
+  flex: 1;
+  min-width: 0;
+  /* Enable text truncation */
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.note-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.note-preview {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.note-date {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.note-icons {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  flex-shrink: 0;
+  margin-left: var(--spacing-2);
+}
+
+.note-icons button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-2);
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.note-icons .rename-note-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.note-icons .delete-note-btn:hover {
+  background-color: var(--color-error-50);
+  color: var(--color-error-500);
+}
+
+/* ==========================================================================
    3. Layout Utilities
    ========================================================================== */
 

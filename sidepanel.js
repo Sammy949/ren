@@ -1834,8 +1834,8 @@ Happy writing! ✨`,
   // Performance: Create a single note DOM element (reusable)
   createNoteElement(note) {
     const noteItem = document.createElement("div");
-    noteItem.className = `p-2 rounded-lg cursor-pointer transition-colors note-item ${
-      note.id === this.currentNoteId ? "active border" : "hover:bg-gray-100"
+    noteItem.className = `note-item${
+      note.id === this.currentNoteId ? " active" : ""
     }`;
     noteItem.dataset.noteId = note.id;
     // a11y: Make note item focusable and add listbox role
@@ -1846,8 +1846,12 @@ Happy writing! ✨`,
       note.id === this.currentNoteId ? "true" : "false"
     );
 
-    const preview =
-      note.content.substring(0, 40).replace(/\n/g, " ") || "Empty note";
+    // Get plain text preview (strip HTML tags)
+    const textContent = note.content
+      .replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    const preview = textContent.substring(0, 40) || "Empty note";
     const updatedDate = new Date(note.updatedAt).toLocaleDateString();
 
     // Highlight search matches
@@ -1859,24 +1863,22 @@ Happy writing! ✨`,
       : preview;
 
     noteItem.innerHTML = `
-      <div class="flex justify-between">
-        <div class="flex-1 min-w-0 note-content-area" data-note-id="${note.id}">
-          <div class="text-sm font-medium text-gray-800 truncate note-title">${displayTitle}</div>
-          <div class="text-xs text-gray-500 mt-1 truncate subtitle note-preview">${displayPreview}</div>
-          <div class="text-xs text-gray-400 mt-1 note-date">${updatedDate}</div>
-        </div>
-        <div class="flex justify-center items-center gap-2 note-icons ml-2">
-          <button class="rename-note-btn w-fit p-2 text-left hover:bg-gray-100 rounded-lg transition-colors menu-item flex items-center space-x-2" data-note-id="${note.id}" aria-label="Rename note: ${note.title}">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-            </svg>
-          </button>
-          <button class="delete-note-btn w-fit p-2 text-left hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors menu-item flex items-center space-x-2" data-note-id="${note.id}" aria-label="Delete note: ${note.title}">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-            </svg>
-          </button>
-        </div>
+      <div class="note-content-area" data-note-id="${note.id}">
+        <div class="note-title">${displayTitle}</div>
+        <div class="note-preview">${displayPreview}</div>
+        <div class="note-date">${updatedDate}</div>
+      </div>
+      <div class="note-icons">
+        <button class="rename-note-btn menu-item" data-note-id="${note.id}" aria-label="Rename note: ${note.title}">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+          </svg>
+        </button>
+        <button class="delete-note-btn menu-item" data-note-id="${note.id}" aria-label="Delete note: ${note.title}">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+        </button>
       </div>
     `;
 
@@ -1917,8 +1919,12 @@ Happy writing! ✨`,
 
     if (titleEl) titleEl.textContent = note.title;
     if (previewEl) {
-      const preview =
-        note.content.substring(0, 40).replace(/\n/g, " ") || "Empty note";
+      // Strip HTML tags for plain text preview
+      const textContent = note.content
+        .replace(/<[^>]*>/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      const preview = textContent.substring(0, 40) || "Empty note";
       previewEl.textContent = preview;
     }
     if (dateEl) {
