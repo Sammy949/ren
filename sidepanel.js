@@ -177,14 +177,24 @@ class SylvaNotePad {
             if (btn.id === "toolbarMoreBtn") {
               e.stopPropagation();
               this.toggleToolbarDropdown();
-              this.hideHeadingsDropdown(); // Close other dropdown
+              this.hideHeadingsDropdown();
+              this.hideListsDropdown();
               return;
             }
             // Handle the "Headings" button separately
             if (btn.id === "toolbarHeadingsBtn") {
               e.stopPropagation();
               this.toggleHeadingsDropdown();
-              this.hideToolbarDropdown(); // Close other dropdown
+              this.hideToolbarDropdown();
+              this.hideListsDropdown();
+              return;
+            }
+            // Handle the "Lists" button separately
+            if (btn.id === "toolbarListsBtn") {
+              e.stopPropagation();
+              this.toggleListsDropdown();
+              this.hideToolbarDropdown();
+              this.hideHeadingsDropdown();
               return;
             }
             this.handleToolbarAction(action);
@@ -192,7 +202,7 @@ class SylvaNotePad {
           });
         });
 
-      // Handle toolbar dropdown items (both More and Headings)
+      // Handle toolbar dropdown items (More, Headings, and Lists)
       const dropdownItems = this.editorToolbar.querySelectorAll(
         ".toolbar-dropdown-item"
       );
@@ -202,6 +212,7 @@ class SylvaNotePad {
           this.handleToolbarAction(action);
           this.hideToolbarDropdown();
           this.hideHeadingsDropdown();
+          this.hideListsDropdown();
           this.noteContent.focus();
         });
       });
@@ -212,6 +223,8 @@ class SylvaNotePad {
         const moreMenu = document.getElementById("toolbarMoreMenu");
         const headingsBtn = document.getElementById("toolbarHeadingsBtn");
         const headingsMenu = document.getElementById("toolbarHeadingsMenu");
+        const listsBtn = document.getElementById("toolbarListsBtn");
+        const listsMenu = document.getElementById("toolbarListsMenu");
 
         // Close More dropdown
         if (
@@ -231,6 +244,16 @@ class SylvaNotePad {
           !headingsMenu.contains(e.target)
         ) {
           this.hideHeadingsDropdown();
+        }
+
+        // Close Lists dropdown
+        if (
+          listsBtn &&
+          listsMenu &&
+          !listsBtn.contains(e.target) &&
+          !listsMenu.contains(e.target)
+        ) {
+          this.hideListsDropdown();
         }
       });
     }
@@ -1161,6 +1184,40 @@ Happy writing! ✨`,
 
     headingsMenu.classList.add("hidden");
     headingsBtn.setAttribute("aria-expanded", "false");
+  }
+
+  /**
+   * Toggle the toolbar "Lists" dropdown
+   */
+  toggleListsDropdown() {
+    const listsBtn = document.getElementById("toolbarListsBtn");
+    const listsMenu = document.getElementById("toolbarListsMenu");
+    if (!listsBtn || !listsMenu) return;
+
+    const isHidden = listsMenu.classList.contains("hidden");
+    if (isHidden) {
+      this.showListsDropdown();
+    } else {
+      this.hideListsDropdown();
+    }
+  }
+
+  showListsDropdown() {
+    const listsBtn = document.getElementById("toolbarListsBtn");
+    const listsMenu = document.getElementById("toolbarListsMenu");
+    if (!listsBtn || !listsMenu) return;
+
+    listsMenu.classList.remove("hidden");
+    listsBtn.setAttribute("aria-expanded", "true");
+  }
+
+  hideListsDropdown() {
+    const listsBtn = document.getElementById("toolbarListsBtn");
+    const listsMenu = document.getElementById("toolbarListsMenu");
+    if (!listsBtn || !listsMenu) return;
+
+    listsMenu.classList.add("hidden");
+    listsBtn.setAttribute("aria-expanded", "false");
   }
 
   /**

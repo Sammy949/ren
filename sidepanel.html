@@ -438,9 +438,82 @@
               </div>
             </div>
 
-            <!-- Block actions - visible on wide screens, dropdown on narrow screens -->
-            <div class="toolbar-blocks">
+            <!-- List dropdown - always visible -->
+            <div class="toolbar-lists">
               <div class="editor-toolbar-divider" aria-hidden="true"></div>
+              <button
+                id="toolbarListsBtn"
+                class="editor-toolbar-btn"
+                title="Lists"
+                aria-label="Lists"
+                aria-expanded="false"
+                aria-haspopup="true"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 6h16M4 12h16M4 18h16"
+                  ></path>
+                </svg>
+              </button>
+              <!-- Lists dropdown menu -->
+              <div
+                id="toolbarListsMenu"
+                class="toolbar-dropdown hidden"
+                role="menu"
+              >
+                <button
+                  class="toolbar-dropdown-item"
+                  data-action="bulletList"
+                  role="menuitem"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M4 6h16M4 12h16M4 18h16"
+                    ></path>
+                  </svg>
+                  <span>Bullet List</span>
+                </button>
+                <button
+                  class="toolbar-dropdown-item"
+                  data-action="numberedList"
+                  role="menuitem"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M7 8h10M7 12h10M7 16h10M3 8h.01M3 12h.01M3 16h.01"
+                    ></path>
+                  </svg>
+                  <span>Numbered List</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Block actions - visible on wide screens only -->
+            <div class="toolbar-blocks">
               <button
                 class="editor-toolbar-btn"
                 data-action="strikethrough"
@@ -458,46 +531,6 @@
                     stroke-linejoin="round"
                     stroke-width="2"
                     d="M12 3v6m0 6v6M5 12h14"
-                  ></path>
-                </svg>
-              </button>
-              <button
-                class="editor-toolbar-btn"
-                data-action="bulletList"
-                title="Bullet List"
-                aria-label="Bullet List"
-              >
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 6h16M4 12h16M4 18h16"
-                  ></path>
-                </svg>
-              </button>
-              <button
-                class="editor-toolbar-btn"
-                data-action="numberedList"
-                title="Numbered List"
-                aria-label="Numbered List"
-              >
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M7 8h10M7 12h10M7 16h10M3 8h.01M3 12h.01M3 16h.01"
                   ></path>
                 </svg>
               </button>
@@ -580,7 +613,7 @@
                 </svg>
               </button>
 
-              <!-- Dropdown menu - strikethrough + block elements -->
+              <!-- Dropdown menu - strikethrough + formatting options -->
               <div
                 id="toolbarMoreMenu"
                 class="toolbar-dropdown hidden"
@@ -605,47 +638,6 @@
                     ></path>
                   </svg>
                   <span>Strikethrough</span>
-                </button>
-                <div class="toolbar-dropdown-divider"></div>
-                <button
-                  class="toolbar-dropdown-item"
-                  data-action="bulletList"
-                  role="menuitem"
-                >
-                  <svg
-                    class="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M4 6h16M4 12h16M4 18h16"
-                    ></path>
-                  </svg>
-                  <span>Bullet List</span>
-                </button>
-                <button
-                  class="toolbar-dropdown-item"
-                  data-action="numberedList"
-                  role="menuitem"
-                >
-                  <svg
-                    class="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M7 8h10M7 12h10M7 16h10M3 8h.01M3 12h.01M3 16h.01"
-                    ></path>
-                  </svg>
-                  <span>Numbered List</span>
                 </button>
                 <div class="toolbar-dropdown-divider"></div>
                 <button

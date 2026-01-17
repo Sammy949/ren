@@ -1891,11 +1891,19 @@ main[role="main"]>.h-full.flex.flex-col {
   margin: var(--spacing-1) 0;
 }
 
-/* Block elements group */
+/* Block elements group - hidden at narrow widths */
 .toolbar-blocks {
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
+  flex-shrink: 0;
+}
+
+/* Lists dropdown - always visible */
+.toolbar-lists {
+  display: flex;
+  align-items: center;
+  position: relative;
   flex-shrink: 0;
 }
 
@@ -1914,32 +1922,29 @@ main[role="main"]>.h-full.flex.flex-col {
   flex-shrink: 0;
 }
 
-/* Responsive breakpoint - switch to compact mode at 600px to prevent wrapping */
-@media (max-width: 600px) {
+/* Responsive breakpoint at 500px - switch to H dropdown, hide block buttons */
+@media (max-width: 500px) {
 
-  /* Hide individual heading buttons on narrow screens */
+  /* Hide individual heading buttons */
   .toolbar-headings-expanded {
     display: none;
   }
 
-  /* Show heading dropdown on narrow screens */
+  /* Show heading dropdown */
   .toolbar-headings-compact {
     display: flex;
     align-items: center;
   }
 
-  /* Hide block elements on narrow screens - they go in dropdown */
+  /* Hide block elements - they go in More dropdown */
   .toolbar-blocks {
     display: none;
   }
 
+  /* Show More dropdown */
   .toolbar-more {
     display: flex;
     align-items: center;
-  }
-
-  .editor-toolbar {
-    flex-wrap: nowrap;
   }
 }
 
