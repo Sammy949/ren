@@ -66,6 +66,15 @@ class SylvaEditor {
     const range = selection.getRangeAt(0);
     const node = range.startContainer;
 
+    // Debug: log input event details
+    console.log("[SylvaEditor] handleInput:", {
+      inputType: e.inputType,
+      data: e.data,
+      nodeType: node.nodeType,
+      isTextNode: node.nodeType === Node.TEXT_NODE,
+      textContent: node.textContent?.substring(0, 50),
+    });
+
     if (node.nodeType !== Node.TEXT_NODE) return;
 
     const text = node.textContent;
@@ -73,6 +82,7 @@ class SylvaEditor {
 
     // Only process on space (for block patterns)
     if (e.inputType === "insertText" && e.data === " ") {
+      console.log("[SylvaEditor] Space detected, processing block shortcuts");
       this.processBlockShortcuts(node, text, cursorPos);
     }
 
@@ -83,6 +93,15 @@ class SylvaEditor {
   processBlockShortcuts(node, text, cursorPos) {
     const lineStart = text.lastIndexOf("\n", cursorPos - 2) + 1;
     const lineText = text.substring(lineStart, cursorPos);
+
+    // Debug: log what we're checking
+    console.log("[SylvaEditor] processBlockShortcuts:", {
+      text: text,
+      cursorPos: cursorPos,
+      lineStart: lineStart,
+      lineText: lineText,
+      lineTextQuoted: JSON.stringify(lineText),
+    });
 
     // Heading patterns
     if (lineText === "# ") {
