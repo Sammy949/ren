@@ -105,21 +105,35 @@ class SylvaEditor {
 
     // Heading patterns
     if (lineText === "# ") {
-      this.convertToBlock(node, lineStart, cursorPos, "h1");
+      console.log("[SylvaEditor] MATCHED H1 pattern, calling convertToBlock");
+      try {
+        this.convertToBlock(node, lineStart, cursorPos, "h1");
+        console.log("[SylvaEditor] convertToBlock completed for H1");
+      } catch (err) {
+        console.error("[SylvaEditor] Error in convertToBlock:", err);
+      }
       return;
     }
     if (lineText === "## ") {
+      console.log("[SylvaEditor] MATCHED H2 pattern");
       this.convertToBlock(node, lineStart, cursorPos, "h2");
       return;
     }
     if (lineText === "### ") {
+      console.log("[SylvaEditor] MATCHED H3 pattern");
       this.convertToBlock(node, lineStart, cursorPos, "h3");
       return;
     }
 
     // Bullet list
     if (lineText === "- " || lineText === "* ") {
-      this.convertToList(node, lineStart, cursorPos, "ul");
+      console.log("[SylvaEditor] MATCHED bullet list pattern");
+      try {
+        this.convertToList(node, lineStart, cursorPos, "ul");
+        console.log("[SylvaEditor] convertToList completed for UL");
+      } catch (err) {
+        console.error("[SylvaEditor] Error in convertToList:", err);
+      }
       return;
     }
 
