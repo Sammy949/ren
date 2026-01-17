@@ -438,9 +438,29 @@
               </div>
             </div>
 
-            <!-- Block actions - only in dropdown on narrow screens -->
+            <!-- Block actions - visible on wide screens, dropdown on narrow screens -->
             <div class="toolbar-blocks">
               <div class="editor-toolbar-divider" aria-hidden="true"></div>
+              <button
+                class="editor-toolbar-btn"
+                data-action="strikethrough"
+                title="Strikethrough"
+                aria-label="Strikethrough"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 3v6m0 6v6M5 12h14"
+                  ></path>
+                </svg>
+              </button>
               <button
                 class="editor-toolbar-btn"
                 data-action="bulletList"

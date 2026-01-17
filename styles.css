@@ -1755,7 +1755,8 @@ main[role="main"]>.h-full.flex.flex-col {
   padding: var(--spacing-2) var(--spacing-4);
   border-bottom: 1px solid var(--border-light);
   background-color: var(--bg-secondary);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow: hidden;
 }
 
 .editor-toolbar-btn {
@@ -1808,18 +1809,21 @@ main[role="main"]>.h-full.flex.flex-col {
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
+  flex-shrink: 0;
 }
 
 .toolbar-secondary {
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
+  flex-shrink: 0;
 }
 
 .toolbar-more {
   display: none;
   position: relative;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 /* Toolbar dropdown */
@@ -1892,6 +1896,7 @@ main[role="main"]>.h-full.flex.flex-col {
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
+  flex-shrink: 0;
 }
 
 /* Headings expanded - individual buttons on wide screens */
@@ -1899,16 +1904,18 @@ main[role="main"]>.h-full.flex.flex-col {
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
+  flex-shrink: 0;
 }
 
 /* Headings compact - dropdown on narrow screens */
 .toolbar-headings-compact {
   display: none;
   position: relative;
+  flex-shrink: 0;
 }
 
-/* Responsive breakpoint - Chrome side panel minimum is ~360px */
-@media (max-width: 420px) {
+/* Responsive breakpoint - switch to compact mode at 600px to prevent wrapping */
+@media (max-width: 600px) {
 
   /* Hide individual heading buttons on narrow screens */
   .toolbar-headings-expanded {
@@ -1917,7 +1924,8 @@ main[role="main"]>.h-full.flex.flex-col {
 
   /* Show heading dropdown on narrow screens */
   .toolbar-headings-compact {
-    display: block;
+    display: flex;
+    align-items: center;
   }
 
   /* Hide block elements on narrow screens - they go in dropdown */
@@ -1926,11 +1934,12 @@ main[role="main"]>.h-full.flex.flex-col {
   }
 
   .toolbar-more {
-    display: block;
+    display: flex;
+    align-items: center;
   }
 
   .editor-toolbar {
-    justify-content: space-between;
+    flex-wrap: nowrap;
   }
 }
 
