@@ -1343,10 +1343,19 @@ Happy writing! ✨`,
     }, 1000);
   }
 
-  createNewNote() {
+  async createNewNote() {
+    // Store previous note ID and save it before creating new
+    const previousNoteId = this.currentNoteId;
+    await this.saveCurrentNote();
+
+    // Clean up previous empty note if applicable
+    if (previousNoteId) {
+      await this.removeEmptyNote(previousNoteId);
+    }
+
     const newNote = {
       id: Date.now().toString(),
-      title: "Untitled Note",
+      title: "Untitled",
       content: "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -1356,7 +1365,7 @@ Happy writing! ✨`,
     // Performance: Add to cache immediately
     this.notesCache.set(newNote.id, newNote);
     this.currentNoteId = newNote.id;
-    this.saveData();
+    await this.saveData();
     this.loadCurrentNote();
     this.renderNotesList();
     this.showNotification("New note created", "success");
@@ -1427,7 +1436,16 @@ Happy writing! ✨`,
   }
 
   async switchToNote(noteId) {
+    // Store the previous note ID before switching
+    const previousNoteId = this.currentNoteId;
+
     await this.saveCurrentNote();
+
+    // Check if the previous note should be auto-removed (empty + default title)
+    if (previousNoteId && previousNoteId !== noteId) {
+      await this.removeEmptyNote(previousNoteId);
+    }
+
     this.currentNoteId = noteId;
     this.loadCurrentNote();
     // Reset undo/redo state for the new note
@@ -1435,6 +1453,44 @@ Happy writing! ✨`,
     // Performance: Update only active states, not full re-render
     this.updateActiveNoteState();
     await this.saveData();
+  }
+
+  /**
+   * Check if a note is empty and has default title, then remove it
+   * This prevents clutter from accidentally created notes
+   */
+  async removeEmptyNote(noteId) {
+    const note = this.getNoteById(noteId);
+    if (!note) return;
+
+    // Check if note has default title (starts with "Untitled")
+    const hasDefaultTitle =
+      note.title === "Untitled" || note.title.match(/^Untitled \d+$/);
+
+    // Check if content is empty (strip HTML tags and whitespace)
+    const textContent = note.content
+      .replace(/<[^>]*>/g, "") // Remove HTML tags
+      .replace(/&nbsp;/g, " ") // Replace &nbsp; with space
+      .replace(/\s+/g, "") // Remove all whitespace
+      .trim();
+
+    const isEmpty = textContent.length === 0;
+
+    // Only auto-remove if both conditions are true AND it's not the last note
+    if (hasDefaultTitle && isEmpty && this.notes.length > 1) {
+      // Remove from notes array
+      const noteIndex = this.notes.findIndex((n) => n.id === noteId);
+      if (noteIndex !== -1) {
+        this.notes.splice(noteIndex, 1);
+        this.notesCache.delete(noteId);
+
+        // Remove from DOM
+        this.removeNoteItemFromDOM(noteId);
+
+        // Save silently (no notification)
+        await this.saveData();
+      }
+    }
   }
 
   showDeleteModal(noteId) {
