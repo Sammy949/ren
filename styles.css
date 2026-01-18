@@ -2066,3 +2066,204 @@ main[role="main"]>.h-full.flex.flex-col {
 .sylva-editor::-webkit-scrollbar-thumb:hover {
   background-color: var(--text-muted);
 }
+
+/* ==========================================================================
+   Minimalist Toast Notifications
+   ========================================================================== */
+
+.notification {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-4);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-width: 320px;
+  opacity: 0;
+  transform: translateX(20px);
+  transition: opacity var(--transition-normal), transform var(--transition-normal);
+}
+
+.notification.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.notification-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.notification-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+.notification.success .notification-icon {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: var(--color-success-500);
+}
+
+.notification.error .notification-icon {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--color-error-500);
+}
+
+.notification.warning .notification-icon {
+  background-color: rgba(234, 179, 8, 0.1);
+  color: var(--color-warning-500);
+}
+
+.notification.info .notification-icon {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--color-info-500);
+}
+
+.notification-message {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+}
+
+.notification-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.notification-close:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.notification-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ==========================================================================
+   Minimalist Shortcuts Modal
+   ========================================================================== */
+
+.shortcuts-modal {
+  position: fixed;
+  inset: 0;
+  background-color: var(--bg-modal);
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-normal), visibility var(--transition-normal);
+}
+
+.shortcuts-modal.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.shortcuts-modal-content {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-5);
+  width: 320px;
+  max-width: calc(100% - 32px);
+  box-shadow: var(--shadow-xl);
+}
+
+.shortcuts-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-4);
+}
+
+.shortcuts-modal-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.shortcuts-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.shortcuts-modal-close:hover {
+  background-color: var(--bg-hover);
+}
+
+.shortcuts-modal-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.shortcuts-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-2) 0;
+}
+
+.shortcut-description {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.shortcut-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background-color: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: var(--font-weight-medium);
+  color: var(--text-tertiary);
+}
+
+.shortcuts-modal-footer {
+  margin-top: var(--spacing-4);
+  text-align: center;
+}
+
+.shortcuts-modal-hint {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}

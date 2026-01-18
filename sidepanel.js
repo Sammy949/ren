@@ -565,8 +565,7 @@ class SylvaNotePad {
     if (!modal) {
       modal = document.createElement("div");
       modal.id = "shortcutsHelpModal";
-      modal.className =
-        "fixed inset-0 bg-black bg-opacity-50 z-60 flex items-center justify-center";
+      modal.className = "shortcuts-modal";
       modal.setAttribute("role", "dialog");
       modal.setAttribute("aria-modal", "true");
       modal.setAttribute("aria-labelledby", "shortcutsHelpTitle");
@@ -574,28 +573,30 @@ class SylvaNotePad {
       const shortcuts = this.keyboardShortcuts
         .map(
           (s) => `
-        <div class="flex justify-between items-center py-2 border-b border-gray-100">
-          <span class="text-sm text-gray-700">${s.description}</span>
-          <kbd class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded font-mono">${s.keys}</kbd>
-        </div>
-      `
+          <div class="shortcut-item">
+            <span class="shortcut-description">${s.description}</span>
+            <kbd class="shortcut-keys">${s.keys}</kbd>
+          </div>
+        `
         )
         .join("");
 
       modal.innerHTML = `
-        <div class="bg-white rounded-lg p-4 w-80 mx-4 shadow-xl" role="document">
-          <div class="flex items-center justify-between mb-4">
-            <h3 id="shortcutsHelpTitle" class="text-base font-semibold text-gray-900">Keyboard Shortcuts</h3>
-            <button id="closeShortcutsHelp" class="p-1 hover:bg-gray-100 rounded" aria-label="Close shortcuts help">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <div class="shortcuts-modal-content" role="document">
+          <div class="shortcuts-modal-header">
+            <h3 id="shortcutsHelpTitle" class="shortcuts-modal-title">Keyboard Shortcuts</h3>
+            <button id="closeShortcutsHelp" class="shortcuts-modal-close" aria-label="Close shortcuts help">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
             </button>
           </div>
-          <div class="space-y-1">
+          <div class="shortcuts-list">
             ${shortcuts}
           </div>
-          <p class="text-xs text-gray-400 mt-4 text-center">Press Escape to close</p>
+          <div class="shortcuts-modal-footer">
+            <p class="shortcuts-modal-hint">Press Escape to close</p>
+          </div>
         </div>
       `;
 
@@ -613,7 +614,7 @@ class SylvaNotePad {
       });
     }
 
-    modal.classList.remove("hidden");
+    modal.classList.add("visible");
     modal.setAttribute("aria-hidden", "false");
     this.shortcutsHelpVisible = true;
     this.lastFocusedElement = document.activeElement;
@@ -626,7 +627,7 @@ class SylvaNotePad {
   hideShortcutsHelp() {
     const modal = document.getElementById("shortcutsHelpModal");
     if (modal) {
-      modal.classList.add("hidden");
+      modal.classList.remove("visible");
       modal.setAttribute("aria-hidden", "true");
     }
     this.shortcutsHelpVisible = false;
@@ -1563,45 +1564,35 @@ Happy writing! ✨`,
 
   showNotification(message, type = "info") {
     const notification = document.createElement("div");
-    notification.className = `notification flex items-center p-3 rounded-lg shadow-lg max-w-sm ${
-      type === "success"
-        ? "bg-green-500 text-white"
-        : type === "error"
-        ? "bg-red-500 text-white"
-        : type === "warning"
-        ? "bg-yellow-500 text-white"
-        : "bg-blue-500 text-white"
-    }`;
+    notification.className = `notification ${type}`;
 
-    const icon =
-      type === "success"
-        ? `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>`
-        : type === "error"
-        ? `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>`
-        : type === "warning"
-        ? `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                    </svg>`
-        : `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>`;
+    const iconSvg = {
+      success: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>`,
+      error: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      </svg>`,
+      warning: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+      </svg>`,
+      info: `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>`,
+    };
 
     notification.innerHTML = `
-                    ${icon}
-                    <span class="text-sm font-medium message">${message}</span>
-                    <button class="ml-auto hover:bg-black hover:bg-opacity-20 rounded p-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </button>
-                `;
+      <div class="notification-icon">${iconSvg[type] || iconSvg.info}</div>
+      <span class="notification-message">${message}</span>
+      <button class="notification-close" aria-label="Dismiss notification">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    `;
 
     // Add close button functionality
-    const closeBtn = notification.querySelector("button");
+    const closeBtn = notification.querySelector(".notification-close");
     closeBtn.addEventListener("click", () =>
       this.hideNotification(notification)
     );
