@@ -145,7 +145,7 @@ class SylvaNotePad {
 
     // Notification container
     this.notificationContainer = document.getElementById(
-      "notificationContainer"
+      "notificationContainer",
     );
 
     // Settings modal state
@@ -204,7 +204,7 @@ class SylvaNotePad {
 
       // Handle toolbar dropdown items (More, Headings, and Lists)
       const dropdownItems = this.editorToolbar.querySelectorAll(
-        ".toolbar-dropdown-item"
+        ".toolbar-dropdown-item",
       );
       dropdownItems.forEach((item) => {
         item.addEventListener("click", () => {
@@ -272,7 +272,7 @@ class SylvaNotePad {
     // Shortcuts info button (with null check)
     if (this.shortcutsInfoBtn) {
       this.shortcutsInfoBtn.addEventListener("click", () =>
-        this.showShortcutsHelp()
+        this.showShortcutsHelp(),
       );
     }
 
@@ -280,7 +280,7 @@ class SylvaNotePad {
     if (this.noteTitle && this.noteTitleInput) {
       this.noteTitle.addEventListener("click", () => this.startEditingTitle());
       this.noteTitleInput.addEventListener("blur", () =>
-        this.finishEditingTitle()
+        this.finishEditingTitle(),
       );
       this.noteTitleInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
@@ -310,7 +310,7 @@ class SylvaNotePad {
     // Rename modal events
     this.cancelRename.addEventListener("click", () => this.hideRenameModal());
     this.confirmRename.addEventListener("click", () =>
-      this.confirmRenameNote()
+      this.confirmRenameNote(),
     );
     this.renameInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") this.confirmRenameNote();
@@ -320,7 +320,7 @@ class SylvaNotePad {
     // Delete modal events
     this.cancelDelete.addEventListener("click", () => this.hideDeleteModal());
     this.confirmDelete.addEventListener("click", () =>
-      this.confirmDeleteNote()
+      this.confirmDeleteNote(),
     );
 
     // a11y: Delete modal keyboard handling
@@ -341,7 +341,7 @@ class SylvaNotePad {
 
     // a11y: Keyboard navigation for notes list
     this.notesList.addEventListener("keydown", (e) =>
-      this.handleNotesListKeydown(e)
+      this.handleNotesListKeydown(e),
     );
 
     // a11y: Global Escape key to close sidebar
@@ -361,7 +361,7 @@ class SylvaNotePad {
   // a11y: Focus trap for modals
   trapFocus(e, container) {
     const focusableElements = container.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
     );
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
@@ -380,7 +380,8 @@ class SylvaNotePad {
     const noteItems = Array.from(this.notesList.querySelectorAll(".note-item"));
     const currentIndex = noteItems.findIndex(
       (item) =>
-        item === document.activeElement || item.contains(document.activeElement)
+        item === document.activeElement ||
+        item.contains(document.activeElement),
     );
 
     switch (e.key) {
@@ -470,7 +471,7 @@ class SylvaNotePad {
     if (shortcut) {
       // Check if typing in an input
       const isTyping = ["INPUT", "TEXTAREA"].includes(
-        document.activeElement.tagName
+        document.activeElement.tagName,
       );
 
       // Always allow these shortcuts, even when typing
@@ -577,7 +578,7 @@ class SylvaNotePad {
             <span class="shortcut-description">${s.description}</span>
             <kbd class="shortcut-keys">${s.keys}</kbd>
           </div>
-        `
+        `,
         )
         .join("");
 
@@ -722,7 +723,7 @@ class SylvaNotePad {
 
     const regex = new RegExp(
       `(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
-      "gi"
+      "gi",
     );
     return text.replace(regex, '<span class="search-highlight">$1</span>');
   }
@@ -942,41 +943,41 @@ class SylvaNotePad {
       modal.setAttribute("aria-labelledby", "welcomeTitle");
 
       modal.innerHTML = `
-        <div class="bg-white rounded-xl p-6 w-80 mx-4 shadow-2xl text-center" role="document">
-          <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-400 to-blue-500 rounded-2xl flex items-center justify-center">
-            <span class="text-white text-2xl font-bold">S</span>
+        <div class="welcome-modal-content" role="document">
+          <div class="welcome-logo">
+            <span class="welcome-logo-text">S</span>
           </div>
-          <h2 id="welcomeTitle" class="text-xl font-semibold text-gray-900 mb-2">Welcome to Sylva</h2>
-          <p class="text-sm text-gray-600 mb-6">Your minimalist notepad for quick thoughts, ideas, and more.</p>
+          <h2 id="welcomeTitle" class="welcome-title">Welcome to Sylva</h2>
+          <p class="welcome-subtitle">Your minimalist notepad for quick thoughts, ideas, and more.</p>
           
-          <div class="space-y-3 text-left mb-6">
-            <div class="flex items-start space-x-3">
-              <div class="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="welcome-features">
+            <div class="welcome-feature-item">
+              <div class="welcome-feature-icon">
+                <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                 </svg>
               </div>
-              <p class="text-sm text-gray-600"><strong>Auto-save</strong> - Your notes save automatically as you type</p>
+              <p class="welcome-feature-text"><strong>Auto-save</strong> - Your notes save automatically as you type</p>
             </div>
-            <div class="flex items-start space-x-3">
-              <div class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="welcome-feature-item">
+              <div class="welcome-feature-icon">
+                <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
                 </svg>
               </div>
-              <p class="text-sm text-gray-600"><strong>Multiple notes</strong> - Create and organize unlimited notes</p>
+              <p class="welcome-feature-text"><strong>Multiple notes</strong> - Create and organize unlimited notes</p>
             </div>
-            <div class="flex items-start space-x-3">
-              <div class="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg class="w-3.5 h-3.5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="welcome-feature-item">
+              <div class="welcome-feature-icon">
+                <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
                 </svg>
               </div>
-              <p class="text-sm text-gray-600"><strong>Keyboard shortcuts</strong> - Press <kbd class="px-1 bg-gray-100 rounded text-xs">Ctrl+/</kbd> anytime</p>
+              <p class="welcome-feature-text"><strong>Keyboard shortcuts</strong> - Press <kbd class="welcome-kbd">Ctrl+/</kbd> anytime</p>
             </div>
           </div>
           
-          <button id="startWritingBtn" class="w-full py-3 px-4 bg-gradient-to-r from-green-400 to-blue-500 text-white font-medium rounded-lg hover:opacity-90 transition-opacity">
+          <button id="startWritingBtn" class="welcome-btn">
             Start Writing
           </button>
         </div>
@@ -1315,6 +1316,9 @@ Happy writing! ✨`,
       case "hr":
         this.editor.execHR();
         break;
+      case "insertCheckbox":
+        this.editor.execCheckbox();
+        break;
     }
 
     // Trigger save after formatting
@@ -1395,7 +1399,7 @@ Happy writing! ✨`,
 
       // Move the note to the top of the list (most recently edited first)
       const currentIndex = this.notes.findIndex(
-        (n) => n.id === this.currentNoteId
+        (n) => n.id === this.currentNoteId,
       );
       if (currentIndex > 0) {
         // Remove from current position and add to the beginning
@@ -1424,7 +1428,7 @@ Happy writing! ✨`,
       // Convert plain text to HTML to preserve line breaks
       if (this.editor) {
         this.noteContent.innerHTML = this.convertPlainTextToHTML(
-          note.content || ""
+          note.content || "",
         );
       } else {
         this.noteContent.value = note.content;
@@ -1608,7 +1612,7 @@ Happy writing! ✨`,
 
         this.showNotification(
           `Note renamed from "${oldTitle}" to "${newTitle}"`,
-          "success"
+          "success",
         );
       }
     } catch (error) {
@@ -1650,7 +1654,7 @@ Happy writing! ✨`,
     // Add close button functionality
     const closeBtn = notification.querySelector(".notification-close");
     closeBtn.addEventListener("click", () =>
-      this.hideNotification(notification)
+      this.hideNotification(notification),
     );
 
     this.notificationContainer.appendChild(notification);
@@ -1733,7 +1737,7 @@ Happy writing! ✨`,
 
       this.showNotification(
         `Exported ${this.notes.length} notes successfully!`,
-        "success"
+        "success",
       );
     } catch (error) {
       console.error("Export error:", error);
@@ -1821,13 +1825,13 @@ Happy writing! ✨`,
 
       this.showNotification(
         `Imported ${noteCount} notes successfully!`,
-        "success"
+        "success",
       );
     } catch (error) {
       console.error("Import error:", error);
       this.showNotification(
         `Failed to import notes: ${error.message || "Invalid file format"}`,
-        "error"
+        "error",
       );
     }
 
@@ -1890,7 +1894,7 @@ Happy writing! ✨`,
     noteItem.setAttribute("role", "option");
     noteItem.setAttribute(
       "aria-selected",
-      note.id === this.currentNoteId ? "true" : "false"
+      note.id === this.currentNoteId ? "true" : "false",
     );
 
     // Get plain text preview (strip HTML tags)
