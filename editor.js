@@ -374,7 +374,7 @@ class SylvaEditor {
 
       // Check if we're inside a checkbox
       const checkboxItem = selection.anchorNode.parentElement?.closest(
-        ".editor-checkbox-item"
+        ".editor-checkbox-item",
       );
       if (checkboxItem) {
         e.preventDefault();
@@ -411,7 +411,7 @@ class SylvaEditor {
 
       // Check if we're at the start of a checkbox text area
       const checkboxItem = selection.anchorNode.parentElement?.closest(
-        ".editor-checkbox-item"
+        ".editor-checkbox-item",
       );
       if (checkboxItem) {
         const textSpan = checkboxItem.querySelector(".checkbox-text");
@@ -451,8 +451,26 @@ class SylvaEditor {
           return;
         }
 
+        // Check if previous sibling is a BR that follows an HR (from --- shortcut)
+        if (prevSibling && prevSibling.nodeName === "BR") {
+          const beforeBr = prevSibling.previousSibling;
+          if (beforeBr && beforeBr.nodeName === "HR") {
+            e.preventDefault();
+            beforeBr.remove(); // Remove the HR
+            prevSibling.remove(); // Remove the BR
+            return;
+          }
+        }
+
+        // Check if previous sibling is directly an HR
+        if (prevSibling && prevSibling.nodeName === "HR") {
+          e.preventDefault();
+          prevSibling.remove();
+          return;
+        }
+
         const block = selection.anchorNode.parentElement?.closest(
-          "h1, h2, h3, blockquote"
+          "h1, h2, h3, blockquote",
         );
         if (block && block.textContent === "") {
           e.preventDefault();
