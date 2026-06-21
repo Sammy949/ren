@@ -1,0 +1,68 @@
+REN — SHIP CHECKLIST
+====================
+A calm place for your thoughts. Goal: get Ren live on the Chrome Web Store.
+Tick these off top to bottom. None of step 1–2 is code.
+
+----------------------------------------------------------------------
+0. ENV SANITY (this new machine)
+----------------------------------------------------------------------
+[ ] Open Chrome -> chrome://extensions
+[ ] Enable "Developer mode" (top-right toggle)
+[ ] "Load unpacked" -> select /home/samy/dev/ren
+[ ] Confirm Ren opens in the side panel
+[ ] Open DevTools on the panel -> check console has NO errors
+    (this is the "does the rename still run clean" check)
+
+----------------------------------------------------------------------
+1. BRANDING / LOGO  (you're sourcing this)
+----------------------------------------------------------------------
+[ ] New Ren logo/wordmark
+[ ] Icon set in icons/ : icon16.png icon32.png icon48.png icon128.png
+[ ] Update the in-app header logo if the old Sylva mark is still shown
+[ ] Keep it simple — do NOT let the logo block shipping
+
+----------------------------------------------------------------------
+2. STORE ASSETS  (copy already drafted -> docs/STORE_LISTING.md)
+----------------------------------------------------------------------
+[ ] Store icon 128x128 PNG
+[ ] 1-5 screenshots @ 1280x800
+      ideas: writing+markdown / sidebar+search / dark mode / shortcuts
+[ ] Small promo tile 440x280 (recommended)
+[ ] Short description (<=132 chars) — see STORE_LISTING.md
+[ ] Detailed description — see STORE_LISTING.md
+
+----------------------------------------------------------------------
+3. PRIVACY POLICY  (text already written -> PRIVACY.md)
+----------------------------------------------------------------------
+[ ] Host PRIVACY.md at a public URL
+      easiest: enable GitHub Pages on the ren repo, OR paste into a Gist
+[ ] Paste that URL into the store's Privacy tab
+
+----------------------------------------------------------------------
+4. DEVELOPER ACCOUNT  (the original blocker)
+----------------------------------------------------------------------
+[ ] Register Chrome Web Store developer account
+[ ] Pay the one-time $5 registration fee
+      https://chrome.google.com/webstore/devconsole
+
+----------------------------------------------------------------------
+5. PACKAGE & SUBMIT
+----------------------------------------------------------------------
+[ ] Bump version in manifest.json if needed
+[ ] Zip the extension root (manifest.json, *.js, *.html, *.css, icons/)
+      NOT the .git or docs folders
+[ ] Upload zip in the dev console
+[ ] Fill listing (name, descriptions, category=Productivity, screenshots)
+[ ] Fill Privacy practices + permission justifications (see STORE_LISTING.md)
+[ ] Submit for review
+
+----------------------------------------------------------------------
+6. AFTER LIVE
+----------------------------------------------------------------------
+[ ] Use it daily, note annoyances
+[ ] THEN start the React/TS/Vite v2 rebuild — with v1 already shipped
+
+notes-to-self:
+- storage keys are still named sylva_* on purpose (internal, invisible).
+  proper rename happens in the v2 storage rewrite. don't "fix" it now.
+- repo: https://github.com/Sammy949/ren.git
