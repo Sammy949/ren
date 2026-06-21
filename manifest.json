@@ -16,6 +16,13 @@
       "128": "icons/icon128.png"
     }
   },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+S"
+      }
+    }
+  },
   "side_panel": {
     "default_path": "sidepanel.html"
   },
