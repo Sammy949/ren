@@ -1,5 +1,5 @@
 /**
- * Sylva Storage Module
+ * Ren Storage Module
  * Handles data persistence with hybrid chrome.storage strategy
  *
  * Storage Strategy (Hybrid):
@@ -10,6 +10,11 @@
  * - Settings sync across devices where user is logged into Chrome
  * - Notes have ample storage space (sync has only 100KB limit)
  *
+ * NOTE: Storage keys keep the legacy `sylva_*` prefix on purpose. They are an
+ * internal namespace (never shown to users), and renaming them would orphan
+ * existing data. A clean migration to Ren-prefixed keys belongs in the v2
+ * storage rewrite, not here.
+ *
  * Storage structure:
  * - [SYNC] sylva_settings: { theme, onboardingComplete }
  * - [LOCAL] sylva_notes_index: [noteId1, noteId2, ...] (order preserved)
@@ -17,7 +22,7 @@
  * - [LOCAL] sylva_current_note: noteId
  */
 
-class SylvaStorage {
+class RenStorage {
   constructor() {
     // Check if chrome.storage APIs are available
     this.useChromeLocal =
@@ -500,4 +505,4 @@ class SylvaStorage {
 }
 
 // Export singleton instance
-const sylvaStorage = new SylvaStorage();
+const renStorage = new RenStorage();

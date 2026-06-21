@@ -1,8 +1,8 @@
-// Background script for Sylva Chrome Extension
+// Background script for Ren Chrome Extension
 
 // This listener is called when the extension is first installed or updated.
 chrome.runtime.onInstalled.addListener(() => {
-  console.log("Sylva extension installed");
+  console.log("Ren extension installed");
 
   // Set the default panel behavior: when the action button is clicked,
   // it should attempt to open the side panel. This is a one-time setup.

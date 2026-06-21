@@ -1,4 +1,4 @@
-class SylvaNotePad {
+class RenNotePad {
   constructor() {
     this.notes = [];
     this.currentNoteId = null;
@@ -12,14 +12,14 @@ class SylvaNotePad {
     this.renderedNoteElements = new Map();
 
     // Storage module
-    this.storage = sylvaStorage;
+    this.storage = renStorage;
 
     // Keyboard shortcuts configuration
     this.keyboardShortcuts = [
       {
         keys: "Alt+Shift+S",
         action: "openExtension",
-        description: "Open Sylva",
+        description: "Open Ren",
       },
       {
         keys: "Ctrl+Alt+N",
@@ -103,8 +103,8 @@ class SylvaNotePad {
     this.canRedo = false;
 
     // Initialize rich editor
-    if (this.noteContent && typeof SylvaEditor !== "undefined") {
-      this.editor = new SylvaEditor(this.noteContent, {
+    if (this.noteContent && typeof RenEditor !== "undefined") {
+      this.editor = new RenEditor(this.noteContent, {
         placeholder:
           "Start writing... (Try # for headings, ** for bold, - for lists)",
         onInput: () => this.handleInput(),
@@ -157,7 +157,7 @@ class SylvaNotePad {
     this.closeSidebar.addEventListener("click", () => this.toggleSidebar());
     this.sidebarOverlay.addEventListener("click", () => this.toggleSidebar());
 
-    // Note: Input events are handled by SylvaEditor's onChange callback
+    // Note: Input events are handled by RenEditor's onChange callback
     // But we still need keydown for Tab handling etc.
     this.noteContent.addEventListener("keydown", (e) => this.handleKeydown(e));
 
@@ -823,7 +823,7 @@ class SylvaNotePad {
           
           <div class="settings-footer">
             <p class="settings-version">
-              Sylva v2.0 • <button id="settingsShortcutsBtn" class="settings-link">Keyboard Shortcuts</button>
+              Ren v2.0 • <button id="settingsShortcutsBtn" class="settings-link">Keyboard Shortcuts</button>
             </p>
           </div>
         </div>
@@ -947,7 +947,7 @@ class SylvaNotePad {
           <div class="welcome-logo">
             <span class="welcome-logo-text">S</span>
           </div>
-          <h2 id="welcomeTitle" class="welcome-title">Welcome to Sylva</h2>
+          <h2 id="welcomeTitle" class="welcome-title">Welcome to Ren</h2>
           <p class="welcome-subtitle">Your minimalist notepad for quick thoughts, ideas, and more.</p>
           
           <div class="welcome-features">
@@ -1010,8 +1010,8 @@ class SylvaNotePad {
     // Create the first note with welcome content
     const welcomeNote = {
       id: Date.now().toString(),
-      title: "Welcome to Sylva! 🌿",
-      content: `Welcome to Sylva! 🌿
+      title: "Welcome to Ren! 🌿",
+      content: `Welcome to Ren! 🌿
 
 This is your first note. Here are some tips to get started:
 
@@ -1727,7 +1727,7 @@ Happy writing! ✨`,
 
       const a = document.createElement("a");
       a.href = url;
-      a.download = `sylva-notes-backup-${
+      a.download = `ren-notes-backup-${
         new Date().toISOString().split("T")[0]
       }.json`;
       document.body.appendChild(a);
@@ -2008,5 +2008,5 @@ Happy writing! ✨`,
 
 // Initialize the application
 document.addEventListener("DOMContentLoaded", () => {
-  new SylvaNotePad();
+  new RenNotePad();
 });

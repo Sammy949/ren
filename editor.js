@@ -1,5 +1,5 @@
 /**
- * Sylva Rich Editor
+ * Ren Rich Editor
  * A lightweight contenteditable editor with markdown shortcuts
  *
  * Supported shortcuts:
@@ -15,7 +15,7 @@
  * - [x] + space → Checkbox (checked)
  */
 
-class SylvaEditor {
+class RenEditor {
   constructor(element, options = {}) {
     this.element = element;
     this.options = {
@@ -32,7 +32,7 @@ class SylvaEditor {
     // Make element editable
     this.element.setAttribute("contenteditable", "true");
     this.element.setAttribute("spellcheck", "true");
-    this.element.classList.add("sylva-editor");
+    this.element.classList.add("ren-editor");
 
     // Set placeholder
     this.element.dataset.placeholder = this.options.placeholder;
@@ -641,4 +641,4 @@ class SylvaEditor {
 }
 
 // Export for use
-window.SylvaEditor = SylvaEditor;
+window.RenEditor = RenEditor;
