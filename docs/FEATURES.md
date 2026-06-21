@@ -1,6 +1,6 @@
-# Sylva - Features & Offerings
+# Ren - Features & Offerings
 
-> **Sylva** is a minimalist notepad Chrome extension that lives in your browser sidebar, designed for quick thoughts, ideas, and seamless note-taking.
+> **Ren** is a minimalist notepad Chrome extension that lives in your browser sidebar, designed for quick thoughts, ideas, and seamless note-taking.
 
 ---
 
@@ -105,7 +105,7 @@ Type markdown syntax and it automatically converts to formatted text:
 - Glassmorphism sidebar with blur effects
 - Smooth transitions and animations
 - Responsive toolbar that adapts to different widths
-- Clean gradient branding (green-to-blue Sylva logo)
+- Clean gradient branding (green-to-blue Ren logo)
 
 ---
 
@@ -113,7 +113,7 @@ Type markdown syntax and it automatically converts to formatted text:
 
 | Shortcut       | Action                       |
 | -------------- | ---------------------------- |
-| `Alt+Shift+S`  | Open Sylva extension         |
+| `Alt+Shift+S`  | Open Ren extension         |
 | `Ctrl+Alt+N`   | Create new note              |
 | `Ctrl+S`       | Save current note            |
 | `Ctrl+Shift+E` | Export all notes             |
@@ -207,7 +207,7 @@ Type markdown syntax and it automatically converts to formatted text:
 
 ## 📋 Summary
 
-Sylva offers a complete, polished note-taking experience designed specifically for the browser environment:
+Ren offers a complete, polished note-taking experience designed specifically for the browser environment:
 
 ✅ Rich text editing with markdown shortcuts  
 ✅ Multiple notes with search  

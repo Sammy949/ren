@@ -1,8 +1,8 @@
-# Sylva v2.0 - Implementation Plan
+# Ren v2.0 - Implementation Plan
 
 ## Overview
 
-Comprehensive improvements to Sylva Notepad covering performance, accessibility, UX, and feature enhancements.
+Comprehensive improvements to Ren Notepad covering performance, accessibility, UX, and feature enhancements.
 
 ---
 
