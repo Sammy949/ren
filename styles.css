@@ -10,22 +10,22 @@
 :root {
   /* Colors - Gray Scale */
   --color-white: #ffffff;
-  --color-gray-50: #f9fafb;
-  --color-gray-100: #f3f4f6;
-  --color-gray-200: #e5e7eb;
-  --color-gray-300: #d1d5db;
-  --color-gray-400: #9ca3af;
-  --color-gray-500: #6b7280;
-  --color-gray-600: #4b5563;
-  --color-gray-700: #374151;
-  --color-gray-800: #1f2937;
-  --color-gray-900: #111827;
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f5f5f5;
+  --color-gray-200: #e5e5e5;
+  --color-gray-300: #d4d4d4;
+  --color-gray-400: #a3a3a3;
+  --color-gray-500: #737373;
+  --color-gray-600: #525252;
+  --color-gray-700: #404040;
+  --color-gray-800: #262626;
+  --color-gray-900: #171717;
   --color-black: #000000;
 
-  /* Colors - Primary (Blue) */
-  --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
+  /* Colors - Primary (neutral gray accent; theme-aware overrides below) */
+  --color-primary-400: #d4d4d4;
+  --color-primary-500: #737373;
+  --color-primary-600: #525252;
 
   /* Colors - Semantic */
   --color-success-500: #22c55e;
@@ -34,10 +34,10 @@
   --color-error-500: #ef4444;
   --color-error-600: #dc2626;
   --color-warning-500: #eab308;
-  --color-info-500: #3b82f6;
+  --color-info-500: #737373;
 
   /* Colors - Gradients */
-  --gradient-brand: linear-gradient(to bottom right, #4ade80, #3b82f6);
+  --gradient-brand: linear-gradient(to bottom right, #525252, #737373);
 
   /* Typography */
   --font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -101,42 +101,46 @@
 
   --input-bg: var(--color-gray-50);
   --input-border: var(--color-gray-200);
-  --input-focus-ring: rgba(59, 130, 246, 0.1);
+  --input-focus-ring: rgba(115, 115, 115, 0.1);
 }
 
 /* Dark Mode Theme */
 [data-theme="dark"] {
-  --color-gray-50: #111827;
-  --color-gray-100: #1f2937;
-  --color-gray-200: #374151;
-  --color-gray-300: #4b5563;
-  --color-gray-400: #6b7280;
-  --color-gray-500: #9ca3af;
-  --color-gray-600: #d1d5db;
-  --color-gray-700: #e5e7eb;
-  --color-gray-800: #f3f4f6;
-  --color-gray-900: #f9fafb;
-  --color-white: #0f172a;
+  --color-gray-50: #1e1e1e;
+  --color-gray-100: #282828;
+  --color-gray-200: #404040;
+  --color-gray-300: #525252;
+  --color-gray-400: #737373;
+  --color-gray-500: #a3a3a3;
+  --color-gray-600: #d4d4d4;
+  --color-gray-700: #e5e5e5;
+  --color-gray-800: #f5f5f5;
+  --color-gray-900: #fafafa;
+  --color-white: #181818;
 
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-tertiary: #334155;
-  --bg-hover: #334155;
+  --color-primary-400: #404040;
+  --color-primary-500: #737373;
+  --color-primary-600: #a3a3a3;
+
+  --bg-primary: #181818;
+  --bg-secondary: #202020;
+  --bg-tertiary: #2a2a2a;
+  --bg-hover: #2a2a2a;
   --bg-overlay: rgba(0, 0, 0, 0.5);
   --bg-modal: rgba(0, 0, 0, 0.7);
 
-  --text-primary: #f1f5f9;
-  --text-secondary: #cbd5e1;
-  --text-tertiary: #94a3b8;
-  --text-muted: #64748b;
-  --text-inverse: #0f172a;
+  --text-primary: #fafafa;
+  --text-secondary: #d4d4d4;
+  --text-tertiary: #a3a3a3;
+  --text-muted: #737373;
+  --text-inverse: #181818;
 
-  --border-light: #334155;
-  --border-medium: #475569;
+  --border-light: #2a2a2a;
+  --border-medium: #404040;
 
-  --input-bg: #1e293b;
-  --input-border: #475569;
-  --input-focus-ring: rgba(59, 130, 246, 0.3);
+  --input-bg: #202020;
+  --input-border: #404040;
+  --input-focus-ring: rgba(115, 115, 115, 0.3);
 
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
@@ -147,37 +151,41 @@
 /* System preference detection */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-gray-50: #111827;
-    --color-gray-100: #1f2937;
-    --color-gray-200: #374151;
-    --color-gray-300: #4b5563;
-    --color-gray-400: #6b7280;
-    --color-gray-500: #9ca3af;
-    --color-gray-600: #d1d5db;
-    --color-gray-700: #e5e7eb;
-    --color-gray-800: #f3f4f6;
-    --color-gray-900: #f9fafb;
-    --color-white: #0f172a;
+    --color-gray-50: #1e1e1e;
+    --color-gray-100: #282828;
+    --color-gray-200: #404040;
+    --color-gray-300: #525252;
+    --color-gray-400: #737373;
+    --color-gray-500: #a3a3a3;
+    --color-gray-600: #d4d4d4;
+    --color-gray-700: #e5e5e5;
+    --color-gray-800: #f5f5f5;
+    --color-gray-900: #fafafa;
+    --color-white: #181818;
 
-    --bg-primary: #0f172a;
-    --bg-secondary: #1e293b;
-    --bg-tertiary: #334155;
-    --bg-hover: #334155;
+  --color-primary-400: #404040;
+  --color-primary-500: #737373;
+  --color-primary-600: #a3a3a3;
+
+    --bg-primary: #181818;
+    --bg-secondary: #202020;
+    --bg-tertiary: #2a2a2a;
+    --bg-hover: #2a2a2a;
     --bg-overlay: rgba(0, 0, 0, 0.5);
     --bg-modal: rgba(0, 0, 0, 0.7);
 
-    --text-primary: #f1f5f9;
-    --text-secondary: #cbd5e1;
-    --text-tertiary: #94a3b8;
-    --text-muted: #64748b;
-    --text-inverse: #0f172a;
+    --text-primary: #fafafa;
+    --text-secondary: #d4d4d4;
+    --text-tertiary: #a3a3a3;
+    --text-muted: #737373;
+    --text-inverse: #181818;
 
-    --border-light: #334155;
-    --border-medium: #475569;
+    --border-light: #2a2a2a;
+    --border-medium: #404040;
 
-    --input-bg: #1e293b;
-    --input-border: #475569;
-    --input-focus-ring: rgba(59, 130, 246, 0.3);
+    --input-bg: #202020;
+    --input-border: #404040;
+    --input-focus-ring: rgba(115, 115, 115, 0.3);
 
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
@@ -294,7 +302,7 @@ a:focus:not(:focus-visible) {
 .menu-item:focus-visible {
   outline: 2px solid var(--color-primary-500);
   outline-offset: 2px;
-  background: rgba(59, 130, 246, 0.05);
+  background: rgba(115, 115, 115, 0.05);
 }
 
 /* Notes list keyboard focus */
@@ -712,7 +720,7 @@ a:focus:not(:focus-visible) {
 }
 
 .from-green-400 {
-  --tw-gradient-from: #4ade80;
+  --tw-gradient-from: #525252;
 }
 
 .to-blue-500 {
@@ -1025,7 +1033,7 @@ a:focus:not(:focus-visible) {
 }
 
 textarea:focus {
-  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(115, 115, 115, 0.3);
 }
 
 input:focus {
@@ -1064,8 +1072,8 @@ input:focus {
    ========================================================================== */
 
 .note-item.active {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: rgba(59, 130, 246, 0.3);
+  background: rgba(115, 115, 115, 0.1);
+  border-color: rgba(115, 115, 115, 0.3);
 }
 
 .note-icons {
@@ -1330,7 +1338,7 @@ main[role="main"]>.h-full.flex.flex-col {
 }
 
 .bg-blue-100 {
-  background-color: #dbeafe;
+  background-color: #e0e7ff;
 }
 
 .bg-purple-100 {
@@ -1343,7 +1351,7 @@ main[role="main"]>.h-full.flex.flex-col {
 }
 
 .text-blue-600 {
-  color: #2563eb;
+  color: var(--color-primary-600);
 }
 
 .text-purple-600 {
@@ -1352,7 +1360,7 @@ main[role="main"]>.h-full.flex.flex-col {
 
 /* Gradient for start button */
 .bg-gradient-to-r {
-  background: linear-gradient(to right, #4ade80, #3b82f6);
+  background: linear-gradient(to right, #525252, #737373);
 }
 
 /* ==========================================================================
@@ -2046,7 +2054,7 @@ main[role="main"]>.h-full.flex.flex-col {
 
 /* Selection styling */
 .ren-editor ::selection {
-  background-color: rgba(59, 130, 246, 0.3);
+  background-color: rgba(115, 115, 115, 0.3);
 }
 
 /* Custom scrollbar for editor */
@@ -2122,7 +2130,7 @@ main[role="main"]>.h-full.flex.flex-col {
 }
 
 .notification.info .notification-icon {
-  background-color: rgba(59, 130, 246, 0.1);
+  background-color: rgba(115, 115, 115, 0.1);
   color: var(--color-info-500);
 }
 
@@ -2283,21 +2291,12 @@ main[role="main"]>.h-full.flex.flex-col {
 }
 
 .welcome-logo {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   margin: 0 auto 16px;
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.welcome-logo-text {
-  color: #111827;
-  font-size: 24px;
-  font-weight: 700;
+  background-color: #000000;
+  -webkit-mask: url("icons/ren.svg") center / contain no-repeat;
+  mask: url("icons/ren.svg") center / contain no-repeat;
 }
 
 .welcome-title {
@@ -2382,16 +2381,19 @@ main[role="main"]>.h-full.flex.flex-col {
 .header-logo {
   width: 20px;
   height: 20px;
-  background-color: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background-color: #000000;
+  -webkit-mask: url("icons/ren.svg") center / contain no-repeat;
+  mask: url("icons/ren.svg") center / contain no-repeat;
 }
 
-.header-logo-text {
-  color: #111827;
-  font-size: 10px;
-  font-weight: 700;
+/* In-app logo: true black on light, true white on dark (mirrors the theme system) */
+[data-theme="dark"] .header-logo,
+[data-theme="dark"] .welcome-logo {
+  background-color: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .header-logo,
+  :root:not([data-theme="light"]) .welcome-logo {
+    background-color: #ffffff;
+  }
 }
