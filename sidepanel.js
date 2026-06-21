@@ -944,9 +944,7 @@ class RenNotePad {
 
       modal.innerHTML = `
         <div class="welcome-modal-content" role="document">
-          <div class="welcome-logo">
-            <span class="welcome-logo-text">S</span>
-          </div>
+          <div class="welcome-logo" role="img" aria-label="Ren"></div>
           <h2 id="welcomeTitle" class="welcome-title">Welcome to Ren</h2>
           <p class="welcome-subtitle">Your minimalist notepad for quick thoughts, ideas, and more.</p>
           
