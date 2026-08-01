@@ -56,6 +56,29 @@ class RenEditor {
       this.options.onInput();
       this.options.onChange(this.getHTML());
     });
+
+    // Checkbox toggling via event delegation.
+    // The per-checkbox listener set at creation time is lost as soon as a
+    // note is serialized to innerHTML and reloaded, so we listen on the
+    // editor root instead — this survives content reloads. It also fires the
+    // change notification, which a checkbox inside a contenteditable=false
+    // container would otherwise never do.
+    this.element.addEventListener("change", (e) => {
+      const checkbox = e.target;
+      if (!checkbox.classList || !checkbox.classList.contains("checkbox-input"))
+        return;
+
+      const container = checkbox.closest(".editor-checkbox-item");
+      if (container) container.classList.toggle("checked", checkbox.checked);
+
+      // Reflect the property onto the attribute so the checked state
+      // survives innerHTML serialization (property alone does not).
+      if (checkbox.checked) checkbox.setAttribute("checked", "");
+      else checkbox.removeAttribute("checked");
+
+      this.options.onInput();
+      this.options.onChange(this.getHTML());
+    });
   }
 
   handleInput(e) {
@@ -274,11 +297,9 @@ class RenEditor {
     checkbox.type = "checkbox";
     checkbox.checked = checked;
     checkbox.className = "checkbox-input";
-
-    // Make checkbox toggle work
-    checkbox.addEventListener("change", () => {
-      container.classList.toggle("checked", checkbox.checked);
-    });
+    // Reflect as an attribute so the state survives innerHTML serialization.
+    // Live toggling is handled by the delegated listener on the editor root.
+    if (checked) checkbox.setAttribute("checked", "");
 
     const textSpan = document.createElement("span");
     textSpan.className = "checkbox-text";
@@ -501,6 +522,31 @@ class RenEditor {
 
   setHTML(html) {
     this.element.innerHTML = html || "";
+    this.normalizeCheckboxes();
+  }
+
+  /**
+   * Reconcile checkbox state after loading serialized content.
+   * Old notes stored the checked state only as a `.checked` class on the
+   * container; new notes also carry the `checked` attribute on the input.
+   * Treat either as authoritative and make input, attribute, and class agree
+   * so reloaded checkboxes render and toggle correctly.
+   */
+  normalizeCheckboxes() {
+    const items = this.element.querySelectorAll(".editor-checkbox-item");
+    items.forEach((container) => {
+      const checkbox = container.querySelector(".checkbox-input");
+      if (!checkbox) return;
+
+      const checked =
+        checkbox.hasAttribute("checked") ||
+        container.classList.contains("checked");
+
+      checkbox.checked = checked;
+      if (checked) checkbox.setAttribute("checked", "");
+      else checkbox.removeAttribute("checked");
+      container.classList.toggle("checked", checked);
+    });
   }
 
   getText() {
