@@ -95,12 +95,16 @@ class RenEditor {
     const cursorPos = range.startOffset;
 
     // Only process on space (for block patterns)
+    let convertedBlock = false;
     if (e.inputType === "insertText" && e.data === " ") {
-      this.processBlockShortcuts(node, text, cursorPos);
+      convertedBlock = this.processBlockShortcuts(node, text, cursorPos);
     }
 
-    // Process inline formatting (bold, italic, code)
-    this.processInlineShortcuts(node);
+    // Process inline formatting (bold, italic, code) — skip if we just
+    // converted the line to a block, since `node` may now be detached.
+    if (!convertedBlock) {
+      this.processInlineShortcuts(node);
+    }
   }
 
   processBlockShortcuts(node, text, cursorPos) {
@@ -114,46 +118,53 @@ class RenEditor {
     // Heading patterns
     if (normalizedLineText === "# ") {
       this.convertToBlock(node, lineStart, cursorPos, "h1");
-      return;
+      return true;
     }
     if (normalizedLineText === "## ") {
       this.convertToBlock(node, lineStart, cursorPos, "h2");
-      return;
+      return true;
     }
     if (normalizedLineText === "### ") {
       this.convertToBlock(node, lineStart, cursorPos, "h3");
-      return;
+      return true;
     }
 
     // Bullet list
     if (normalizedLineText === "- " || normalizedLineText === "* ") {
       this.convertToList(node, lineStart, cursorPos, "ul");
-      return;
+      return true;
     }
 
     // Numbered list
     if (/^\d+\. $/.test(normalizedLineText)) {
       this.convertToList(node, lineStart, cursorPos, "ol");
-      return;
+      return true;
     }
 
     // Blockquote
     if (normalizedLineText === "> ") {
       this.convertToBlock(node, lineStart, cursorPos, "blockquote");
-      return;
+      return true;
     }
 
-    // Checkbox unchecked
-    if (normalizedLineText === "[] ") {
+    // Checkbox unchecked (accept both "[] " and GitHub-style "[ ] ")
+    if (normalizedLineText === "[] " || normalizedLineText === "[ ] ") {
       this.convertToCheckbox(node, lineStart, cursorPos, false);
-      return;
+      return true;
     }
 
-    // Checkbox checked
-    if (normalizedLineText === "[x] " || normalizedLineText === "[X] ") {
+    // Checkbox checked (accept "[x] " and GitHub-style "[ x ] ")
+    if (
+      normalizedLineText === "[x] " ||
+      normalizedLineText === "[X] " ||
+      normalizedLineText === "[ x ] " ||
+      normalizedLineText === "[ X ] "
+    ) {
       this.convertToCheckbox(node, lineStart, cursorPos, true);
-      return;
+      return true;
     }
+
+    return false;
   }
 
   processInlineShortcuts(node) {
@@ -170,7 +181,10 @@ class RenEditor {
 
     // Italic: *text* or _text_
     const italicMatch =
-      text.match(/(?<!\*)\*([^*]+)\*(?!\*)/) || text.match(/_([^_]+)_/);
+      text.match(/(?<!\*)\*([^*]+)\*(?!\*)/) ||
+      // Underscore italics only at word boundaries, so intra-word
+      // underscores (e.g. snake_case_name) are left alone.
+      text.match(/(?<![A-Za-z0-9])_([^_]+)_(?![A-Za-z0-9])/);
     if (italicMatch) {
       this.wrapInline(node, italicMatch, "em");
       return;
@@ -445,7 +459,10 @@ class RenEditor {
           // Create a paragraph with any remaining text
           const remainingText = textSpan.textContent.trim();
           const p = document.createElement("div");
-          p.innerHTML = remainingText || "<br>";
+          // Use textContent (not innerHTML) so characters like < or & in the
+          // task text aren't reinterpreted as markup.
+          if (remainingText) p.textContent = remainingText;
+          else p.innerHTML = "<br>";
           checkboxItem.parentNode.insertBefore(p, checkboxItem);
           checkboxItem.remove();
           this.focusElement(p);
