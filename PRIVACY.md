@@ -38,7 +38,7 @@ transmits data.
 
 ## Contact
 
-Questions: urahsamuel0202@gmail.com
+Questions: hello@samuelyahaya.com
 
 ## Changes
 
