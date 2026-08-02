@@ -172,39 +172,16 @@ class RenEditor {
 
     const text = node.textContent;
 
-    // Bold: **text**
-    const boldMatch = text.match(/\*\*(.+?)\*\*/);
-    if (boldMatch) {
-      this.wrapInline(node, boldMatch, "strong");
-      return;
-    }
+    // NOTE: Inline auto-format (**bold**, *italic*/_italic_, `code`, ~~strike~~)
+    // is intentionally DISABLED in v1. Wrapping text mid-line leaves the caret
+    // with affinity to the new inline element, so subsequent typing "spills"
+    // into the mark and inherits its formatting — an unwinnable contenteditable
+    // problem without a real document model. Inline formatting is still fully
+    // available via the toolbar and Ctrl+B/I/U (native, non-spilling). Typed
+    // inline shortcuts return in v2 on a proper editor engine. See wrapInline()
+    // below, which is retained for that work.
 
-    // Italic: *text* or _text_
-    const italicMatch =
-      text.match(/(?<!\*)\*([^*]+)\*(?!\*)/) ||
-      // Underscore italics only at word boundaries, so intra-word
-      // underscores (e.g. snake_case_name) are left alone.
-      text.match(/(?<![A-Za-z0-9])_([^_]+)_(?![A-Za-z0-9])/);
-    if (italicMatch) {
-      this.wrapInline(node, italicMatch, "em");
-      return;
-    }
-
-    // Code: `text`
-    const codeMatch = text.match(/`([^`]+)`/);
-    if (codeMatch) {
-      this.wrapInline(node, codeMatch, "code");
-      return;
-    }
-
-    // Strikethrough: ~~text~~
-    const strikeMatch = text.match(/~~(.+?)~~/);
-    if (strikeMatch) {
-      this.wrapInline(node, strikeMatch, "s");
-      return;
-    }
-
-    // Horizontal rule: ---
+    // Horizontal rule: --- (block-level, builds a fresh node — no spill)
     if (text.trim() === "---") {
       this.convertToHR(node);
       return;

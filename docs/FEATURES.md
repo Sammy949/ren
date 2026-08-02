@@ -22,19 +22,20 @@
 
 ### ⌨️ Markdown Shortcuts
 
-Type markdown syntax and it automatically converts to formatted text:
+Type markdown syntax at the start of a line and it automatically converts to
+formatted text:
 
 - `# `, `## `, `### ` + space → Headings (H1, H2, H3)
-- `**text**` → **Bold**
-- `*text*` or `_text_` → _Italic_
-- `` `text` `` → `Inline code`
 - `- ` or `* ` + space → Bullet list
 - `1. ` + space → Numbered list
 - `> ` + space → Blockquote
 - `---` → Horizontal rule
-- `[] ` + space → Unchecked checkbox
-- `[x] ` + space → Checked checkbox
-- `~~text~~` → ~~Strikethrough~~
+- `[] ` or `[ ] ` + space → Unchecked checkbox
+- `[x] ` or `[ x ] ` + space → Checked checkbox
+
+> Inline formatting (bold, italic, underline, strikethrough, inline code) is
+> available via the toolbar and `Ctrl+B` / `Ctrl+I` / `Ctrl+U`. Typed inline
+> shortcuts (`**bold**`, `` `code` ``, etc.) are planned for a future version.
 
 ---
 
