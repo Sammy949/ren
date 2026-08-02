@@ -375,9 +375,13 @@ class RenEditor {
     parent.insertBefore(afterNode, textNode);
     parent.removeChild(textNode);
 
-    // Position cursor after the element
+    // Position the caret inside the trailing text node, not at the boundary
+    // right after the inline element. A caret at the trailing edge of an
+    // inline element has affinity to that element, so typed characters land
+    // *inside* it and inherit the formatting ("spilling"). Placing the caret
+    // at offset 0 of the sibling text node keeps new text outside the mark.
     const range = document.createRange();
-    range.setStartAfter(element);
+    range.setStart(afterNode, 0);
     range.collapse(true);
 
     const selection = window.getSelection();
