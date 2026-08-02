@@ -40,15 +40,15 @@ no clutter.
 Ren opens instantly in the side panel and stays open while you browse — perfect
 for capturing thoughts, drafting, and taking notes while you research.
 
-**Markdown that just works**
+**Markdown shortcuts that just work**
 Type naturally and watch it format itself:
 • `# ` for headings
-• `**bold**` and `*italic*`
 • `- ` and `1. ` for lists
 • `[] ` for checklists
-• `> ` for quotes, `` `code` `` for inline code, `---` for dividers
+• `> ` for quotes and `---` for dividers
 
-Or use the formatting toolbar if you prefer clicking.
+Prefer clicking? The formatting toolbar (and Ctrl+B / Ctrl+I / Ctrl+U) has
+bold, italic, underline, strikethrough, and inline code covered.
 
 **Everything you'd expect, nothing you wouldn't**
 • Unlimited notes with titles

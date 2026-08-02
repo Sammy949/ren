@@ -56,6 +56,29 @@ class RenEditor {
       this.options.onInput();
       this.options.onChange(this.getHTML());
     });
+
+    // Checkbox toggling via event delegation.
+    // The per-checkbox listener set at creation time is lost as soon as a
+    // note is serialized to innerHTML and reloaded, so we listen on the
+    // editor root instead — this survives content reloads. It also fires the
+    // change notification, which a checkbox inside a contenteditable=false
+    // container would otherwise never do.
+    this.element.addEventListener("change", (e) => {
+      const checkbox = e.target;
+      if (!checkbox.classList || !checkbox.classList.contains("checkbox-input"))
+        return;
+
+      const container = checkbox.closest(".editor-checkbox-item");
+      if (container) container.classList.toggle("checked", checkbox.checked);
+
+      // Reflect the property onto the attribute so the checked state
+      // survives innerHTML serialization (property alone does not).
+      if (checkbox.checked) checkbox.setAttribute("checked", "");
+      else checkbox.removeAttribute("checked");
+
+      this.options.onInput();
+      this.options.onChange(this.getHTML());
+    });
   }
 
   handleInput(e) {
@@ -72,12 +95,16 @@ class RenEditor {
     const cursorPos = range.startOffset;
 
     // Only process on space (for block patterns)
+    let convertedBlock = false;
     if (e.inputType === "insertText" && e.data === " ") {
-      this.processBlockShortcuts(node, text, cursorPos);
+      convertedBlock = this.processBlockShortcuts(node, text, cursorPos);
     }
 
-    // Process inline formatting (bold, italic, code)
-    this.processInlineShortcuts(node);
+    // Process inline formatting (bold, italic, code) — skip if we just
+    // converted the line to a block, since `node` may now be detached.
+    if (!convertedBlock) {
+      this.processInlineShortcuts(node);
+    }
   }
 
   processBlockShortcuts(node, text, cursorPos) {
@@ -91,46 +118,53 @@ class RenEditor {
     // Heading patterns
     if (normalizedLineText === "# ") {
       this.convertToBlock(node, lineStart, cursorPos, "h1");
-      return;
+      return true;
     }
     if (normalizedLineText === "## ") {
       this.convertToBlock(node, lineStart, cursorPos, "h2");
-      return;
+      return true;
     }
     if (normalizedLineText === "### ") {
       this.convertToBlock(node, lineStart, cursorPos, "h3");
-      return;
+      return true;
     }
 
     // Bullet list
     if (normalizedLineText === "- " || normalizedLineText === "* ") {
       this.convertToList(node, lineStart, cursorPos, "ul");
-      return;
+      return true;
     }
 
     // Numbered list
     if (/^\d+\. $/.test(normalizedLineText)) {
       this.convertToList(node, lineStart, cursorPos, "ol");
-      return;
+      return true;
     }
 
     // Blockquote
     if (normalizedLineText === "> ") {
       this.convertToBlock(node, lineStart, cursorPos, "blockquote");
-      return;
+      return true;
     }
 
-    // Checkbox unchecked
-    if (normalizedLineText === "[] ") {
+    // Checkbox unchecked (accept both "[] " and GitHub-style "[ ] ")
+    if (normalizedLineText === "[] " || normalizedLineText === "[ ] ") {
       this.convertToCheckbox(node, lineStart, cursorPos, false);
-      return;
+      return true;
     }
 
-    // Checkbox checked
-    if (normalizedLineText === "[x] " || normalizedLineText === "[X] ") {
+    // Checkbox checked (accept "[x] " and GitHub-style "[ x ] ")
+    if (
+      normalizedLineText === "[x] " ||
+      normalizedLineText === "[X] " ||
+      normalizedLineText === "[ x ] " ||
+      normalizedLineText === "[ X ] "
+    ) {
       this.convertToCheckbox(node, lineStart, cursorPos, true);
-      return;
+      return true;
     }
+
+    return false;
   }
 
   processInlineShortcuts(node) {
@@ -138,36 +172,16 @@ class RenEditor {
 
     const text = node.textContent;
 
-    // Bold: **text**
-    const boldMatch = text.match(/\*\*(.+?)\*\*/);
-    if (boldMatch) {
-      this.wrapInline(node, boldMatch, "strong");
-      return;
-    }
+    // NOTE: Inline auto-format (**bold**, *italic*/_italic_, `code`, ~~strike~~)
+    // is intentionally DISABLED in v1. Wrapping text mid-line leaves the caret
+    // with affinity to the new inline element, so subsequent typing "spills"
+    // into the mark and inherits its formatting — an unwinnable contenteditable
+    // problem without a real document model. Inline formatting is still fully
+    // available via the toolbar and Ctrl+B/I/U (native, non-spilling). Typed
+    // inline shortcuts return in v2 on a proper editor engine. See wrapInline()
+    // below, which is retained for that work.
 
-    // Italic: *text* or _text_
-    const italicMatch =
-      text.match(/(?<!\*)\*([^*]+)\*(?!\*)/) || text.match(/_([^_]+)_/);
-    if (italicMatch) {
-      this.wrapInline(node, italicMatch, "em");
-      return;
-    }
-
-    // Code: `text`
-    const codeMatch = text.match(/`([^`]+)`/);
-    if (codeMatch) {
-      this.wrapInline(node, codeMatch, "code");
-      return;
-    }
-
-    // Strikethrough: ~~text~~
-    const strikeMatch = text.match(/~~(.+?)~~/);
-    if (strikeMatch) {
-      this.wrapInline(node, strikeMatch, "s");
-      return;
-    }
-
-    // Horizontal rule: ---
+    // Horizontal rule: --- (block-level, builds a fresh node — no spill)
     if (text.trim() === "---") {
       this.convertToHR(node);
       return;
@@ -274,11 +288,9 @@ class RenEditor {
     checkbox.type = "checkbox";
     checkbox.checked = checked;
     checkbox.className = "checkbox-input";
-
-    // Make checkbox toggle work
-    checkbox.addEventListener("change", () => {
-      container.classList.toggle("checked", checkbox.checked);
-    });
+    // Reflect as an attribute so the state survives innerHTML serialization.
+    // Live toggling is handled by the delegated listener on the editor root.
+    if (checked) checkbox.setAttribute("checked", "");
 
     const textSpan = document.createElement("span");
     textSpan.className = "checkbox-text";
@@ -340,9 +352,13 @@ class RenEditor {
     parent.insertBefore(afterNode, textNode);
     parent.removeChild(textNode);
 
-    // Position cursor after the element
+    // Position the caret inside the trailing text node, not at the boundary
+    // right after the inline element. A caret at the trailing edge of an
+    // inline element has affinity to that element, so typed characters land
+    // *inside* it and inherit the formatting ("spilling"). Placing the caret
+    // at offset 0 of the sibling text node keeps new text outside the mark.
     const range = document.createRange();
-    range.setStartAfter(element);
+    range.setStart(afterNode, 0);
     range.collapse(true);
 
     const selection = window.getSelection();
@@ -424,7 +440,10 @@ class RenEditor {
           // Create a paragraph with any remaining text
           const remainingText = textSpan.textContent.trim();
           const p = document.createElement("div");
-          p.innerHTML = remainingText || "<br>";
+          // Use textContent (not innerHTML) so characters like < or & in the
+          // task text aren't reinterpreted as markup.
+          if (remainingText) p.textContent = remainingText;
+          else p.innerHTML = "<br>";
           checkboxItem.parentNode.insertBefore(p, checkboxItem);
           checkboxItem.remove();
           this.focusElement(p);
@@ -501,6 +520,31 @@ class RenEditor {
 
   setHTML(html) {
     this.element.innerHTML = html || "";
+    this.normalizeCheckboxes();
+  }
+
+  /**
+   * Reconcile checkbox state after loading serialized content.
+   * Old notes stored the checked state only as a `.checked` class on the
+   * container; new notes also carry the `checked` attribute on the input.
+   * Treat either as authoritative and make input, attribute, and class agree
+   * so reloaded checkboxes render and toggle correctly.
+   */
+  normalizeCheckboxes() {
+    const items = this.element.querySelectorAll(".editor-checkbox-item");
+    items.forEach((container) => {
+      const checkbox = container.querySelector(".checkbox-input");
+      if (!checkbox) return;
+
+      const checked =
+        checkbox.hasAttribute("checked") ||
+        container.classList.contains("checked");
+
+      checkbox.checked = checked;
+      if (checked) checkbox.setAttribute("checked", "");
+      else checkbox.removeAttribute("checked");
+      container.classList.toggle("checked", checked);
+    });
   }
 
   getText() {

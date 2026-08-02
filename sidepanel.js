@@ -1387,11 +1387,24 @@ Happy writing! ✨`,
         : this.noteContent.value;
       note.updatedAt = new Date().toISOString();
 
-      // Extract title from plain text content
-      const plainText = this.noteContent.textContent || "";
+      // Extract title from plain text content.
+      // Normalize NBSP (contenteditable often inserts U+00A0) so a note that
+      // only contains "spaces" is still treated as empty.
+      const plainText = (this.noteContent.textContent || "").replace(
+        /\u00A0/g,
+        " ",
+      );
       const firstLine = plainText.split("\n")[0].trim();
-      if (firstLine && firstLine !== note.title && firstLine.length > 0) {
-        note.title = firstLine.substring(0, 50) || "Untitled Note";
+      if (firstLine) {
+        const derived = firstLine.substring(0, 50);
+        if (derived !== note.title) {
+          note.title = derived;
+          this.noteTitle.textContent = note.title;
+        }
+      } else if (note.title !== "Untitled") {
+        // Content is now empty — revert to the default title instead of
+        // leaving a stale title on an empty note.
+        note.title = "Untitled";
         this.noteTitle.textContent = note.title;
       }
 
@@ -1425,9 +1438,7 @@ Happy writing! ✨`,
       // Use innerHTML for rich editor, value for textarea
       // Convert plain text to HTML to preserve line breaks
       if (this.editor) {
-        this.noteContent.innerHTML = this.convertPlainTextToHTML(
-          note.content || "",
-        );
+        this.editor.setHTML(this.convertPlainTextToHTML(note.content || ""));
       } else {
         this.noteContent.value = note.content;
       }
