@@ -2294,9 +2294,7 @@ main[role="main"]>.h-full.flex.flex-col {
   width: 56px;
   height: 56px;
   margin: 0 auto 16px;
-  background-color: #000000;
-  -webkit-mask: url("icons/ren.svg") center / contain no-repeat;
-  mask: url("icons/ren.svg") center / contain no-repeat;
+  background: url("icons/ren.svg") center / contain no-repeat;
 }
 
 .welcome-title {
@@ -2381,19 +2379,5 @@ main[role="main"]>.h-full.flex.flex-col {
 .header-logo {
   width: 20px;
   height: 20px;
-  background-color: #000000;
-  -webkit-mask: url("icons/ren.svg") center / contain no-repeat;
-  mask: url("icons/ren.svg") center / contain no-repeat;
-}
-
-/* In-app logo: true black on light, true white on dark (mirrors the theme system) */
-[data-theme="dark"] .header-logo,
-[data-theme="dark"] .welcome-logo {
-  background-color: #ffffff;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .header-logo,
-  :root:not([data-theme="light"]) .welcome-logo {
-    background-color: #ffffff;
-  }
+  background: url("icons/ren.svg") center / contain no-repeat;
 }
