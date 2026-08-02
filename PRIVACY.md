@@ -1,6 +1,6 @@
 # Ren — Privacy Policy
 
-_Last updated: 21 June 2026_
+_Last updated: 2 August 2026_
 
 Ren ("the extension") is a notepad that runs in the Google Chrome side panel.
 
