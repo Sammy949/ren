@@ -2,6 +2,7 @@ class RenNotePad {
   constructor() {
     this.notes = [];
     this.currentNoteId = null;
+    this.dataLoadFailed = false;
     this.autoSaveTimeout = null;
     this.sidebarUpdateTimeout = null; // Separate debounce for UI updates
     this.noteToDelete = null;
@@ -62,7 +63,18 @@ class RenNotePad {
     this.bindKeyboardShortcuts();
 
     // Async initialization
-    this.init();
+    this.init().catch((error) => {
+      console.error("Error initializing Ren:", error);
+      this.handleLoadFailure();
+    });
+  }
+
+  handleLoadFailure() {
+    this.dataLoadFailed = true;
+    this.autoSaveStatus.textContent = "Could not load notes";
+    this.noteContent.setAttribute("contenteditable", "false");
+    this.newNoteBtn.disabled = true;
+    this.showNotification("Could not load notes. Reopen Ren to retry.", "error");
   }
 
   async init() {
@@ -503,6 +515,7 @@ class RenNotePad {
         this.announceToScreenReader("New note created");
         break;
       case "forceSave":
+        if (this.dataLoadFailed) return;
         this.saveCurrentNote();
         this.autoSaveStatus.textContent = "Saved";
         this.showNotification("Note saved", "success");
@@ -1064,8 +1077,7 @@ Happy writing! ✨`,
       this.renderNotesList();
     } catch (error) {
       console.error("Error loading data:", error);
-      this.showNotification("Error loading notes", "error");
-      await this.createNewNote();
+      this.handleLoadFailure();
     }
   }
 
@@ -1081,6 +1093,9 @@ Happy writing! ✨`,
   }
 
   async saveData() {
+    if (this.dataLoadFailed) {
+      throw new Error("Cannot save while notes have not loaded");
+    }
     try {
       // Save to chrome.storage
       await this.storage.saveAllNotes(this.notes);
@@ -1336,6 +1351,7 @@ Happy writing! ✨`,
   }
 
   scheduleAutoSave() {
+    if (this.dataLoadFailed) return;
     clearTimeout(this.autoSaveTimeout);
     this.autoSaveStatus.textContent = "Saving...";
 
@@ -1346,6 +1362,7 @@ Happy writing! ✨`,
   }
 
   async createNewNote() {
+    if (this.dataLoadFailed) return;
     // Store previous note ID and save it before creating new
     const previousNoteId = this.currentNoteId;
     await this.saveCurrentNote();
@@ -1376,6 +1393,7 @@ Happy writing! ✨`,
   }
 
   async saveCurrentNote() {
+    if (this.dataLoadFailed) return;
     if (!this.currentNoteId) return;
 
     // Performance: O(1) lookup instead of O(n) find()
@@ -1721,6 +1739,7 @@ Happy writing! ✨`,
   }
 
   exportNotes() {
+    if (this.dataLoadFailed) return;
     try {
       const exportData = {
         version: "1.0",
@@ -1755,6 +1774,10 @@ Happy writing! ✨`,
   }
 
   async importNotes(event) {
+    if (this.dataLoadFailed) {
+      this.importFileInput.value = "";
+      return;
+    }
     const file = event.target.files[0];
     if (!file) return;
 

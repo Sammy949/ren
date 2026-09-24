@@ -100,10 +100,8 @@ class RenStorage {
         `Storage: Migration complete. ${notes.length} notes → local, settings → sync`
       );
     } catch (error) {
-      console.error(
-        "Storage: Migration failed",
-        error?.message || JSON.stringify(error)
-      );
+      console.error("Storage: Migration failed", error);
+      throw error;
     }
   }
 
@@ -116,8 +114,14 @@ class RenStorage {
    */
   async getLocal(keys) {
     if (this.useChromeLocal) {
-      return new Promise((resolve) => {
-        chrome.storage.local.get(keys, resolve);
+      return new Promise((resolve, reject) => {
+        chrome.storage.local.get(keys, (result) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(result);
+          }
+        });
       });
     } else {
       return this._getFromLocalStorage(keys);
@@ -148,8 +152,14 @@ class RenStorage {
    */
   async removeLocal(keys) {
     if (this.useChromeLocal) {
-      return new Promise((resolve) => {
-        chrome.storage.local.remove(keys, resolve);
+      return new Promise((resolve, reject) => {
+        chrome.storage.local.remove(keys, () => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve();
+          }
+        });
       });
     } else {
       this._removeFromLocalStorage(keys);
@@ -161,8 +171,14 @@ class RenStorage {
    */
   async getSync(keys) {
     if (this.useChromeSync) {
-      return new Promise((resolve) => {
-        chrome.storage.sync.get(keys, resolve);
+      return new Promise((resolve, reject) => {
+        chrome.storage.sync.get(keys, (result) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(result);
+          }
+        });
       });
     } else {
       return this._getFromLocalStorage(keys);
@@ -260,15 +276,14 @@ class RenStorage {
       const notes = [];
       for (const id of notesIndex) {
         const note = notesResult[`note_${id}`];
-        if (note) {
-          notes.push(note);
-        }
+        if (!note) throw new Error("An indexed note is missing from storage");
+        notes.push(note);
       }
 
       return notes;
     } catch (error) {
-      console.error("Storage: Failed to get notes", error?.message || error);
-      return [];
+      console.error("Storage: Failed to get notes", error);
+      throw error;
     }
   }
 
