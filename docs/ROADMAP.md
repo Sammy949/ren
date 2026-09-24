@@ -1,6 +1,6 @@
 # Ren rewrite roadmap
 
-Updated: 24 September 2026. Status: planning baseline; implementation has not started.
+Updated: 24 September 2026. Status: milestone 0 and storage safeguards in progress.
 
 ## Purpose and working memory
 
@@ -229,9 +229,19 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Start milestone 0. Build disposable fixtures and browser smoke coverage, then
-fix truthful saving on the current code line before the editor migration. Update
-this document with measured baseline results and any changed decisions.
+Fix truthful save status and serialize writes on the current code line. Then
+build the disposable browser fixtures and backup/restore coverage before the
+editor migration. Record measured baseline results and any changed decisions.
+
+## Progress log
+
+- 24 September 2026: On branch `fix/storage-read-failures`, storage read/remove
+  errors now propagate; a missing indexed note aborts load; a failed load blocks
+  note writes, creation, import, export, and false `Ctrl+S` success. Six focused
+  Node tests pass. A local headless-browser smoke check loaded the panel through
+  its `localStorage` fallback, but did not exercise packaged extension storage.
+  Milestone 0 remains open. Existing note contents and storage keys were not
+  modified by this work.
 
 ## Primary references checked for this plan
 
