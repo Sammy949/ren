@@ -64,7 +64,7 @@ test("a failed index read cannot be mistaken for an empty notebook", async () =>
 
   await assert.rejects(fixture.storage.getAllNotes(), /read failed/);
   assert.equal(fixture.writes, 0);
-  assert.deepEqual(fixture.data.sylva_notes_index, ["a"]);
+  assert.deepEqual(Array.from(fixture.data.sylva_notes_index), ["a"]);
 });
 
 test("a failed note read rejects instead of returning a partial list", async () => {
@@ -102,6 +102,20 @@ test("failed removal is reported to the caller", async () => {
 
   await assert.rejects(fixture.storage.removeLocal("note_a"), /remove failed/);
   assert.ok(fixture.data.note_a);
+});
+
+test("bulk note data and the current note commit in one storage write", async () => {
+  const fixture = loadStorage();
+
+  await fixture.storage.saveAllNotes(
+    [{ id: "a", title: "A", content: "saved" }],
+    "a",
+  );
+
+  assert.equal(fixture.writes, 1);
+  assert.deepEqual(Array.from(fixture.data.sylva_notes_index), ["a"]);
+  assert.equal(fixture.data.sylva_current_note, "a");
+  assert.equal(fixture.data.note_a.content, "saved");
 });
 
 test("a failed notebook load never creates or saves a replacement note", async () => {

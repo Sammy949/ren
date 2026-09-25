@@ -331,9 +331,10 @@ class RenStorage {
   /**
    * Save all notes (for bulk operations like import)
    * @param {Array} notes - Array of notes
+   * @param {string|null} [currentNoteId] - Current note to commit atomically
    * @returns {Promise<void>}
    */
-  async saveAllNotes(notes) {
+  async saveAllNotes(notes, currentNoteId) {
     try {
       const items = {};
       const notesIndex = [];
@@ -344,6 +345,9 @@ class RenStorage {
       }
 
       items.sylva_notes_index = notesIndex;
+      if (arguments.length > 1) {
+        items.sylva_current_note = currentNoteId;
+      }
       await this.setLocal(items);
     } catch (error) {
       console.error(

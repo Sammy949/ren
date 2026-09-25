@@ -4,6 +4,8 @@ class RenNotePad {
     this.currentNoteId = null;
     this.dataLoadFailed = false;
     this.autoSaveTimeout = null;
+    this.editRevision = 0;
+    this.saveQueue = Promise.resolve();
     this.sidebarUpdateTimeout = null; // Separate debounce for UI updates
     this.noteToDelete = null;
 
@@ -516,10 +518,8 @@ class RenNotePad {
         break;
       case "forceSave":
         if (this.dataLoadFailed) return;
-        this.saveCurrentNote();
-        this.autoSaveStatus.textContent = "Saved";
-        this.showNotification("Note saved", "success");
-        this.announceToScreenReader("Note saved");
+        clearTimeout(this.autoSaveTimeout);
+        this.saveCurrentNoteWithStatus({ notifySuccess: true });
         break;
       case "exportNotes":
         this.exportNotes();
@@ -1096,13 +1096,26 @@ Happy writing! ✨`,
     if (this.dataLoadFailed) {
       throw new Error("Cannot save while notes have not loaded");
     }
+
+    // Snapshot at queue time so a later edit cannot change an earlier write.
+    const notes = this.notes.map((note) => ({ ...note }));
+    const currentNoteId = this.currentNoteId;
+    const previousSave = this.saveQueue || Promise.resolve();
+    const save = previousSave.catch(() => {}).then(() =>
+      this.storage.saveAllNotes(notes, currentNoteId),
+    );
+
+    this.saveQueue = save;
+
     try {
-      // Save to chrome.storage
-      await this.storage.saveAllNotes(this.notes);
-      await this.storage.setCurrentNoteId(this.currentNoteId);
+      await save;
     } catch (error) {
       console.error("Error saving data:", error);
-      this.showNotification("Error saving notes", "error");
+      this.showNotification(
+        "Could not save note. Your changes are still open.",
+        "error",
+      );
+      throw error;
     }
   }
 
@@ -1353,12 +1366,38 @@ Happy writing! ✨`,
   scheduleAutoSave() {
     if (this.dataLoadFailed) return;
     clearTimeout(this.autoSaveTimeout);
+    const revision = ++this.editRevision;
     this.autoSaveStatus.textContent = "Saving...";
 
     this.autoSaveTimeout = setTimeout(() => {
-      this.saveCurrentNote();
-      this.autoSaveStatus.textContent = "Saved";
+      this.saveCurrentNoteWithStatus({ revision });
     }, 1000);
+  }
+
+  async saveCurrentNoteWithStatus({
+    revision = this.editRevision,
+    notifySuccess = false,
+  } = {}) {
+    this.autoSaveStatus.textContent = "Saving...";
+
+    try {
+      await this.saveCurrentNote();
+
+      // A newer edit may have arrived while this write was in flight.
+      if (revision === this.editRevision) {
+        this.autoSaveStatus.textContent = "Saved";
+        if (notifySuccess) {
+          this.showNotification("Note saved", "success");
+          this.announceToScreenReader("Note saved");
+        }
+      }
+      return true;
+    } catch (error) {
+      if (revision === this.editRevision) {
+        this.autoSaveStatus.textContent = "Could not save";
+      }
+      return false;
+    }
   }
 
   async createNewNote() {
