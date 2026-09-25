@@ -242,6 +242,12 @@ editor migration. Record measured baseline results and any changed decisions.
   its `localStorage` fallback, but did not exercise packaged extension storage.
   Milestone 0 remains open. Existing note contents and storage keys were not
   modified by this work.
+- 25 September 2026: On branch `fix/truthful-saves`, notebook writes are queued
+  from snapshots; note data, index, and current-note ID commit in one storage
+  call; failed writes remain retryable; autosave and `Ctrl+S` only report
+  success after storage confirms it. Twelve focused storage/save tests pass, and
+  the local fallback UI loads in headless Chrome. Packaged extension storage and
+  restart recovery remain to be exercised before milestone 0 closes.
 
 ## Primary references checked for this plan
 
