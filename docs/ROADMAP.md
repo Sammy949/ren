@@ -248,6 +248,11 @@ editor migration. Record measured baseline results and any changed decisions.
   success after storage confirms it. Twelve focused storage/save tests pass, and
   the local fallback UI loads in headless Chrome. Packaged extension storage and
   restart recovery remain to be exercised before milestone 0 closes.
+- 25 September 2026: On branch `perf/incremental-note-saves`, ordinary body and
+  title edits write only the changed note plus the ordered ID list and current
+  note ID. Switching notes writes only the selection. Collection-wide writes
+  remain limited to structural operations such as create, delete, onboarding,
+  and import. Fourteen focused storage/save tests pass.
 
 ## Primary references checked for this plan
 
