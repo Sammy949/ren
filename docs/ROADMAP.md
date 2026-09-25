@@ -1,6 +1,6 @@
 # Ren rewrite roadmap
 
-Updated: 24 September 2026. Status: milestone 0 and storage safeguards in progress.
+Updated: 25 September 2026. Status: milestone 0 and storage safeguards in progress.
 
 ## Purpose and working memory
 
@@ -70,7 +70,7 @@ record private notes, extension IDs, browser-profile paths, or recovery data her
 | P1 | Manual title edits can be overwritten by first-line derivation on a later body save. | The title component has no stable ownership rule. | Direct call path in `finishEditingTitle()` and `saveCurrentNote()`. |
 | P1 | Undo/redo availability is tracked with booleans, and custom DOM operations bypass the editor's history model. | Toolbar state and actual undo history can disagree. | Direct code path; browser interaction matrix needed. |
 | P1 | Note IDs use `Date.now().toString()` for new notes; imports accept loosely typed IDs. | Fast creation or malformed imports can collide or produce bad keys. | Direct code path; collision test needed. |
-| P1 | No test suite or browser smoke gate exists. Store screenshots are 1280px wide, wider than a usual side panel. | Regressions in formatting, save timing, and narrow layouts can escape review. | Repository inventory; actual browser behavior unverified in this planning pass. |
+| P1 | Focused storage tests and a real Chrome restart smoke test now exist, but no formatting or narrow-layout browser gate exists. Store screenshots are 1280px wide, wider than a usual side panel. | Editor and narrow-layout regressions can still escape review. | Storage read/save tests and unpacked-extension restart smoke pass; editor interaction coverage remains open. |
 | P2 | `getStorageInfo()` assumes 5 MB; current Chrome documents 10 MB for `storage.local` in modern versions. | Usage UI would misreport headroom. | Current Chrome API reference. |
 | P2 | Onboarding says notes sync, while notes are local. Settings display "Ren v2.0" while the manifest is 1.0.0. | Product copy contradicts actual behavior. | Repository code and manifest. |
 
@@ -229,9 +229,9 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Fix truthful save status and serialize writes on the current code line. Then
-build the disposable browser fixtures and backup/restore coverage before the
-editor migration. Record measured baseline results and any changed decisions.
+Add a read-only storage health report, then make import staged and validated
+with synthetic export/import round-trip coverage. Keep backup/restore work ahead
+of the editor migration and record measured baseline results.
 
 ## Progress log
 
@@ -253,6 +253,13 @@ editor migration. Record measured baseline results and any changed decisions.
   note ID. Switching notes writes only the selection. Collection-wide writes
   remain limited to structural operations such as create, delete, onboarding,
   and import. Fourteen focused storage/save tests pass.
+- 25 September 2026: On branch `test/packaged-storage-smoke`, a Node test launches
+  Ren as an unpacked extension in a disposable Chrome profile, writes a synthetic
+  note through `chrome.storage`, fully restarts Chrome, and verifies the note and
+  active selection. Two consecutive restart cycles passed, alongside all fourteen
+  focused storage/save tests. The harness deletes its profile and never opens a
+  personal browser profile. Packaged release ZIP and import/export coverage remain
+  open, so milestone 0 is not yet complete.
 
 ## Primary references checked for this plan
 
