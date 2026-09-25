@@ -10,6 +10,7 @@ function loadStorage({ initial = {}, failGet, failRemove } = {}) {
   const data = { ...initial };
   const runtime = { lastError: null };
   let writes = 0;
+  const writtenItems = [];
   const local = {
     get(keys, callback) {
       const error = failGet?.(keys);
@@ -27,6 +28,7 @@ function loadStorage({ initial = {}, failGet, failRemove } = {}) {
     },
     set(items, callback) {
       writes++;
+      writtenItems.push(items);
       Object.assign(data, items);
       callback();
     },
@@ -53,7 +55,12 @@ function loadStorage({ initial = {}, failGet, failRemove } = {}) {
       "\nthis.RenStorage = RenStorage;",
     context,
   );
-  return { storage: new context.RenStorage(), data, get writes() { return writes; } };
+  return {
+    storage: new context.RenStorage(),
+    data,
+    writtenItems,
+    get writes() { return writes; },
+  };
 }
 
 test("a failed index read cannot be mistaken for an empty notebook", async () => {
@@ -116,6 +123,30 @@ test("bulk note data and the current note commit in one storage write", async ()
   assert.deepEqual(Array.from(fixture.data.sylva_notes_index), ["a"]);
   assert.equal(fixture.data.sylva_current_note, "a");
   assert.equal(fixture.data.note_a.content, "saved");
+});
+
+test("saving one note does not rewrite unrelated note bodies", async () => {
+  const fixture = loadStorage({
+    initial: {
+      note_a: { id: "a", content: "old" },
+      note_b: { id: "b", content: "untouched" },
+      sylva_notes_index: ["a", "b"],
+    },
+  });
+
+  await fixture.storage.saveNote(
+    { id: "a", content: "new" },
+    ["a", "b"],
+    "a",
+  );
+
+  assert.equal(fixture.writes, 1);
+  assert.deepEqual(
+    Object.keys(fixture.writtenItems[0]).sort(),
+    ["note_a", "sylva_current_note", "sylva_notes_index"],
+  );
+  assert.equal(fixture.data.note_a.content, "new");
+  assert.equal(fixture.data.note_b.content, "untouched");
 });
 
 test("a failed notebook load never creates or saves a replacement note", async () => {

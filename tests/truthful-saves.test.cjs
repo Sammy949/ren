@@ -94,6 +94,28 @@ test("a failed write does not prevent a later queued save", async () => {
   assert.deepEqual(writes, ["first", "retry"]);
 });
 
+test("an ordinary note save uses the incremental storage path", async () => {
+  const app = createSaveApp();
+  app.notes.push({ id: "b", title: "B", content: "untouched" });
+  const calls = [];
+  app.storage = {
+    saveNote(note, notesIndex, currentNoteId) {
+      calls.push({ note, notesIndex, currentNoteId });
+      return Promise.resolve();
+    },
+    saveAllNotes() {
+      throw new Error("ordinary note save rewrote the notebook");
+    },
+  };
+
+  await app.saveNoteData(app.notes[0]);
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].note.content, "first");
+  assert.deepEqual(Array.from(calls[0].notesIndex), ["a", "b"]);
+  assert.equal(calls[0].currentNoteId, "a");
+});
+
 test("save status changes to Saved only after the write completes", async () => {
   const app = createSaveApp();
   const pending = deferred();

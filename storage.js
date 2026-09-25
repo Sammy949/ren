@@ -290,19 +290,17 @@ class RenStorage {
   /**
    * Save a single note
    * @param {object} note - Note object
+   * @param {Array<string>} notesIndex - Ordered note IDs
+   * @param {string|null} currentNoteId - Current note ID
    * @returns {Promise<void>}
    */
-  async saveNote(note) {
+  async saveNote(note, notesIndex, currentNoteId) {
     try {
-      await this.setLocal({ [`note_${note.id}`]: note });
-
-      const indexResult = await this.getLocal("sylva_notes_index");
-      const notesIndex = indexResult.sylva_notes_index || [];
-
-      if (!notesIndex.includes(note.id)) {
-        notesIndex.unshift(note.id);
-        await this.setLocal({ sylva_notes_index: notesIndex });
-      }
+      await this.setLocal({
+        [`note_${note.id}`]: note,
+        sylva_notes_index: notesIndex,
+        sylva_current_note: currentNoteId,
+      });
     } catch (error) {
       console.error("Storage: Failed to save note", error?.message || error);
       throw error;

@@ -671,9 +671,21 @@ class RenNotePad {
         note.title = newTitle;
         note.updatedAt = new Date().toISOString();
         this.noteTitle.textContent = newTitle;
-        this.saveData();
+        const revision = ++this.editRevision;
+        this.autoSaveStatus.textContent = "Saving...";
+        this.saveNoteData(note)
+          .then(() => {
+            if (revision === this.editRevision) {
+              this.autoSaveStatus.textContent = "Saved";
+            }
+            this.showNotification("Title updated", "success");
+          })
+          .catch(() => {
+            if (revision === this.editRevision) {
+              this.autoSaveStatus.textContent = "Could not save";
+            }
+          });
         this.updateNoteItemInDOM(note);
-        this.showNotification("Title updated", "success");
       }
     }
     this.noteTitleInput.classList.add("hidden");
@@ -1100,15 +1112,43 @@ Happy writing! ✨`,
     // Snapshot at queue time so a later edit cannot change an earlier write.
     const notes = this.notes.map((note) => ({ ...note }));
     const currentNoteId = this.currentNoteId;
-    const previousSave = this.saveQueue || Promise.resolve();
-    const save = previousSave.catch(() => {}).then(() =>
+    return this.queueStorageSave(() =>
       this.storage.saveAllNotes(notes, currentNoteId),
     );
+  }
+
+  async saveNoteData(note) {
+    if (this.dataLoadFailed) {
+      throw new Error("Cannot save while notes have not loaded");
+    }
+
+    const noteSnapshot = { ...note };
+    const notesIndex = this.notes.map(({ id }) => id);
+    const currentNoteId = this.currentNoteId;
+    return this.queueStorageSave(() =>
+      this.storage.saveNote(noteSnapshot, notesIndex, currentNoteId),
+    );
+  }
+
+  async saveCurrentNoteSelection() {
+    if (this.dataLoadFailed) {
+      throw new Error("Cannot save while notes have not loaded");
+    }
+
+    const currentNoteId = this.currentNoteId;
+    return this.queueStorageSave(() =>
+      this.storage.setCurrentNoteId(currentNoteId),
+    );
+  }
+
+  async queueStorageSave(operation) {
+    const previousSave = this.saveQueue || Promise.resolve();
+    const save = previousSave.catch(() => {}).then(operation);
 
     this.saveQueue = save;
 
     try {
-      await save;
+      return await save;
     } catch (error) {
       console.error("Error saving data:", error);
       this.showNotification(
@@ -1480,7 +1520,7 @@ Happy writing! ✨`,
         this.updateNoteItemInDOM(note);
       }
 
-      await this.saveData();
+      await this.saveNoteData(note);
     }
   }
 
@@ -1522,7 +1562,7 @@ Happy writing! ✨`,
     this.resetUndoRedoState();
     // Performance: Update only active states, not full re-render
     this.updateActiveNoteState();
-    await this.saveData();
+    await this.saveCurrentNoteSelection();
   }
 
   /**
@@ -1668,7 +1708,7 @@ Happy writing! ✨`,
         const oldTitle = note.title;
         note.title = newTitle;
         note.updatedAt = new Date().toISOString();
-        await this.saveData();
+        await this.saveNoteData(note);
         // Performance: Update only the changed note in DOM
         this.updateNoteItemInDOM(note);
 
