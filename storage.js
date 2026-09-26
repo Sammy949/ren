@@ -210,6 +210,13 @@ class RenStorage {
 
   _getFromLocalStorage(keys) {
     const result = {};
+    if (keys === null) {
+      for (let index = 0; index < localStorage.length; index++) {
+        const key = localStorage.key(index);
+        if (key !== null) Object.assign(result, this._getFromLocalStorage(key));
+      }
+      return result;
+    }
     const keyArray = Array.isArray(keys) ? keys : [keys];
     for (const key of keyArray) {
       const value = localStorage.getItem(key);
@@ -477,14 +484,121 @@ class RenStorage {
   }
 
   /**
+   * Inspect note storage without changing it or returning note content.
+   * @returns {Promise<object>} A versioned summary of storage consistency.
+   */
+  async getStorageHealth() {
+    const snapshot = await this.getLocal(null);
+    const hasIndex = Object.prototype.hasOwnProperty.call(
+      snapshot,
+      "sylva_notes_index",
+    );
+    const rawIndex = hasIndex ? snapshot.sylva_notes_index : [];
+    const indexIsArray = Array.isArray(rawIndex);
+    const index = indexIsArray ? rawIndex : [];
+    const invalidIndexEntries = [];
+    const duplicateNoteIds = [];
+    const seenIds = new Set();
+
+    index.forEach((id, position) => {
+      if (typeof id !== "string" || id.length === 0) {
+        invalidIndexEntries.push(position);
+        return;
+      }
+      if (seenIds.has(id)) duplicateNoteIds.push(id);
+      seenIds.add(id);
+    });
+
+    const storedNotes = Object.entries(snapshot).filter(([key]) =>
+      key.startsWith("note_"),
+    );
+    const missingNoteIds = [...seenIds].filter(
+      (id) => !Object.prototype.hasOwnProperty.call(snapshot, `note_${id}`),
+    );
+    const orphanNoteIds = storedNotes
+      .map(([key]) => key.slice("note_".length))
+      .filter((id) => !seenIds.has(id));
+    const malformedNotes = [];
+
+    for (const [storageKey, note] of storedNotes) {
+      const reasons = [];
+      if (!note || typeof note !== "object" || Array.isArray(note)) {
+        reasons.push("record-not-object");
+      } else {
+        const expectedId = storageKey.slice("note_".length);
+        if (typeof note.id !== "string" || note.id.length === 0) {
+          reasons.push("invalid-id");
+        } else if (note.id !== expectedId) {
+          reasons.push("id-key-mismatch");
+        }
+        if (typeof note.title !== "string") reasons.push("invalid-title");
+        if (typeof note.content !== "string") reasons.push("invalid-content");
+        if (
+          typeof note.createdAt !== "string" ||
+          Number.isNaN(Date.parse(note.createdAt))
+        ) {
+          reasons.push("invalid-created-at");
+        }
+        if (
+          typeof note.updatedAt !== "string" ||
+          Number.isNaN(Date.parse(note.updatedAt))
+        ) {
+          reasons.push("invalid-updated-at");
+        }
+      }
+      if (reasons.length > 0) malformedNotes.push({ storageKey, reasons });
+    }
+
+    const hasCurrentNote = Object.prototype.hasOwnProperty.call(
+      snapshot,
+      "sylva_current_note",
+    );
+    const currentNoteId = hasCurrentNote ? snapshot.sylva_current_note : null;
+    const currentNoteValid =
+      currentNoteId === null ||
+      (typeof currentNoteId === "string" && seenIds.has(currentNoteId));
+    const storageInfo = await this.getStorageInfo();
+    const issueCount =
+      (indexIsArray ? 0 : 1) +
+      invalidIndexEntries.length +
+      duplicateNoteIds.length +
+      missingNoteIds.length +
+      orphanNoteIds.length +
+      malformedNotes.length +
+      (currentNoteValid ? 0 : 1);
+
+    return {
+      version: 1,
+      healthy: issueCount === 0,
+      issueCount,
+      bytesInUse: storageInfo?.bytesInUse ?? null,
+      quotaBytes: storageInfo?.quota ?? null,
+      indexValid: indexIsArray,
+      indexedNoteCount: index.length,
+      storedNoteCount: storedNotes.length,
+      invalidIndexEntries,
+      duplicateNoteIds,
+      missingNoteIds,
+      orphanNoteIds,
+      malformedNotes,
+      currentNoteId,
+      currentNoteValid,
+    };
+  }
+
+  /**
    * Get storage usage info
    * @returns {Promise<object|null>}
    */
   async getStorageInfo() {
     if (this.useChromeLocal) {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         chrome.storage.local.getBytesInUse(null, (bytesInUse) => {
-          const quota = 5242880; // ~5MB for local storage
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+            return;
+          }
+          const quota = chrome.storage.local.QUOTA_BYTES || 10 * 1024 * 1024;
           resolve({
             bytesInUse,
             quota,

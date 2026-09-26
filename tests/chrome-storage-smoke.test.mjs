@@ -251,11 +251,17 @@ test("Ren notes in chrome.storage survive a real Chrome restart", { timeout: 30_
       await renStorage.saveAllNotes([note], note.id);
       return {
         notes: await renStorage.getAllNotes(),
-        currentNoteId: await renStorage.getCurrentNoteId()
+        currentNoteId: await renStorage.getCurrentNoteId(),
+        health: await renStorage.getStorageHealth()
       };
     })()`);
     assert.equal(written.notes[0].content, "Stored in real Chrome storage");
     assert.equal(written.currentNoteId, "smoke-note");
+    assert.equal(written.health.healthy, true);
+    assert.equal(written.health.indexedNoteCount, 1);
+    assert.equal(written.health.storedNoteCount, 1);
+    assert.ok(written.health.bytesInUse > 0);
+    assert.ok(written.health.quotaBytes >= written.health.bytesInUse);
 
     page.close();
     await stopChrome(chrome);
