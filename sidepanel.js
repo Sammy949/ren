@@ -117,6 +117,7 @@ class RenNotePad {
     this.wordCount = document.getElementById("wordCount");
     this.charCount = document.getElementById("charCount");
     this.autoSaveStatus = document.getElementById("autoSaveStatus");
+    this.saveRecoveryExportBtn = document.getElementById("saveRecoveryExportBtn");
     this.notesList = document.getElementById("notesList");
     this.newNoteBtn = document.getElementById("newNoteBtn");
 
@@ -304,6 +305,9 @@ class RenNotePad {
         this.showShortcutsHelp(),
       );
     }
+    this.saveRecoveryExportBtn?.addEventListener("click", () =>
+      this.exportNotes(),
+    );
 
     // Editable title - click to edit (with null check)
     if (this.noteTitle && this.noteTitleInput) {
@@ -692,20 +696,20 @@ class RenNotePad {
         note.updatedAt = new Date().toISOString();
         this.noteTitle.textContent = newTitle;
         const revision = ++this.editRevision;
-        this.autoSaveStatus.textContent = "Saving...";
+        this.setSaveStatus("Saving...");
         this.saveNoteData(note)
           .then(() => {
             this.savedRevision = Math.max(this.savedRevision, revision);
             if (revision === this.editRevision) {
-              this.autoSaveStatus.textContent = "Saved";
+              this.setSaveStatus("Saved");
             }
             this.showNotification("Title updated", "success");
           })
           .catch(() => {
             if (revision === this.editRevision) {
-              this.autoSaveStatus.textContent = this.storageConflict
+              this.setSaveStatus(this.storageConflict
                 ? "Changed elsewhere"
-                : "Could not save";
+                : "Could not save");
             }
           });
         this.updateNoteItemInDOM(note);
@@ -871,7 +875,7 @@ class RenNotePad {
                 </svg>
                 <div>
                   <div class="settings-btn-title">Export Notes</div>
-                  <div class="settings-btn-desc">Download all notes as JSON</div>
+                  <div class="settings-btn-desc">Download a copy of your notes</div>
                 </div>
               </button>
               <button id="settingsImportBtn" class="settings-action-btn">
@@ -893,11 +897,12 @@ class RenNotePad {
                 </div>
               </button>
             </div>
+            <p class="settings-backup-reminder">Notes are stored in this browser. Export a copy regularly and keep the file somewhere safe.</p>
           </div>
           
           <div class="settings-footer">
             <p class="settings-version">
-              Ren v2.0 • <button id="settingsShortcutsBtn" class="settings-link">Keyboard Shortcuts</button>
+              Ren v${chrome.runtime.getManifest().version} • <button id="settingsShortcutsBtn" class="settings-link">Keyboard Shortcuts</button>
             </p>
           </div>
         </div>
@@ -1219,7 +1224,7 @@ Happy writing! ✨`,
     if (this.storageConflict) return;
     clearTimeout(this.autoSaveTimeout);
     this.storageConflict = true;
-    this.autoSaveStatus.textContent = "Changed elsewhere";
+    this.setSaveStatus("Changed elsewhere");
     this.showNotification(
       "This notebook changed in another Ren panel. Export or copy your open edits, then reopen Ren.",
       "warning",
@@ -1266,6 +1271,14 @@ Happy writing! ✨`,
     this.persistedNotes = new Map(
       notes.map((note) => [note.id, { ...note }]),
     );
+  }
+
+  setSaveStatus(status) {
+    this.autoSaveStatus.textContent = status;
+    if (this.saveRecoveryExportBtn) {
+      this.saveRecoveryExportBtn.hidden =
+        status !== "Could not save" && status !== "Changed elsewhere";
+    }
   }
 
   persistedNotebook() {
@@ -1379,10 +1392,8 @@ Happy writing! ✨`,
       if (error?.name === "StorageConflictError") {
         this.enterStorageConflict();
       } else {
-        this.showNotification(
-          "Could not save note. Your changes are still open.",
-          "error",
-        );
+        this.setSaveStatus("Could not save");
+        this.showNotification("Could not save. Export your open edits or try again.", "error");
       }
       throw error;
     }
@@ -1636,12 +1647,12 @@ Happy writing! ✨`,
     if (this.dataLoadFailed || this.importInProgress) return;
     if (this.storageConflict) {
       this.captureCurrentEditorContent();
-      this.autoSaveStatus.textContent = "Changed elsewhere";
+      this.setSaveStatus("Changed elsewhere");
       return;
     }
     clearTimeout(this.autoSaveTimeout);
     const revision = ++this.editRevision;
-    this.autoSaveStatus.textContent = "Saving...";
+    this.setSaveStatus("Saving...");
 
     this.autoSaveTimeout = setTimeout(() => {
       this.saveCurrentNoteWithStatus({ revision });
@@ -1652,7 +1663,7 @@ Happy writing! ✨`,
     revision = this.editRevision,
     notifySuccess = false,
   } = {}) {
-    this.autoSaveStatus.textContent = "Saving...";
+    this.setSaveStatus("Saving...");
 
     try {
       await this.saveCurrentNote();
@@ -1660,7 +1671,7 @@ Happy writing! ✨`,
 
       // A newer edit may have arrived while this write was in flight.
       if (revision === this.editRevision) {
-        this.autoSaveStatus.textContent = "Saved";
+        this.setSaveStatus("Saved");
         if (notifySuccess) {
           this.showNotification("Note saved", "success");
           this.announceToScreenReader("Note saved");
@@ -1669,9 +1680,9 @@ Happy writing! ✨`,
       return true;
     } catch (error) {
       if (revision === this.editRevision) {
-        this.autoSaveStatus.textContent = this.storageConflict
+        this.setSaveStatus(this.storageConflict
           ? "Changed elsewhere"
-          : "Could not save";
+          : "Could not save");
       }
       return false;
     }
@@ -1804,7 +1815,7 @@ Happy writing! ✨`,
       }
       this.noteTitle.textContent = note.title;
       this.updateWordCount();
-      this.autoSaveStatus.textContent = "Ready";
+      this.setSaveStatus("Ready");
     }
   }
 
@@ -2216,10 +2227,7 @@ Happy writing! ✨`,
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      this.showNotification(
-        `Exported ${this.notes.length} notes successfully!`,
-        "success",
-      );
+      this.showNotification(`Backup download started for ${this.notes.length} notes.`, "success");
     } catch (error) {
       console.error("Export error:", error);
       this.showNotification("Failed to export notes", "error");

@@ -43,6 +43,7 @@ function createSaveApp() {
   app.storageConflict = false;
   app.saveQueue = Promise.resolve();
   app.autoSaveStatus = { textContent: "Ready" };
+  app.saveRecoveryExportBtn = { hidden: true };
   app.notes = [{ id: "a", title: "A", content: "first" }];
   app.notesCache = new Map([["a", app.notes[0]]]);
   app.persistedNotes = new Map([["a", { ...app.notes[0] }]]);
@@ -100,6 +101,26 @@ test("a failed write does not prevent a later queued save", async () => {
   await app.saveData();
 
   assert.deepEqual(writes, ["first", "retry"]);
+});
+
+test("a failed save reveals export until a retry succeeds", async () => {
+  const app = createSaveApp();
+  app.editRevision = 1;
+  app.noteContent.innerHTML = "unsaved open edit";
+  let attempts = 0;
+  app.saveCurrentNote = async () => {
+    attempts++;
+    if (attempts === 1) throw new Error("quota exceeded");
+  };
+
+  assert.equal(await app.saveCurrentNoteWithStatus(), false);
+  assert.equal(app.autoSaveStatus.textContent, "Could not save");
+  assert.equal(app.saveRecoveryExportBtn.hidden, false);
+  assert.equal(app.createExportData().notes[0].content, "unsaved open edit");
+
+  assert.equal(await app.saveCurrentNoteWithStatus(), true);
+  assert.equal(app.autoSaveStatus.textContent, "Saved");
+  assert.equal(app.saveRecoveryExportBtn.hidden, true);
 });
 
 test("a failed note write retries against the last confirmed snapshot", async () => {

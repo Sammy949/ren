@@ -586,6 +586,39 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
     assert.equal(restored.notes[0].id, "smoke-note");
     assert.equal(restored.notes[0].content, preImportContent);
     assert.equal(restored.currentNoteId, "smoke-note");
+
+    await page.call("Emulation.setDeviceMetricsOverride", {
+      width: 320, height: 700, deviceScaleFactor: 1, mobile: false,
+    });
+    const recoveryUi = await evaluate(page, `(() => {
+      const status = document.getElementById("autoSaveStatus");
+      const button = document.getElementById("saveRecoveryExportBtn");
+      const app = {
+        autoSaveStatus: status,
+        saveRecoveryExportBtn: button,
+      };
+      RenNotePad.prototype.setSaveStatus.call(app, "Could not save");
+      const visible = !button.hidden && button.getBoundingClientRect().width > 0;
+      const buttonBounds = button.getBoundingClientRect();
+      RenNotePad.prototype.setSaveStatus.call(app, "Saved");
+      document.getElementById("settingsBtn").click();
+      const modal = document.getElementById("settingsModal");
+      return {
+        visible,
+        buttonFits: buttonBounds.left >= 0 && buttonBounds.right <= window.innerWidth,
+        hiddenAfterSave: button.hidden,
+        reminder: modal.querySelector(".settings-backup-reminder")?.textContent,
+        version: modal.querySelector(".settings-version")?.textContent,
+        viewportWidth: window.innerWidth,
+        documentWidth: document.documentElement.scrollWidth,
+      };
+    })()`);
+    assert.equal(recoveryUi.visible, true);
+    assert.equal(recoveryUi.buttonFits, true);
+    assert.equal(recoveryUi.hiddenAfterSave, true);
+    assert.match(recoveryUi.reminder, /Export a copy regularly/);
+    assert.match(recoveryUi.version, /Ren v1\.0\.0/);
+    assert.ok(recoveryUi.documentWidth <= recoveryUi.viewportWidth);
   } finally {
     page?.close();
     if (chrome) await stopChrome(chrome);

@@ -235,8 +235,9 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Add retry/recovery messaging and a manual backup reminder. Then capture the
-current editor formatting baseline and build the replacement editor spike.
+Capture the current editor formatting baseline and build the replacement editor
+spike. Test title ownership and shortcut scope against that editor before
+changing either component.
 Keep the branch stack untagged until release gates pass.
 
 ## Progress log
@@ -317,6 +318,13 @@ Keep the branch stack untagged until release gates pass.
   notebook intact. Focused stale save/import/restore tests pass. Two packaged
   Chrome runs raced notebook-wide writes from separate panels: one committed,
   one reported a conflict, and the restart/import/restore gate still passed.
+- 26 September 2026: On branch `feat/save-recovery-controls`, failed saves and
+  panel conflicts expose an "Export edits" action beside the status. Export
+  includes the open editor contents. Settings explain that notes live in this
+  browser and recommend a regular downloaded copy. The displayed version comes
+  from the manifest; export feedback says the download started, rather than
+  claiming a file reached disk. Focused retry coverage and the packaged Chrome
+  gate pass, including a 320 px panel fit check for the recovery action.
 
 ## Primary references checked for this plan
 

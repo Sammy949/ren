@@ -1587,6 +1587,40 @@ main[role="main"]>.h-full.flex.flex-col {
   color: var(--text-tertiary);
 }
 
+.settings-backup-reminder {
+  margin-top: var(--spacing-3);
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.save-recovery-button:not([hidden]) {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.save-recovery-button:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 420px) {
+  footer[role="contentinfo"] {
+    flex-wrap: wrap;
+    gap: var(--spacing-1);
+  }
+
+  footer[role="contentinfo"] > div:last-child {
+    margin-left: auto;
+  }
+}
+
 .settings-footer {
   margin-top: var(--spacing-4);
   padding-top: var(--spacing-4);
