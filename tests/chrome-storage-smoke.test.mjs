@@ -370,6 +370,17 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
     assert.ok(written.health.bytesInUse > 0);
     assert.ok(written.health.quotaBytes >= written.health.bytesInUse);
 
+    await page.call("Page.close");
+    page.close();
+    page = await openExtensionPage(chrome);
+    const panelReopened = await evaluate(page, `(async () => ({
+      notes: await renStorage.getAllNotes(),
+      currentNoteId: await renStorage.getCurrentNoteId()
+    }))()`);
+    assert.equal(panelReopened.notes.length, 1);
+    assert.equal(panelReopened.notes[0].content, "Stored in real Chrome storage");
+    assert.equal(panelReopened.currentNoteId, "smoke-note");
+
     page.close();
     await stopChrome(chrome);
     chrome = await startChrome(profileDirectory, loadedExtensionRoot);
