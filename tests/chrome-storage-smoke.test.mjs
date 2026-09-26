@@ -381,6 +381,24 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
     assert.equal(panelReopened.notes[0].content, "Stored in real Chrome storage");
     assert.equal(panelReopened.currentNoteId, "smoke-note");
 
+    await evaluate(page, `(() => {
+      const editor = document.getElementById("noteContent");
+      editor.innerHTML = "<p>Saved while Ren is hidden</p>";
+      editor.dispatchEvent(new InputEvent("input", { bubbles: true }));
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        value: "hidden"
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+    })()`);
+    const hiddenContent = await poll(async () => {
+      const content = await evaluate(page, `(async () =>
+        (await renStorage.getAllNotes())[0]?.content
+      )()`);
+      return content === "<p>Saved while Ren is hidden</p>" ? content : null;
+    }, "dirty note flush while Ren is hidden");
+    assert.equal(hiddenContent, "<p>Saved while Ren is hidden</p>");
+
     page.close();
     await stopChrome(chrome);
     chrome = await startChrome(profileDirectory, loadedExtensionRoot);
@@ -391,8 +409,8 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
       currentNoteId: await renStorage.getCurrentNoteId()
     }))()`);
     assert.equal(reopened.notes.length, 1);
-    assert.equal(reopened.notes[0].title, "Smoke test");
-    assert.equal(reopened.notes[0].content, "Stored in real Chrome storage");
+    assert.equal(reopened.notes[0].title, "Saved while Ren is hidden");
+    assert.equal(reopened.notes[0].content, "<p>Saved while Ren is hidden</p>");
     assert.equal(reopened.currentNoteId, "smoke-note");
 
     const importRoundTrip = await evaluate(page, `(async () => {
@@ -451,7 +469,7 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
     })()`);
     assert.equal(restored.notes.length, 1);
     assert.equal(restored.notes[0].id, "smoke-note");
-    assert.equal(restored.notes[0].content, "Stored in real Chrome storage");
+    assert.equal(restored.notes[0].content, "<p>Saved while Ren is hidden</p>");
     assert.equal(restored.currentNoteId, "smoke-note");
   } finally {
     page?.close();

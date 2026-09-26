@@ -37,6 +37,8 @@ function createSaveApp() {
   const app = Object.create(RenNotePad.prototype);
   app.dataLoadFailed = false;
   app.editRevision = 0;
+  app.savedRevision = 0;
+  app.flushSavePromise = null;
   app.saveQueue = Promise.resolve();
   app.autoSaveStatus = { textContent: "Ready" };
   app.notes = [{ id: "a", title: "A", content: "first" }];
@@ -152,4 +154,58 @@ test("a failed current-note write reports failure instead of Saved", async () =>
 
   assert.equal(await app.saveCurrentNoteWithStatus({ revision: 1 }), false);
   assert.equal(app.autoSaveStatus.textContent, "Could not save");
+});
+
+test("hiding Ren flushes a dirty revision and records the successful save", async () => {
+  const app = createSaveApp();
+  let saves = 0;
+  app.editRevision = 2;
+  app.savedRevision = 1;
+  app.saveCurrentNote = async () => { saves++; };
+
+  assert.equal(await app.flushPendingSave(), true);
+  assert.equal(saves, 1);
+  assert.equal(app.savedRevision, 2);
+  assert.equal(app.autoSaveStatus.textContent, "Saved");
+});
+
+test("hiding Ren does not rewrite a clean note", async () => {
+  const app = createSaveApp();
+  let saves = 0;
+  app.editRevision = 3;
+  app.savedRevision = 3;
+  app.saveCurrentNote = async () => { saves++; };
+
+  assert.equal(await app.flushPendingSave(), true);
+  assert.equal(saves, 0);
+});
+
+test("a failed visibility flush remains dirty for retry", async () => {
+  const app = createSaveApp();
+  app.editRevision = 1;
+  app.saveCurrentNote = async () => { throw new Error("storage unavailable"); };
+
+  assert.equal(await app.flushPendingSave(), false);
+  assert.equal(app.savedRevision, 0);
+  assert.equal(app.autoSaveStatus.textContent, "Could not save");
+});
+
+test("visibility and pagehide share one in-flight flush", async () => {
+  const app = createSaveApp();
+  const pending = deferred();
+  let saves = 0;
+  app.editRevision = 1;
+  app.saveCurrentNote = () => {
+    saves++;
+    return pending.promise;
+  };
+
+  const visibilitySave = app.flushPendingSave();
+  const pagehideSave = app.flushPendingSave();
+  assert.equal(saves, 1);
+
+  pending.resolve();
+  assert.equal(await visibilitySave, true);
+  assert.equal(await pagehideSave, true);
+  assert.equal(saves, 1);
 });

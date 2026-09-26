@@ -6,6 +6,8 @@ class RenNotePad {
     this.importInProgress = false;
     this.autoSaveTimeout = null;
     this.editRevision = 0;
+    this.savedRevision = 0;
+    this.flushSavePromise = null;
     this.saveQueue = Promise.resolve();
     this.sidebarUpdateTimeout = null; // Separate debounce for UI updates
     this.noteToDelete = null;
@@ -371,6 +373,11 @@ class RenNotePad {
         }
       }
     });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") this.flushPendingSave();
+    });
+    window.addEventListener("pagehide", () => this.flushPendingSave());
   }
 
   // a11y: Focus trap for modals
@@ -676,6 +683,7 @@ class RenNotePad {
         this.autoSaveStatus.textContent = "Saving...";
         this.saveNoteData(note)
           .then(() => {
+            this.savedRevision = Math.max(this.savedRevision, revision);
             if (revision === this.editRevision) {
               this.autoSaveStatus.textContent = "Saved";
             }
@@ -995,6 +1003,7 @@ class RenNotePad {
       this.notes = restoredNotes;
       this.currentNoteId = restoredCurrentNoteId;
       this.editRevision++;
+      this.savedRevision = this.editRevision;
       this.rebuildCache();
       this.loadCurrentNote();
       this.renderNotesList();
@@ -1173,6 +1182,7 @@ Happy writing! ✨`,
         this.loadCurrentNote();
       }
       this.renderNotesList();
+      this.savedRevision = this.editRevision;
     } catch (error) {
       console.error("Error loading data:", error);
       this.handleLoadFailure();
@@ -1508,6 +1518,7 @@ Happy writing! ✨`,
 
     try {
       await this.saveCurrentNote();
+      this.savedRevision = Math.max(this.savedRevision, revision);
 
       // A newer edit may have arrived while this write was in flight.
       if (revision === this.editRevision) {
@@ -1524,6 +1535,28 @@ Happy writing! ✨`,
       }
       return false;
     }
+  }
+
+  flushPendingSave() {
+    if (
+      this.dataLoadFailed ||
+      this.importInProgress ||
+      this.editRevision <= this.savedRevision
+    ) {
+      return Promise.resolve(true);
+    }
+    if (this.flushSavePromise) return this.flushSavePromise;
+    clearTimeout(this.autoSaveTimeout);
+    this.flushSavePromise = this.saveCurrentNoteWithStatus({
+      revision: this.editRevision,
+    }).then((saved) => {
+      this.flushSavePromise = null;
+      if (saved && this.editRevision > this.savedRevision) {
+        return this.flushPendingSave();
+      }
+      return saved;
+    });
+    return this.flushSavePromise;
   }
 
   async createNewNote() {
@@ -2171,6 +2204,7 @@ Happy writing! ✨`,
       this.notes = prepared.notes;
       this.currentNoteId = prepared.currentNoteId;
       this.editRevision++;
+      this.savedRevision = this.editRevision;
 
       // Rebuild the cache to sync with new notes
       this.rebuildCache();
