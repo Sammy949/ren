@@ -229,9 +229,10 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Complete synthetic export/import round trips for every supported v1 formatting
-shape, including tasks, links, special characters, and malformed input. Then
-measure the current editor behavior and build the replacement editor spike.
+Exercise the exact release-package file set and a synthetic extension upgrade in
+the disposable profile. Then capture the current editor formatting baseline and
+build the replacement editor spike. Keep the current branch stack untagged until
+the release package, upgrade path, and editor work pass their gates.
 
 ## Progress log
 
@@ -279,6 +280,13 @@ measure the current editor behavior and build the replacement editor spike.
   attributes are removed. Titles, search results, note cards, and notifications
   render user strings with text nodes. Hostile fixtures pass in the real Chrome
   extension while safe links, inline formatting, and task checkboxes survive.
+- 26 September 2026: On branch `test/v1-backup-roundtrip`, checked-in synthetic
+  v1 fixtures cover headings, inline marks, code, quotes, lists, dividers, line
+  breaks, tasks, links, emoji, special characters, an empty note, ordering, and
+  current selection. The exact note set survives export, JSON serialization,
+  validated import, verified storage replacement, a full Chrome restart, and
+  pre-import restoration in two consecutive runs. The release ZIP file set and
+  extension-update path remain open, so milestone 0 is not yet closed.
 
 ## Primary references checked for this plan
 
