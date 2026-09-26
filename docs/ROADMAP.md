@@ -235,9 +235,9 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Fix the confirmed inline-code continuation loss on the current release line,
-then build the replacement editor spike. Test title ownership and shortcut
-scope against that editor before changing either component.
+Build the replacement editor spike and prove that inline marks end without
+spilling into the following text. Test title ownership and shortcut scope
+against that editor before changing either component.
 Keep the branch stack untagged until release gates pass.
 
 ## Progress log
@@ -331,6 +331,12 @@ Keep the branch stack untagged until release gates pass.
   task serialization work. Typed `**bold**` remains literal by design in v1.
   Selecting text for inline code and typing after it removes the selected text
   in Chrome, a confirmed content-loss bug to fix before the editor migration.
+- 26 September 2026: On branch `fix/inline-code-selection-loss`, the inline code
+  command collapses Chrome's selection after replacing selected text. The next
+  insertion no longer removes that text; packaged Chrome verifies content and
+  undo. Chrome still extends the code mark into following typing even when the
+  caret is moved to an empty sibling or parent boundary. This remains a v2
+  formatting failure, not a solved inline-mark behavior.
 
 ## Primary references checked for this plan
 

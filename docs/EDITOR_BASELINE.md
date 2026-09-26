@@ -17,6 +17,14 @@ editor. Typed bold syntax remaining literal is intentional in v1 because the
 older inline shortcut spilled formatting into following text. Neither should be
 treated as an acceptable v2 outcome.
 
+## Interim safeguard
+
+On `fix/inline-code-selection-loss`, the code command collapses the selection
+after insertion. The same Chrome sequence now retains `selected` while typing
+continues. Chrome still appends ` after` inside the code element, so formatting
+spill remains a failing v2 requirement. Placing a DOM range in an empty sibling
+or at the parent boundary produced the same spill in the packaged browser.
+
 ## Next browser matrix
 
 For each supported block and inline mark: type, transform, continue typing,

@@ -683,9 +683,11 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
     })()`);
     assert.match(formattingBaseline.headingAfterShortcut, /<h1>/);
     assert.match(formattingBaseline.headingAfterTyping, /<h1>Heading<\/h1>/);
+    assert.match(formattingBaseline.codeAfterCommand, /<code>selected<\/code>/);
+    assert.match(formattingBaseline.codeAfterTyping, /selected after/);
+    assert.match(formattingBaseline.codeAfterUndo, /selected/);
     assert.equal(formattingBaseline.checkboxCreated, true);
     assert.equal(formattingBaseline.checkboxCheckedAfterReload, true);
-    console.log("Current editor formatting:", JSON.stringify(formattingBaseline));
   } finally {
     page?.close();
     if (chrome) await stopChrome(chrome);

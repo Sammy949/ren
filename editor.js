@@ -608,10 +608,21 @@ class RenEditor {
     const selection = window.getSelection();
     if (selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
+      const selectedText = range.toString();
+      if (!selectedText) return;
       const code = document.createElement("code");
-      code.textContent = range.toString();
+      code.textContent = selectedText;
       range.deleteContents();
       range.insertNode(code);
+      // insertNode leaves the old selection spanning the new node in Chrome.
+      // Collapse it so the next keystroke cannot replace the selected text.
+      // Chrome may still extend the code mark at this boundary; the document
+      // model migration must handle mark exit consistently.
+      const caret = document.createRange();
+      caret.setStartAfter(code);
+      caret.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(caret);
     }
   }
 
