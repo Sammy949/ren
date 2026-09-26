@@ -234,10 +234,10 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Finish milestone 1 save lifecycle coverage for simultaneous panel instances,
-then add retry/recovery messaging and a manual backup reminder. After that,
-capture the current editor formatting baseline and build the replacement editor
-spike. Keep the branch stack untagged until release gates pass.
+Extend multi-panel conflict checks to structural writes such as create, delete,
+and import. Then add retry/recovery messaging and a manual backup reminder.
+After that, capture the current editor formatting baseline and build the
+replacement editor spike. Keep the branch stack untagged until release gates pass.
 
 ## Progress log
 
@@ -303,6 +303,13 @@ spike. Keep the branch stack untagged until release gates pass.
   `pagehide`. Clean notes do not rewrite, failures remain dirty for retry, and
   overlapping lifecycle events share one in-flight flush. Ten focused save tests
   and the exact packaged Chrome gate pass an immediate edit/hide/restart cycle.
+- 26 September 2026: On branch `fix/multi-panel-conflicts`, normal note writes
+  compare the full last-confirmed note inside a browser Web Lock. A stale panel
+  keeps its open edits available for export and shows a conflict instead of
+  overwriting the other panel. Clean panels refresh when storage changes. Failed
+  writes retain the confirmed baseline for retry. Two consecutive packaged
+  Chrome runs raced two panels and passed. Structural operations still need the
+  same concurrency gate before milestone 1 closes.
 
 ## Primary references checked for this plan
 
