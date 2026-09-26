@@ -364,6 +364,153 @@ class RenStorage {
   }
 
   /**
+   * Replace the notebook after preserving the previous storage shape.
+   * The live index changes only after the backup write succeeds.
+   * @param {Array<object>} notes
+   * @param {string} currentNoteId
+   * @returns {Promise<object>} Commit and cleanup result.
+   */
+  async replaceAllNotesWithBackup(notes, currentNoteId) {
+    if (!Array.isArray(notes) || notes.length === 0) {
+      throw new Error("Replacement notebook must contain at least one note");
+    }
+
+    const noteIds = [];
+    const seenIds = new Set();
+    const replacement = {};
+    for (const note of notes) {
+      if (
+        !note ||
+        typeof note !== "object" ||
+        typeof note.id !== "string" ||
+        note.id.length === 0
+      ) {
+        throw new Error("Replacement notebook contains an invalid note ID");
+      }
+      if (seenIds.has(note.id)) {
+        throw new Error("Replacement notebook contains duplicate note IDs");
+      }
+      seenIds.add(note.id);
+      noteIds.push(note.id);
+      replacement[`note_${note.id}`] = note;
+    }
+    if (typeof currentNoteId !== "string" || !seenIds.has(currentNoteId)) {
+      throw new Error("Replacement notebook has an invalid current note");
+    }
+
+    const previous = await this.getLocal(null);
+    const previousNoteKeys = Object.keys(previous).filter((key) =>
+      key.startsWith("note_"),
+    );
+    const backupEntries = {};
+    for (const key of [
+      ...previousNoteKeys,
+      "sylva_notes_index",
+      "sylva_current_note",
+    ]) {
+      if (Object.prototype.hasOwnProperty.call(previous, key)) {
+        backupEntries[key] = previous[key];
+      }
+    }
+
+    const createdAt = new Date().toISOString();
+    await this.setLocal({
+      ren_pre_import_backup_v1: {
+        version: 1,
+        createdAt,
+        hadNotesIndex: Object.prototype.hasOwnProperty.call(
+          previous,
+          "sylva_notes_index",
+        ),
+        hadCurrentNote: Object.prototype.hasOwnProperty.call(
+          previous,
+          "sylva_current_note",
+        ),
+        entries: backupEntries,
+      },
+    });
+
+    const commitId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    Object.assign(replacement, {
+      sylva_notes_index: noteIds,
+      sylva_current_note: currentNoteId,
+      ren_import_commit_v1: { version: 1, commitId, committedAt: createdAt },
+    });
+    await this.setLocal(replacement);
+
+    const verification = await this.getLocal(Object.keys(replacement));
+    for (const [key, expected] of Object.entries(replacement)) {
+      if (JSON.stringify(verification[key]) !== JSON.stringify(expected)) {
+        throw new Error("Imported notebook could not be verified");
+      }
+    }
+
+    const replacementKeys = new Set(noteIds.map((id) => `note_${id}`));
+    const obsoleteKeys = previousNoteKeys.filter(
+      (key) => !replacementKeys.has(key),
+    );
+    let cleanupPending = false;
+    if (obsoleteKeys.length > 0) {
+      try {
+        await this.removeLocal(obsoleteKeys);
+      } catch (error) {
+        cleanupPending = true;
+        console.error(
+          "Storage: Imported notes but could not remove replaced note keys",
+          error?.message || error,
+        );
+      }
+    }
+
+    return {
+      commitId,
+      backupCreatedAt: createdAt,
+      cleanupPending,
+      obsoleteNoteCount: obsoleteKeys.length,
+    };
+  }
+
+  /**
+   * Restore the exact note keys and selection saved before the latest import.
+   * @returns {Promise<void>}
+   */
+  async restorePreImportBackup() {
+    const result = await this.getLocal("ren_pre_import_backup_v1");
+    const backup = result.ren_pre_import_backup_v1;
+    if (
+      !backup ||
+      backup.version !== 1 ||
+      !backup.entries ||
+      typeof backup.entries !== "object" ||
+      Array.isArray(backup.entries)
+    ) {
+      throw new Error("No valid pre-import backup is available");
+    }
+
+    const current = await this.getLocal(null);
+    const keysToRemove = Object.keys(current).filter(
+      (key) =>
+        (key.startsWith("note_") &&
+          !Object.prototype.hasOwnProperty.call(backup.entries, key)) ||
+        (key === "sylva_notes_index" && !backup.hadNotesIndex) ||
+        (key === "sylva_current_note" && !backup.hadCurrentNote) ||
+        key === "ren_import_commit_v1",
+    );
+
+    if (Object.keys(backup.entries).length > 0) {
+      await this.setLocal(backup.entries);
+    }
+    if (keysToRemove.length > 0) await this.removeLocal(keysToRemove);
+
+    const restored = await this.getLocal(Object.keys(backup.entries));
+    for (const [key, expected] of Object.entries(backup.entries)) {
+      if (JSON.stringify(restored[key]) !== JSON.stringify(expected)) {
+        throw new Error("Pre-import backup could not be verified");
+      }
+    }
+  }
+
+  /**
    * Update notes index order
    * @param {Array} notesIndex - Array of note IDs in order
    * @returns {Promise<void>}
