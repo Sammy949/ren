@@ -436,13 +436,24 @@ class RenStorage {
       sylva_current_note: currentNoteId,
       ren_import_commit_v1: { version: 1, commitId, committedAt: createdAt },
     });
-    await this.setLocal(replacement);
+    try {
+      await this.setLocal(replacement);
 
-    const verification = await this.getLocal(Object.keys(replacement));
-    for (const [key, expected] of Object.entries(replacement)) {
-      if (JSON.stringify(verification[key]) !== JSON.stringify(expected)) {
-        throw new Error("Imported notebook could not be verified");
+      const verification = await this.getLocal(Object.keys(replacement));
+      for (const [key, expected] of Object.entries(replacement)) {
+        if (!this.storageValuesEqual(verification[key], expected)) {
+          throw new Error("Imported notebook could not be verified");
+        }
       }
+    } catch (error) {
+      try {
+        await this.restorePreImportBackup();
+      } catch (restoreError) {
+        throw new Error("Import failed and its backup could not be restored", {
+          cause: restoreError,
+        });
+      }
+      throw error;
     }
 
     const replacementKeys = new Set(noteIds.map((id) => `note_${id}`));
@@ -467,6 +478,31 @@ class RenStorage {
       backupCreatedAt: createdAt,
       cleanupPending,
       obsoleteNoteCount: obsoleteKeys.length,
+    };
+  }
+
+  /**
+   * Get non-content metadata for the latest pre-import backup.
+   * @returns {Promise<object|null>}
+   */
+  async getPreImportBackupInfo() {
+    const result = await this.getLocal("ren_pre_import_backup_v1");
+    const backup = result.ren_pre_import_backup_v1;
+    if (
+      !backup ||
+      backup.version !== 1 ||
+      typeof backup.createdAt !== "string" ||
+      !backup.entries ||
+      typeof backup.entries !== "object" ||
+      Array.isArray(backup.entries)
+    ) {
+      return null;
+    }
+    return {
+      createdAt: backup.createdAt,
+      storedNoteCount: Object.keys(backup.entries).filter((key) =>
+        key.startsWith("note_"),
+      ).length,
     };
   }
 
@@ -502,12 +538,59 @@ class RenStorage {
     }
     if (keysToRemove.length > 0) await this.removeLocal(keysToRemove);
 
-    const restored = await this.getLocal(Object.keys(backup.entries));
+    const restored = await this.getLocal(null);
     for (const [key, expected] of Object.entries(backup.entries)) {
-      if (JSON.stringify(restored[key]) !== JSON.stringify(expected)) {
+      if (!this.storageValuesEqual(restored[key], expected)) {
         throw new Error("Pre-import backup could not be verified");
       }
     }
+    const unexpectedNote = Object.keys(restored).some(
+      (key) =>
+        key.startsWith("note_") &&
+        !Object.prototype.hasOwnProperty.call(backup.entries, key),
+    );
+    if (
+      unexpectedNote ||
+      Object.prototype.hasOwnProperty.call(restored, "ren_import_commit_v1") ||
+      (!backup.hadNotesIndex &&
+        Object.prototype.hasOwnProperty.call(restored, "sylva_notes_index")) ||
+      (!backup.hadCurrentNote &&
+        Object.prototype.hasOwnProperty.call(restored, "sylva_current_note"))
+    ) {
+      throw new Error("Pre-import backup cleanup could not be verified");
+    }
+  }
+
+  storageValuesEqual(left, right) {
+    if (Object.is(left, right)) return true;
+    if (Array.isArray(left) || Array.isArray(right)) {
+      return (
+        Array.isArray(left) &&
+        Array.isArray(right) &&
+        left.length === right.length &&
+        left.every((value, index) =>
+          this.storageValuesEqual(value, right[index]),
+        )
+      );
+    }
+    if (
+      !left ||
+      !right ||
+      typeof left !== "object" ||
+      typeof right !== "object"
+    ) {
+      return false;
+    }
+    const leftKeys = Object.keys(left).sort();
+    const rightKeys = Object.keys(right).sort();
+    return (
+      leftKeys.length === rightKeys.length &&
+      leftKeys.every(
+        (key, index) =>
+          key === rightKeys[index] &&
+          this.storageValuesEqual(left[key], right[key]),
+      )
+    );
   }
 
   /**

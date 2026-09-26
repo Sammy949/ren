@@ -276,6 +276,43 @@ test("Ren notes in chrome.storage survive a real Chrome restart", { timeout: 30_
     assert.equal(reopened.notes[0].title, "Smoke test");
     assert.equal(reopened.notes[0].content, "Stored in real Chrome storage");
     assert.equal(reopened.currentNoteId, "smoke-note");
+
+    const importRoundTrip = await evaluate(page, `(async () => {
+      const imported = {
+        id: "imported-note",
+        title: "Imported",
+        content: "Replacement notebook",
+        createdAt: "2026-09-26T00:00:00.000Z",
+        updatedAt: "2026-09-26T00:00:00.000Z"
+      };
+      await renStorage.replaceAllNotesWithBackup([imported], imported.id);
+      const replaced = await renStorage.getAllNotes();
+      await renStorage.restorePreImportBackup();
+      return {
+        replaced,
+        restored: await renStorage.getAllNotes(),
+        currentNoteId: await renStorage.getCurrentNoteId()
+      };
+    })()`);
+    assert.equal(importRoundTrip.replaced.length, 1);
+    assert.equal(importRoundTrip.replaced[0].id, "imported-note");
+    assert.equal(importRoundTrip.restored.length, 1);
+    assert.equal(importRoundTrip.restored[0].id, "smoke-note");
+    assert.equal(importRoundTrip.restored[0].content, "Stored in real Chrome storage");
+    assert.equal(importRoundTrip.currentNoteId, "smoke-note");
+
+    await evaluate(page, `document.getElementById("settingsBtn").click()`);
+    const restoreControl = await poll(
+      () => evaluate(page, `(() => {
+        const button = document.getElementById("settingsRestoreImportBtn");
+        if (!button || button.classList.contains("hidden") || button.disabled) {
+          return null;
+        }
+        return button.querySelector(".settings-btn-desc").textContent;
+      })()`),
+      "pre-import restore control",
+    );
+    assert.match(restoreControl, /Restore 1 note saved before the latest import/);
   } finally {
     page?.close();
     if (chrome) await stopChrome(chrome);

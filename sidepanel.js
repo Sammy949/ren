@@ -3,6 +3,7 @@ class RenNotePad {
     this.notes = [];
     this.currentNoteId = null;
     this.dataLoadFailed = false;
+    this.importInProgress = false;
     this.autoSaveTimeout = null;
     this.editRevision = 0;
     this.saveQueue = Promise.resolve();
@@ -843,6 +844,15 @@ class RenNotePad {
                   <div class="settings-btn-desc">Load notes from a JSON file</div>
                 </div>
               </button>
+              <button id="settingsRestoreImportBtn" class="settings-action-btn hidden">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h11a4 4 0 014 4v1m-15-5l4-4m-4 4l4 4m11 3v.01"></path>
+                </svg>
+                <div>
+                  <div class="settings-btn-title">Restore Before Import</div>
+                  <div class="settings-btn-desc">Restore notes saved before the latest import</div>
+                </div>
+              </button>
             </div>
           </div>
           
@@ -871,6 +881,12 @@ class RenNotePad {
         .addEventListener("click", () => {
           this.importFileInput.click();
           this.hideSettingsModal();
+        });
+      modal
+        .querySelector("#settingsRestoreImportBtn")
+        .addEventListener("click", () => {
+          this.hideSettingsModal();
+          this.restoreImportBackup();
         });
       modal
         .querySelector("#settingsShortcutsBtn")
@@ -902,6 +918,7 @@ class RenNotePad {
 
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
+    this.updateImportBackupControl(modal);
     this.settingsModalVisible = true;
     this.lastFocusedElement = document.activeElement;
 
@@ -919,6 +936,58 @@ class RenNotePad {
 
     if (this.lastFocusedElement) {
       this.lastFocusedElement.focus();
+    }
+  }
+
+  async updateImportBackupControl(modal) {
+    const button = modal?.querySelector("#settingsRestoreImportBtn");
+    if (!button) return;
+    button.disabled = true;
+    try {
+      const backup = await this.storage.getPreImportBackupInfo();
+      button.classList.toggle("hidden", !backup);
+      if (backup) {
+        const description = button.querySelector(".settings-btn-desc");
+        description.textContent = `Restore ${backup.storedNoteCount} note${
+          backup.storedNoteCount === 1 ? "" : "s"
+        } saved before the latest import`;
+      }
+    } catch (error) {
+      console.error("Could not read import backup metadata:", error);
+      button.classList.add("hidden");
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async restoreImportBackup() {
+    if (this.dataLoadFailed || this.importInProgress) return;
+    if (!confirm("Restore the notes saved before your latest import?")) return;
+
+    clearTimeout(this.autoSaveTimeout);
+    this.importInProgress = true;
+    const previousEditable =
+      this.noteContent?.getAttribute?.("contenteditable") ?? "true";
+    this.noteContent?.setAttribute?.("contenteditable", "false");
+    try {
+      await this.queueStorageSave(() =>
+        this.storage.restorePreImportBackup(),
+      );
+      const restoredNotes = await this.storage.getAllNotes();
+      const restoredCurrentNoteId = await this.storage.getCurrentNoteId();
+      this.notes = restoredNotes;
+      this.currentNoteId = restoredCurrentNoteId;
+      this.editRevision++;
+      this.rebuildCache();
+      this.loadCurrentNote();
+      this.renderNotesList();
+      this.showNotification("Restored the pre-import backup.", "success");
+    } catch (error) {
+      console.error("Pre-import restore error:", error);
+      this.showNotification("Could not restore the pre-import backup.", "error");
+    } finally {
+      this.importInProgress = false;
+      this.noteContent?.setAttribute?.("contenteditable", previousEditable);
     }
   }
 
@@ -1404,7 +1473,7 @@ Happy writing! ✨`,
   }
 
   scheduleAutoSave() {
-    if (this.dataLoadFailed) return;
+    if (this.dataLoadFailed || this.importInProgress) return;
     clearTimeout(this.autoSaveTimeout);
     const revision = ++this.editRevision;
     this.autoSaveStatus.textContent = "Saving...";
@@ -1852,6 +1921,72 @@ Happy writing! ✨`,
     }
   }
 
+  prepareImportedNotebook(importData) {
+    if (
+      !importData ||
+      typeof importData !== "object" ||
+      Array.isArray(importData) ||
+      !Array.isArray(importData.notes)
+    ) {
+      throw new Error("Invalid backup file: missing notes array");
+    }
+    if (importData.notes.length === 0) {
+      throw new Error("Invalid backup file: no notes found");
+    }
+    if (importData.notes.length > 10_000) {
+      throw new Error("Invalid backup file: too many notes");
+    }
+
+    const notes = [];
+    const noteIds = new Set();
+    for (let index = 0; index < importData.notes.length; index++) {
+      const note = importData.notes[index];
+      const position = index + 1;
+      if (!note || typeof note !== "object" || Array.isArray(note)) {
+        throw new Error(`Invalid backup file: note ${position} is not an object`);
+      }
+      if (
+        typeof note.id !== "string" ||
+        !/^[A-Za-z0-9_-]{1,128}$/.test(note.id)
+      ) {
+        throw new Error(`Invalid backup file: note ${position} has an invalid ID`);
+      }
+      if (noteIds.has(note.id)) {
+        throw new Error("Invalid backup file: duplicate note IDs");
+      }
+      if (typeof note.title !== "string" || note.title.length > 500) {
+        throw new Error(`Invalid backup file: note ${position} has an invalid title`);
+      }
+      if (typeof note.content !== "string") {
+        throw new Error(`Invalid backup file: note ${position} has invalid content`);
+      }
+      if (
+        typeof note.createdAt !== "string" ||
+        Number.isNaN(Date.parse(note.createdAt)) ||
+        typeof note.updatedAt !== "string" ||
+        Number.isNaN(Date.parse(note.updatedAt))
+      ) {
+        throw new Error(`Invalid backup file: note ${position} has an invalid date`);
+      }
+
+      noteIds.add(note.id);
+      notes.push({
+        id: note.id,
+        title: note.title,
+        content: this.convertPlainTextToHTML(note.content),
+        createdAt: note.createdAt,
+        updatedAt: note.updatedAt,
+      });
+    }
+
+    const currentNoteId =
+      typeof importData.currentNoteId === "string" &&
+      noteIds.has(importData.currentNoteId)
+        ? importData.currentNoteId
+        : notes[0].id;
+    return { notes, currentNoteId };
+  }
+
   async importNotes(event) {
     if (this.dataLoadFailed) {
       this.importFileInput.value = "";
@@ -1860,94 +1995,68 @@ Happy writing! ✨`,
     const file = event.target.files[0];
     if (!file) return;
 
+    let previousEditable;
     try {
+      if (typeof file.size === "number" && file.size > 10 * 1024 * 1024) {
+        throw new Error("Invalid backup file: file is larger than 10 MB");
+      }
       const text = await file.text();
       const importData = JSON.parse(text);
-
-      // Validate the import data structure
-      if (!importData.notes || !Array.isArray(importData.notes)) {
-        throw new Error("Invalid backup file format: missing notes array");
-      }
-
-      // Validate each note has required fields
-      const validNotes = [];
-      const now = new Date().toISOString();
-
-      for (const note of importData.notes) {
-        if (!note || typeof note !== "object") {
-          console.warn("Skipping invalid note entry:", note);
-          continue;
-        }
-
-        // Ensure required fields exist, provide defaults if missing
-        const validNote = {
-          id:
-            note.id ||
-            Date.now().toString() + Math.random().toString(36).substr(2, 9),
-          title: note.title || "Untitled Note",
-          content: this.convertPlainTextToHTML(note.content || ""),
-          createdAt: note.createdAt || now,
-          updatedAt: note.updatedAt || now,
-        };
-
-        validNotes.push(validNote);
-      }
-
-      if (validNotes.length === 0) {
-        throw new Error("No valid notes found in backup file");
-      }
+      const prepared = this.prepareImportedNotebook(importData);
 
       // Confirm before overwriting
-      const noteCount = validNotes.length;
-      const skippedCount = importData.notes.length - validNotes.length;
-      let confirmMessage = `This will import ${noteCount} notes and replace your current notes. Continue?`;
-
-      if (skippedCount > 0) {
-        confirmMessage = `This will import ${noteCount} notes (${skippedCount} invalid entries skipped) and replace your current notes. Continue?`;
-      }
-
-      const confirmImport = confirm(confirmMessage);
+      const noteCount = prepared.notes.length;
+      const confirmImport = confirm(
+        `This will replace your current notes with ${noteCount} imported notes. Ren will keep a restorable pre-import backup. Continue?`,
+      );
 
       if (!confirmImport) {
-        this.importFileInput.value = "";
         return;
       }
 
-      // Import the validated notes
-      this.notes = validNotes;
+      clearTimeout(this.autoSaveTimeout);
+      this.importInProgress = true;
+      previousEditable = this.noteContent?.getAttribute?.("contenteditable");
+      this.noteContent?.setAttribute?.("contenteditable", "false");
 
-      // Set current note ID (validate it exists in imported notes)
-      const importedIds = new Set(validNotes.map((n) => n.id));
-      if (
-        importData.currentNoteId &&
-        importedIds.has(importData.currentNoteId)
-      ) {
-        this.currentNoteId = importData.currentNoteId;
-      } else {
-        this.currentNoteId = validNotes[0]?.id || null;
-      }
+      // Include the latest editor contents in the recovery snapshot.
+      await this.saveCurrentNote();
+      const result = await this.queueStorageSave(() =>
+        this.storage.replaceAllNotesWithBackup(
+          prepared.notes,
+          prepared.currentNoteId,
+        ),
+      );
+
+      // Switch the live state only after storage has verified the replacement.
+      this.notes = prepared.notes;
+      this.currentNoteId = prepared.currentNoteId;
+      this.editRevision++;
 
       // Rebuild the cache to sync with new notes
       this.rebuildCache();
-
-      await this.saveData();
       this.loadCurrentNote();
       this.renderNotesList();
 
       this.showNotification(
-        `Imported ${noteCount} notes successfully!`,
-        "success",
+        result.cleanupPending
+          ? `Imported ${noteCount} notes. The backup is safe, but old storage cleanup is still pending.`
+          : `Imported ${noteCount} notes. A pre-import backup is available.`,
+        result.cleanupPending ? "info" : "success",
       );
     } catch (error) {
       console.error("Import error:", error);
-      this.showNotification(
-        `Failed to import notes: ${error.message || "Invalid file format"}`,
-        "error",
-      );
+      this.showNotification("Import failed. Your current notes remain open.", "error");
+    } finally {
+      this.importInProgress = false;
+      if (previousEditable !== undefined) {
+        this.noteContent?.setAttribute?.(
+          "contenteditable",
+          previousEditable ?? "true",
+        );
+      }
+      this.importFileInput.value = "";
     }
-
-    // Reset the file input
-    this.importFileInput.value = "";
   }
 
   renderNotesList() {
