@@ -65,7 +65,7 @@ record private notes, extension IDs, browser-profile paths, or recovery data her
 | P0 | Autosave previously showed "Saved" without awaiting storage; failed writes resolved as if successful. | Users could be told a failed write succeeded. | Fixed on `fix/truthful-saves`; completion-order and failed-write tests pass. |
 | P0 | Normal edits previously rewrote every note on each save. | Write cost grew with the whole collection; overlapping writes made ordering hard to reason about. | Fixed on `perf/incremental-note-saves`; normal edits now write one note and the small index metadata. |
 | P0 | Chrome storage reads previously ignored `runtime.lastError`; `getAllNotes()` also turned caught read failures into `[]`. | A transient read failure could lead Ren to create a new note and replace the visible index while old note keys remained. | Safeguarded on `fix/storage-read-failures`; focused failure tests pass. |
-| P0 | Imported content, note titles, search text, and notification messages can reach `innerHTML` without a strict allowlist or text encoding. | A crafted backup/title/query can inject markup into the extension UI. Extension CSP constrains script execution, but markup and deceptive UI remain a concern. | Code path confirmed; browser impact needs a local repro. |
+| P0 | Imported content, note titles, search text, and notification messages previously reached `innerHTML` without a strict allowlist or text encoding. | A crafted backup/title/query could inject markup or deceptive controls into the extension UI. | Fixed on `fix/import-markup-safety`; hostile browser fixtures verify the content allowlist and text-only UI paths. |
 | P0 | Import previously replaced the index while leaving old `note_*` keys in storage. | Hidden orphan notes consumed quota and made recovery confusing. | Fixed on `fix/recoverable-note-import`; old keys are removed only after verified replacement and remain recoverable from the pre-import backup. |
 | P1 | Manual title edits can be overwritten by first-line derivation on a later body save. | The title component has no stable ownership rule. | Direct call path in `finishEditingTitle()` and `saveCurrentNote()`. |
 | P1 | Undo/redo availability is tracked with booleans, and custom DOM operations bypass the editor's history model. | Toolbar state and actual undo history can disagree. | Direct code path; browser interaction matrix needed. |
@@ -229,10 +229,9 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Sanitize imported rich content and remove user-controlled `innerHTML` paths for
-titles, search, and notifications. Add adversarial browser fixtures for markup
-injection, then complete synthetic export/import formatting round trips before
-the editor migration.
+Complete synthetic export/import round trips for every supported v1 formatting
+shape, including tasks, links, special characters, and malformed input. Then
+measure the current editor behavior and build the replacement editor spike.
 
 ## Progress log
 
@@ -274,6 +273,12 @@ the editor migration.
   Settings. Failed writes or verification restore the previous notebook. Nine
   focused import/restore tests and a real Chrome replace/restore round trip pass.
   Imported HTML still needs an allowlist before this milestone is complete.
+- 26 September 2026: On branch `fix/import-markup-safety`, imported rich text is
+  reduced to Ren's supported tag and attribute allowlist. Executable URLs,
+  scripts, embedded media, foreign markup, event handlers, and arbitrary
+  attributes are removed. Titles, search results, note cards, and notifications
+  render user strings with text nodes. Hostile fixtures pass in the real Chrome
+  extension while safe links, inline formatting, and task checkboxes survive.
 
 ## Primary references checked for this plan
 
