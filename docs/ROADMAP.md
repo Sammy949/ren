@@ -1,6 +1,6 @@
 # Ren rewrite roadmap
 
-Updated: 26 September 2026. Status: milestone 0 and storage safeguards in progress.
+Updated: 26 September 2026. Status: milestone 0 complete; milestone 1 in progress.
 
 ## Purpose and working memory
 
@@ -81,6 +81,11 @@ storage writes, import handling, and backup gaps are separate failure paths.
 ## Milestones and exit gates
 
 ### 0. Safeguard the existing data and capture a baseline
+
+**Status: complete on 26 September 2026.** The repeatable gate now covers the
+unpacked checkout, deterministic release ZIP, prior-package upgrade, panel
+reopen, browser restart, backup/import/restore, failed reads and writes, and a
+read-only health inventory using synthetic data in disposable profiles.
 
 - Create a real-browser smoke harness in a disposable Chrome profile. Exercise
   the published-format v1 package and an unpacked build; record version and
@@ -229,10 +234,11 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Exercise the exact release-package file set and a synthetic extension upgrade in
-the disposable profile. Then capture the current editor formatting baseline and
-build the replacement editor spike. Keep the current branch stack untagged until
-the release package, upgrade path, and editor work pass their gates.
+Finish milestone 1 save lifecycle coverage: pending edits during visibility
+changes, simultaneous panel instances, retry and recovery messaging, and manual
+backup reminders. Then capture the current editor formatting baseline and build
+the replacement editor spike. Keep the branch stack untagged until release gates
+pass.
 
 ## Progress log
 
@@ -287,6 +293,12 @@ the release package, upgrade path, and editor work pass their gates.
   validated import, verified storage replacement, a full Chrome restart, and
   pre-import restoration in two consecutive runs. The release ZIP file set and
   extension-update path remain open, so milestone 0 is not yet closed.
+- 26 September 2026: On branch `test/release-package-smoke`, Ren's package builder
+  creates a deterministic ZIP from an explicit eleven-file runtime allowlist; a
+  unit test checks every archived byte. The full Chrome gate passes from the
+  extracted ZIP. A same-path upgrade from the existing v1 archive preserves the
+  synthetic notebook, and a panel-only close/reopen preserves it before the full
+  browser restart. These results close milestone 0. No release tag was created.
 
 ## Primary references checked for this plan
 
