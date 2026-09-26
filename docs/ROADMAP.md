@@ -66,7 +66,7 @@ record private notes, extension IDs, browser-profile paths, or recovery data her
 | P0 | Normal edits previously rewrote every note on each save. | Write cost grew with the whole collection; overlapping writes made ordering hard to reason about. | Fixed on `perf/incremental-note-saves`; normal edits now write one note and the small index metadata. |
 | P0 | Chrome storage reads previously ignored `runtime.lastError`; `getAllNotes()` also turned caught read failures into `[]`. | A transient read failure could lead Ren to create a new note and replace the visible index while old note keys remained. | Safeguarded on `fix/storage-read-failures`; focused failure tests pass. |
 | P0 | Imported content, note titles, search text, and notification messages can reach `innerHTML` without a strict allowlist or text encoding. | A crafted backup/title/query can inject markup into the extension UI. Extension CSP constrains script execution, but markup and deceptive UI remain a concern. | Code path confirmed; browser impact needs a local repro. |
-| P0 | Import replaces the index but leaves old `note_*` keys in storage. | Hidden orphan notes consume quota and make recovery confusing. | Reproduced with a mocked `chrome.storage.local`: only the new note was listed, while both keys remained. |
+| P0 | Import previously replaced the index while leaving old `note_*` keys in storage. | Hidden orphan notes consumed quota and made recovery confusing. | Fixed on `fix/recoverable-note-import`; old keys are removed only after verified replacement and remain recoverable from the pre-import backup. |
 | P1 | Manual title edits can be overwritten by first-line derivation on a later body save. | The title component has no stable ownership rule. | Direct call path in `finishEditingTitle()` and `saveCurrentNote()`. |
 | P1 | Undo/redo availability is tracked with booleans, and custom DOM operations bypass the editor's history model. | Toolbar state and actual undo history can disagree. | Direct code path; browser interaction matrix needed. |
 | P1 | Note IDs use `Date.now().toString()` for new notes; imports accept loosely typed IDs. | Fast creation or malformed imports can collide or produce bad keys. | Direct code path; collision test needed. |
@@ -229,9 +229,10 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Make import staged and validated with a pre-import backup, a verifiable commit
-point, orphan handling, and synthetic export/import round-trip coverage. Keep
-backup/restore work ahead of the editor migration and record measured results.
+Sanitize imported rich content and remove user-controlled `innerHTML` paths for
+titles, search, and notifications. Add adversarial browser fixtures for markup
+injection, then complete synthetic export/import formatting round trips before
+the editor migration.
 
 ## Progress log
 
@@ -266,6 +267,13 @@ backup/restore work ahead of the editor migration and record measured results.
   selection, actual bytes used, and Chrome's reported quota. Reports exclude note
   content and never repair or delete records. Three focused health tests, all
   fourteen storage/save tests, and the real Chrome storage smoke test pass.
+- 26 September 2026: On branch `fix/recoverable-note-import`, imports validate
+  every note and reject duplicates before changing live state. Ren flushes the
+  open editor, saves a pre-import recovery snapshot, verifies the replacement,
+  removes obsolete note keys only after verification, and offers restoration in
+  Settings. Failed writes or verification restore the previous notebook. Nine
+  focused import/restore tests and a real Chrome replace/restore round trip pass.
+  Imported HTML still needs an allowlist before this milestone is complete.
 
 ## Primary references checked for this plan
 
