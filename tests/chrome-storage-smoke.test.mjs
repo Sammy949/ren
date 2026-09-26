@@ -413,6 +413,88 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
     assert.equal(reopened.notes[0].content, "<p>Saved while Ren is hidden</p>");
     assert.equal(reopened.currentNoteId, "smoke-note");
 
+    const peerPage = await openExtensionPage(chrome);
+    await poll(async () => {
+      const editors = await Promise.all(
+        [page, peerPage].map((client) =>
+          evaluate(client, `document.getElementById("noteContent")?.textContent`),
+        ),
+      );
+      return editors.every((text) => text === "Saved while Ren is hidden");
+    }, "both Ren panels to load the same note");
+    await evaluate(page, `(() => {
+      const editor = document.getElementById("noteContent");
+      editor.innerHTML = "<p>Unsaved edit from the first panel</p>";
+      editor.dispatchEvent(new InputEvent("input", { bubbles: true }));
+    })()`);
+    await evaluate(peerPage, `(() => {
+      const editor = document.getElementById("noteContent");
+      editor.innerHTML = "<p>Saved by the second panel</p>";
+      editor.dispatchEvent(new InputEvent("input", { bubbles: true }));
+    })()`);
+    await Promise.all(
+      [page, peerPage].map((client) =>
+        evaluate(client, `(() => {
+          Object.defineProperty(document, "visibilityState", {
+            configurable: true,
+            value: "hidden"
+          });
+          document.dispatchEvent(new Event("visibilitychange"));
+        })()`),
+      ),
+    );
+    const readPanelConflict = async () => {
+      const [first, second] = await Promise.all(
+        [page, peerPage].map((client) =>
+          evaluate(client, `({
+            status: document.getElementById("autoSaveStatus")?.textContent,
+            open: document.getElementById("noteContent")?.innerHTML
+          })`),
+        ),
+      );
+      const stored = await evaluate(page, `(async () =>
+        (await renStorage.getAllNotes())[0]?.content
+      )()`);
+      return [first, second].some(({ status }) => status === "Changed elsewhere")
+        ? { first, second, stored }
+        : null;
+    };
+    const panelConflict = await poll(
+      readPanelConflict,
+      "simultaneous panel conflict detection",
+    ).catch(async (error) => {
+      const diagnostics = await Promise.all(
+        [page, peerPage].map((client) =>
+          evaluate(client, `({
+            status: document.getElementById("autoSaveStatus")?.textContent,
+            open: document.getElementById("noteContent")?.innerHTML,
+            locks: Boolean(globalThis.navigator?.locks)
+          })`),
+        ),
+      );
+      throw new Error(
+        `${error.message}: ${JSON.stringify(diagnostics)}`,
+        { cause: error },
+      );
+    });
+    assert.ok([
+      "<p>Unsaved edit from the first panel</p>",
+      "<p>Saved by the second panel</p>",
+    ].includes(panelConflict.stored));
+    const conflictedPanel = [panelConflict.first, panelConflict.second].find(
+      ({ status }) => status === "Changed elsewhere",
+    );
+    assert.ok(conflictedPanel);
+    assert.notEqual(conflictedPanel.open, panelConflict.stored);
+    await new Promise((resolve) => setTimeout(resolve, 1_200));
+    const afterStaleTimer = await evaluate(page, `(async () => ({
+      stored: (await renStorage.getAllNotes())[0]?.content,
+      status: document.getElementById("autoSaveStatus")?.textContent
+    }))()`);
+    assert.equal(afterStaleTimer.stored, panelConflict.stored);
+    await peerPage.call("Page.close");
+    peerPage.close();
+
     const importRoundTrip = await evaluate(page, `(async () => {
       const fixture = ${JSON.stringify(v1Fixture)};
       const app = Object.create(RenNotePad.prototype);
@@ -469,7 +551,7 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
     })()`);
     assert.equal(restored.notes.length, 1);
     assert.equal(restored.notes[0].id, "smoke-note");
-    assert.equal(restored.notes[0].content, "<p>Saved while Ren is hidden</p>");
+    assert.equal(restored.notes[0].content, panelConflict.stored);
     assert.equal(restored.currentNoteId, "smoke-note");
   } finally {
     page?.close();

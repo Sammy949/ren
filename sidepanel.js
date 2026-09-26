@@ -8,12 +8,17 @@ class RenNotePad {
     this.editRevision = 0;
     this.savedRevision = 0;
     this.flushSavePromise = null;
+    this.instanceId =
+      globalThis.crypto?.randomUUID?.() ||
+      `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    this.storageConflict = false;
     this.saveQueue = Promise.resolve();
     this.sidebarUpdateTimeout = null; // Separate debounce for UI updates
     this.noteToDelete = null;
 
     // Performance: Map-based cache for O(1) note lookups
     this.notesCache = new Map();
+    this.persistedNotes = new Map();
     // Performance: Track rendered DOM elements by note ID
     this.renderedNoteElements = new Map();
 
@@ -92,6 +97,13 @@ class RenNotePad {
 
     // Load data
     await this.loadData();
+    this.unsubscribeStorageChanges = this.storage.subscribeToLocalChanges(
+      (changes) => {
+        this.handleStorageChanges(changes).catch((error) => {
+          console.error("Could not process external storage change:", error);
+        });
+      },
+    );
   }
 
   initializeElements() {
@@ -691,7 +703,9 @@ class RenNotePad {
           })
           .catch(() => {
             if (revision === this.editRevision) {
-              this.autoSaveStatus.textContent = "Could not save";
+              this.autoSaveStatus.textContent = this.storageConflict
+                ? "Changed elsewhere"
+                : "Could not save";
             }
           });
         this.updateNoteItemInDOM(note);
@@ -986,7 +1000,7 @@ class RenNotePad {
   }
 
   async restoreImportBackup() {
-    if (this.dataLoadFailed || this.importInProgress) return;
+    if (this.dataLoadFailed || this.importInProgress || this.storageConflict) return;
     if (!confirm("Restore the notes saved before your latest import?")) return;
 
     clearTimeout(this.autoSaveTimeout);
@@ -1004,6 +1018,7 @@ class RenNotePad {
       this.currentNoteId = restoredCurrentNoteId;
       this.editRevision++;
       this.savedRevision = this.editRevision;
+      this.recordPersistedNotes(restoredNotes);
       this.rebuildCache();
       this.loadCurrentNote();
       this.renderNotesList();
@@ -1167,6 +1182,7 @@ Happy writing! ✨`,
       // Load notes from chrome.storage
       this.notes = await this.storage.getAllNotes();
       this.currentNoteId = await this.storage.getCurrentNoteId();
+      this.recordPersistedNotes(this.notes);
 
       // Performance: Rebuild cache after loading
       this.rebuildCache();
@@ -1189,10 +1205,74 @@ Happy writing! ✨`,
     }
   }
 
+  captureCurrentEditorContent() {
+    if (!this.currentNoteId) return;
+    const note = this.getNoteById(this.currentNoteId);
+    if (!note) return;
+    note.content = this.editor
+      ? this.noteContent.innerHTML
+      : this.noteContent.value;
+  }
+
+  enterStorageConflict() {
+    this.captureCurrentEditorContent();
+    if (this.storageConflict) return;
+    clearTimeout(this.autoSaveTimeout);
+    this.storageConflict = true;
+    this.autoSaveStatus.textContent = "Changed elsewhere";
+    this.showNotification(
+      "This notebook changed in another Ren panel. Export or copy your open edits, then reopen Ren.",
+      "warning",
+    );
+  }
+
+  async handleStorageChanges(changes) {
+    const changedKeys = Object.keys(changes);
+    const notebookChanged = changedKeys.some(
+      (key) => key === "sylva_notes_index" || key.startsWith("note_"),
+    );
+    if (!notebookChanged || this.importInProgress) return;
+
+    const writer = changes.ren_last_write_v1?.newValue;
+    if (writer?.instanceId === this.instanceId) return;
+
+    if (this.editRevision > this.savedRevision) {
+      this.enterStorageConflict();
+      return;
+    }
+
+    const previousCurrentNoteId = this.currentNoteId;
+    const notes = await this.storage.getAllNotes();
+    const storedCurrentNoteId = await this.storage.getCurrentNoteId();
+    this.notes = notes;
+    this.currentNoteId = notes.some(({ id }) => id === previousCurrentNoteId)
+      ? previousCurrentNoteId
+      : storedCurrentNoteId;
+    this.rebuildCache();
+    this.recordPersistedNotes(notes);
+    this.loadCurrentNote();
+    this.renderNotesList();
+    this.savedRevision = this.editRevision;
+  }
+
   // Performance: Rebuild the notes cache from the array
   rebuildCache() {
     this.notesCache.clear();
     this.notes.forEach((note) => this.notesCache.set(note.id, note));
+  }
+
+  recordPersistedNotes(notes) {
+    this.persistedNotes = new Map(
+      notes.map((note) => [note.id, { ...note }]),
+    );
+  }
+
+  assertNoStorageConflict() {
+    if (this.storageConflict) {
+      const error = new Error("Another Ren panel changed the notebook");
+      error.name = "StorageConflictError";
+      throw error;
+    }
   }
 
   // Performance: O(1) note lookup instead of O(n) array.find()
@@ -1204,26 +1284,48 @@ Happy writing! ✨`,
     if (this.dataLoadFailed) {
       throw new Error("Cannot save while notes have not loaded");
     }
+    this.assertNoStorageConflict();
 
     // Snapshot at queue time so a later edit cannot change an earlier write.
     const notes = this.notes.map((note) => ({ ...note }));
     const currentNoteId = this.currentNoteId;
-    return this.queueStorageSave(() =>
-      this.storage.saveAllNotes(notes, currentNoteId),
-    );
+    const writeContext = {
+      instanceId: this.instanceId,
+      revision: this.editRevision,
+    };
+    return this.queueStorageSave(async () => {
+      this.assertNoStorageConflict();
+      await this.storage.saveAllNotes(notes, currentNoteId, writeContext);
+      this.recordPersistedNotes(notes);
+    });
   }
 
   async saveNoteData(note) {
     if (this.dataLoadFailed) {
       throw new Error("Cannot save while notes have not loaded");
     }
+    this.assertNoStorageConflict();
 
     const noteSnapshot = { ...note };
     const notesIndex = this.notes.map(({ id }) => id);
     const currentNoteId = this.currentNoteId;
-    return this.queueStorageSave(() =>
-      this.storage.saveNote(noteSnapshot, notesIndex, currentNoteId),
-    );
+    const writeContext = {
+      instanceId: this.instanceId,
+      revision: this.editRevision,
+    };
+    return this.queueStorageSave(async () => {
+      this.assertNoStorageConflict();
+      const expectedNote = this.persistedNotes?.get(noteSnapshot.id);
+      await this.storage.saveNote(
+        noteSnapshot,
+        notesIndex,
+        currentNoteId,
+        writeContext,
+        expectedNote,
+      );
+      if (!this.persistedNotes) this.persistedNotes = new Map();
+      this.persistedNotes.set(noteSnapshot.id, { ...noteSnapshot });
+    });
   }
 
   async saveCurrentNoteSelection() {
@@ -1232,9 +1334,14 @@ Happy writing! ✨`,
     }
 
     const currentNoteId = this.currentNoteId;
-    return this.queueStorageSave(() =>
-      this.storage.setCurrentNoteId(currentNoteId),
-    );
+    const writeContext = {
+      instanceId: this.instanceId,
+      revision: this.editRevision,
+    };
+    return this.queueStorageSave(() => {
+      this.assertNoStorageConflict();
+      return this.storage.setCurrentNoteId(currentNoteId, writeContext);
+    });
   }
 
   async queueStorageSave(operation) {
@@ -1247,10 +1354,14 @@ Happy writing! ✨`,
       return await save;
     } catch (error) {
       console.error("Error saving data:", error);
-      this.showNotification(
-        "Could not save note. Your changes are still open.",
-        "error",
-      );
+      if (error?.name === "StorageConflictError") {
+        this.enterStorageConflict();
+      } else {
+        this.showNotification(
+          "Could not save note. Your changes are still open.",
+          "error",
+        );
+      }
       throw error;
     }
   }
@@ -1501,6 +1612,11 @@ Happy writing! ✨`,
 
   scheduleAutoSave() {
     if (this.dataLoadFailed || this.importInProgress) return;
+    if (this.storageConflict) {
+      this.captureCurrentEditorContent();
+      this.autoSaveStatus.textContent = "Changed elsewhere";
+      return;
+    }
     clearTimeout(this.autoSaveTimeout);
     const revision = ++this.editRevision;
     this.autoSaveStatus.textContent = "Saving...";
@@ -1531,13 +1647,16 @@ Happy writing! ✨`,
       return true;
     } catch (error) {
       if (revision === this.editRevision) {
-        this.autoSaveStatus.textContent = "Could not save";
+        this.autoSaveStatus.textContent = this.storageConflict
+          ? "Changed elsewhere"
+          : "Could not save";
       }
       return false;
     }
   }
 
   flushPendingSave() {
+    if (this.storageConflict) return Promise.resolve(false);
     if (
       this.dataLoadFailed ||
       this.importInProgress ||
@@ -1560,7 +1679,7 @@ Happy writing! ✨`,
   }
 
   async createNewNote() {
-    if (this.dataLoadFailed) return;
+    if (this.dataLoadFailed || this.storageConflict) return;
     // Store previous note ID and save it before creating new
     const previousNoteId = this.currentNoteId;
     await this.saveCurrentNote();
@@ -1592,6 +1711,9 @@ Happy writing! ✨`,
 
   async saveCurrentNote() {
     if (this.dataLoadFailed) return;
+    if (this.storageConflict) {
+      throw new Error("Cannot save while another panel has changed the notebook");
+    }
     if (!this.currentNoteId) return;
 
     // Performance: O(1) lookup instead of O(n) find()
@@ -1665,6 +1787,7 @@ Happy writing! ✨`,
   }
 
   async switchToNote(noteId) {
+    if (this.storageConflict) return;
     // Store the previous note ID before switching
     const previousNoteId = this.currentNoteId;
 
@@ -2085,6 +2208,9 @@ Happy writing! ✨`,
     if (this.dataLoadFailed) {
       throw new Error("Cannot export while notes have not loaded");
     }
+    if (this.editRevision > this.savedRevision || this.storageConflict) {
+      this.captureCurrentEditorContent();
+    }
     return {
       version: "1.0",
       exportedAt: new Date().toISOString(),
@@ -2160,7 +2286,7 @@ Happy writing! ✨`,
   }
 
   async importNotes(event) {
-    if (this.dataLoadFailed) {
+    if (this.dataLoadFailed || this.storageConflict) {
       this.importFileInput.value = "";
       return;
     }
@@ -2205,6 +2331,7 @@ Happy writing! ✨`,
       this.currentNoteId = prepared.currentNoteId;
       this.editRevision++;
       this.savedRevision = this.editRevision;
+      this.recordPersistedNotes(prepared.notes);
 
       // Rebuild the cache to sync with new notes
       this.rebuildCache();

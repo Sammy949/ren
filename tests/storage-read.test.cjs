@@ -149,6 +149,36 @@ test("saving one note does not rewrite unrelated note bodies", async () => {
   assert.equal(fixture.data.note_b.content, "untouched");
 });
 
+test("a stale panel cannot overwrite a newer note revision", async () => {
+  const fixture = loadStorage({
+    initial: {
+      note_a: { id: "a", content: "old", updatedAt: "2026-09-26T00:00:00.000Z" },
+      sylva_notes_index: ["a"],
+    },
+  });
+
+  await fixture.storage.saveNote(
+    { id: "a", content: "panel A", updatedAt: "2026-09-26T00:00:00.000Z" },
+    ["a"],
+    "a",
+    { instanceId: "panel-a", revision: 1 },
+    { id: "a", content: "old", updatedAt: "2026-09-26T00:00:00.000Z" },
+  );
+  await assert.rejects(
+    fixture.storage.saveNote(
+      { id: "a", content: "panel B", updatedAt: "2026-09-26T00:00:00.000Z" },
+      ["a"],
+      "a",
+      { instanceId: "panel-b", revision: 1 },
+    { id: "a", content: "old", updatedAt: "2026-09-26T00:00:00.000Z" },
+    ),
+    (error) => error.name === "StorageConflictError",
+  );
+
+  assert.equal(fixture.data.note_a.content, "panel A");
+  assert.equal(fixture.data.ren_last_write_v1.instanceId, "panel-a");
+});
+
 test("a failed notebook load never creates or saves a replacement note", async () => {
   const context = {
     document: { addEventListener() {} },

@@ -39,10 +39,16 @@ function createSaveApp() {
   app.editRevision = 0;
   app.savedRevision = 0;
   app.flushSavePromise = null;
+  app.instanceId = "panel-a";
+  app.storageConflict = false;
   app.saveQueue = Promise.resolve();
   app.autoSaveStatus = { textContent: "Ready" };
   app.notes = [{ id: "a", title: "A", content: "first" }];
+  app.notesCache = new Map([["a", app.notes[0]]]);
+  app.persistedNotes = new Map([["a", { ...app.notes[0] }]]);
   app.currentNoteId = "a";
+  app.editor = true;
+  app.noteContent = { innerHTML: "first", value: "first" };
   app.showNotification = () => {};
   app.announceToScreenReader = () => {};
   return app;
@@ -94,6 +100,29 @@ test("a failed write does not prevent a later queued save", async () => {
   await app.saveData();
 
   assert.deepEqual(writes, ["first", "retry"]);
+});
+
+test("a failed note write retries against the last confirmed snapshot", async () => {
+  const app = createSaveApp();
+  const expected = [];
+  let attempts = 0;
+  app.storage = {
+    async saveNote(note, _index, _current, _context, previous) {
+      attempts++;
+      expected.push(previous.content);
+      if (attempts === 1) throw new Error("quota exceeded");
+      assert.equal(note.content, "retry content");
+    },
+  };
+
+  app.notes[0].content = "failed content";
+  await assert.rejects(app.saveNoteData(app.notes[0]), /quota exceeded/);
+  assert.equal(app.persistedNotes.get("a").content, "first");
+
+  app.notes[0].content = "retry content";
+  await app.saveNoteData(app.notes[0]);
+  assert.deepEqual(expected, ["first", "first"]);
+  assert.equal(app.persistedNotes.get("a").content, "retry content");
 });
 
 test("an ordinary note save uses the incremental storage path", async () => {
@@ -208,4 +237,59 @@ test("visibility and pagehide share one in-flight flush", async () => {
   assert.equal(await visibilitySave, true);
   assert.equal(await pagehideSave, true);
   assert.equal(saves, 1);
+});
+
+test("an external notebook change blocks a dirty panel from overwriting it", async () => {
+  const app = createSaveApp();
+  const notices = [];
+  app.editRevision = 1;
+  app.noteContent.innerHTML = "unsaved local edit";
+  app.showNotification = (...args) => notices.push(args);
+
+  await app.handleStorageChanges({
+    note_a: { newValue: { id: "a", title: "External", content: "external" } },
+    ren_last_write_v1: { newValue: { instanceId: "panel-b", revision: 1 } },
+  });
+
+  assert.equal(app.storageConflict, true);
+  assert.equal(app.notes[0].content, "unsaved local edit");
+  assert.equal(app.autoSaveStatus.textContent, "Changed elsewhere");
+  assert.equal(notices.length, 1);
+  await assert.rejects(app.saveData(), /[Aa]nother Ren panel/);
+  assert.equal(app.createExportData().notes[0].content, "unsaved local edit");
+});
+
+test("a clean panel refreshes after another panel saves", async () => {
+  const app = createSaveApp();
+  let loaded = 0;
+  let rendered = 0;
+  const external = { id: "a", title: "External", content: "new value" };
+  app.storage = {
+    getAllNotes: async () => [external],
+    getCurrentNoteId: async () => "a",
+  };
+  app.loadCurrentNote = () => { loaded++; };
+  app.renderNotesList = () => { rendered++; };
+
+  await app.handleStorageChanges({
+    note_a: { newValue: external },
+    ren_last_write_v1: { newValue: { instanceId: "panel-b", revision: 1 } },
+  });
+
+  assert.equal(app.storageConflict, false);
+  assert.equal(app.notesCache.get("a").content, "new value");
+  assert.equal(loaded, 1);
+  assert.equal(rendered, 1);
+});
+
+test("a panel ignores its own tagged storage event", async () => {
+  const app = createSaveApp();
+  app.editRevision = 1;
+
+  await app.handleStorageChanges({
+    note_a: { newValue: { id: "a", content: "first" } },
+    ren_last_write_v1: { newValue: { instanceId: "panel-a", revision: 1 } },
+  });
+
+  assert.equal(app.storageConflict, false);
 });

@@ -301,13 +301,44 @@ class RenStorage {
    * @param {string|null} currentNoteId - Current note ID
    * @returns {Promise<void>}
    */
-  async saveNote(note, notesIndex, currentNoteId) {
+  async saveNote(
+    note,
+    notesIndex,
+    currentNoteId,
+    writeContext = null,
+    expectedNote = undefined,
+  ) {
     try {
-      await this.setLocal({
+      const items = {
         [`note_${note.id}`]: note,
         sylva_notes_index: notesIndex,
         sylva_current_note: currentNoteId,
-      });
+      };
+      if (writeContext?.instanceId) {
+        items.ren_last_write_v1 = writeContext;
+      }
+      const commit = async () => {
+        if (expectedNote !== undefined) {
+          const key = `note_${note.id}`;
+          const current = (await this.getLocal(key))[key];
+          if (!current || !this.storageValuesEqual(current, expectedNote)) {
+            const error = new Error(
+              "This note changed in another Ren panel",
+            );
+            error.name = "StorageConflictError";
+            throw error;
+          }
+        }
+        await this.setLocal(items);
+      };
+      if (globalThis.navigator?.locks?.request) {
+        await globalThis.navigator.locks.request(
+          `ren-note-write:${note.id}`,
+          commit,
+        );
+      } else {
+        await commit();
+      }
     } catch (error) {
       console.error("Storage: Failed to save note", error?.message || error);
       throw error;
@@ -339,7 +370,7 @@ class RenStorage {
    * @param {string|null} [currentNoteId] - Current note to commit atomically
    * @returns {Promise<void>}
    */
-  async saveAllNotes(notes, currentNoteId) {
+  async saveAllNotes(notes, currentNoteId, writeContext = null) {
     try {
       const items = {};
       const notesIndex = [];
@@ -352,6 +383,9 @@ class RenStorage {
       items.sylva_notes_index = notesIndex;
       if (arguments.length > 1) {
         items.sylva_current_note = currentNoteId;
+      }
+      if (writeContext?.instanceId) {
+        items.ren_last_write_v1 = writeContext;
       }
       await this.setLocal(items);
     } catch (error) {
@@ -674,8 +708,23 @@ class RenStorage {
    * @param {string} noteId
    * @returns {Promise<void>}
    */
-  async setCurrentNoteId(noteId) {
-    await this.setLocal({ sylva_current_note: noteId });
+  async setCurrentNoteId(noteId, writeContext = null) {
+    const items = { sylva_current_note: noteId };
+    if (writeContext?.instanceId) {
+      items.ren_last_write_v1 = writeContext;
+    }
+    await this.setLocal(items);
+  }
+
+  subscribeToLocalChanges(listener) {
+    if (!this.useChromeLocal || !chrome.storage.onChanged?.addListener) {
+      return () => {};
+    }
+    const handler = (changes, areaName) => {
+      if (areaName === "local") listener(changes);
+    };
+    chrome.storage.onChanged.addListener(handler);
+    return () => chrome.storage.onChanged.removeListener(handler);
   }
 
   /**
