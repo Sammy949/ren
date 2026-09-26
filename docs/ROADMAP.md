@@ -235,9 +235,9 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Capture the current editor formatting baseline and build the replacement editor
-spike. Test title ownership and shortcut scope against that editor before
-changing either component.
+Fix the confirmed inline-code continuation loss on the current release line,
+then build the replacement editor spike. Test title ownership and shortcut
+scope against that editor before changing either component.
 Keep the branch stack untagged until release gates pass.
 
 ## Progress log
@@ -325,6 +325,12 @@ Keep the branch stack untagged until release gates pass.
   from the manifest; export feedback says the download started, rather than
   claiming a file reached disk. Focused retry coverage and the packaged Chrome
   gate pass, including a 320 px panel fit check for the recovery action.
+- 26 September 2026: On branch `test/editor-formatting-baseline`, the packaged
+  Chrome gate now types real heading, inline-mark, code, and task sequences.
+  `docs/EDITOR_BASELINE.md` records the results. Heading conversion and checked
+  task serialization work. Typed `**bold**` remains literal by design in v1.
+  Selecting text for inline code and typing after it removes the selected text
+  in Chrome, a confirmed content-loss bug to fix before the editor migration.
 
 ## Primary references checked for this plan
 

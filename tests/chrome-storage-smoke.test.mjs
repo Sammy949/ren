@@ -619,6 +619,73 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
     assert.match(recoveryUi.reminder, /Export a copy regularly/);
     assert.match(recoveryUi.version, /Ren v1\.0\.0/);
     assert.ok(recoveryUi.documentWidth <= recoveryUi.viewportWidth);
+
+    const formattingBaseline = await evaluate(page, `(() => {
+      document.getElementById("closeSettings").click();
+      const editor = document.getElementById("noteContent");
+      editor.innerHTML = "";
+      editor.focus();
+      document.execCommand("insertText", false, "#");
+      document.execCommand("insertText", false, " ");
+      const headingAfterShortcut = editor.innerHTML;
+      document.execCommand("insertText", false, "Heading");
+      const headingAfterTyping = editor.innerHTML;
+
+      editor.innerHTML = "<p><br></p>";
+      const paragraph = editor.firstElementChild;
+      const range = document.createRange();
+      range.selectNodeContents(paragraph);
+      range.collapse(true);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      editor.focus();
+      for (const character of "**bold** next") {
+        document.execCommand("insertText", false, character);
+      }
+      const inlineAfterTyping = editor.innerHTML;
+
+      editor.innerHTML = "<p>selected</p>";
+      const codeText = editor.querySelector("p").firstChild;
+      range.setStart(codeText, 0);
+      range.setEnd(codeText, codeText.textContent.length);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      RenEditor.prototype.execCode.call({});
+      const codeAfterCommand = editor.innerHTML;
+      document.execCommand("insertText", false, " after");
+      const codeAfterTyping = editor.innerHTML;
+      document.execCommand("undo", false, null);
+      const codeAfterUndo = editor.innerHTML;
+
+      editor.innerHTML = "";
+      editor.focus();
+      for (const character of "[] task") {
+        document.execCommand("insertText", false, character);
+      }
+      const checkbox = editor.querySelector(".checkbox-input");
+      const checkboxCreated = Boolean(checkbox);
+      if (checkbox) checkbox.click();
+      const checkboxSerialized = editor.innerHTML;
+      editor.innerHTML = checkboxSerialized;
+      RenEditor.prototype.normalizeCheckboxes.call({ element: editor });
+      return {
+        headingAfterShortcut,
+        headingAfterTyping,
+        inlineAfterTyping,
+        codeAfterCommand,
+        codeAfterTyping,
+        codeAfterUndo,
+        checkboxCreated,
+        checkboxSerialized,
+        checkboxCheckedAfterReload: editor.querySelector(".checkbox-input")?.checked,
+      };
+    })()`);
+    assert.match(formattingBaseline.headingAfterShortcut, /<h1>/);
+    assert.match(formattingBaseline.headingAfterTyping, /<h1>Heading<\/h1>/);
+    assert.equal(formattingBaseline.checkboxCreated, true);
+    assert.equal(formattingBaseline.checkboxCheckedAfterReload, true);
+    console.log("Current editor formatting:", JSON.stringify(formattingBaseline));
   } finally {
     page?.close();
     if (chrome) await stopChrome(chrome);
