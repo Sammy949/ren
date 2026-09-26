@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { cp, mkdtemp, readFile, rm } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -9,6 +9,9 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const extensionRoot = process.env.REN_EXTENSION_ROOT
+  ? path.resolve(process.env.REN_EXTENSION_ROOT)
+  : repoRoot;
 const v1Fixture = JSON.parse(
   await readFile(path.join(repoRoot, "tests/fixtures/v1-notes.json"), "utf8"),
 );
@@ -90,7 +93,7 @@ class CdpClient {
   }
 }
 
-async function startChrome(profileDirectory) {
+async function startChrome(profileDirectory, loadedExtensionRoot = extensionRoot) {
   const port = await reservePort();
   const stderr = [];
   const processHandle = spawn(findChrome(), [
@@ -103,8 +106,8 @@ async function startChrome(profileDirectory) {
     "--no-default-browser-check",
     `--remote-debugging-port=${port}`,
     `--user-data-dir=${profileDirectory}`,
-    `--disable-extensions-except=${repoRoot}`,
-    `--load-extension=${repoRoot}`,
+    `--disable-extensions-except=${loadedExtensionRoot}`,
+    `--load-extension=${loadedExtensionRoot}`,
     "about:blank",
   ], { stdio: ["ignore", "ignore", "pipe"] });
 
@@ -235,14 +238,56 @@ async function stopChrome(chrome) {
   if (chrome.processHandle.exitCode === null) chrome.processHandle.kill("SIGKILL");
 }
 
-test("Ren notes in chrome.storage survive a real Chrome restart", { timeout: 30_000 }, async () => {
+test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000 }, async () => {
   const profileDirectory = await mkdtemp(path.join(os.tmpdir(), "ren-smoke-"));
+  const upgradeFromRoot = process.env.REN_UPGRADE_FROM_ROOT
+    ? path.resolve(process.env.REN_UPGRADE_FROM_ROOT)
+    : null;
+  let loadedExtensionRoot = extensionRoot;
+  let activeExtensionRoot;
   let chrome;
   let page;
 
   try {
-    chrome = await startChrome(profileDirectory);
-    page = await openExtensionPage(chrome);
+    if (upgradeFromRoot) {
+      activeExtensionRoot = await mkdtemp(
+        path.join(os.tmpdir(), "ren-extension-"),
+      );
+      await rm(activeExtensionRoot, { recursive: true, force: true });
+      await cp(upgradeFromRoot, activeExtensionRoot, { recursive: true });
+      loadedExtensionRoot = activeExtensionRoot;
+
+      chrome = await startChrome(profileDirectory, loadedExtensionRoot);
+      page = await openExtensionPage(chrome);
+      await evaluate(page, `(async () => {
+        const note = {
+          id: "smoke-note",
+          title: "Before upgrade",
+          content: "Stored by the previous package",
+          createdAt: "2026-09-26T00:00:00.000Z",
+          updatedAt: "2026-09-26T00:00:00.000Z"
+        };
+        await renStorage.saveAllNotes([note]);
+        await renStorage.setCurrentNoteId(note.id);
+      })()`);
+      page.close();
+      await stopChrome(chrome);
+
+      await rm(activeExtensionRoot, { recursive: true, force: true });
+      await cp(extensionRoot, activeExtensionRoot, { recursive: true });
+      chrome = await startChrome(profileDirectory, loadedExtensionRoot);
+      page = await openExtensionPage(chrome);
+      const upgraded = await evaluate(page, `(async () => ({
+        notes: await renStorage.getAllNotes(),
+        currentNoteId: await renStorage.getCurrentNoteId()
+      }))()`);
+      assert.equal(upgraded.notes.length, 1);
+      assert.equal(upgraded.notes[0].content, "Stored by the previous package");
+      assert.equal(upgraded.currentNoteId, "smoke-note");
+    } else {
+      chrome = await startChrome(profileDirectory, loadedExtensionRoot);
+      page = await openExtensionPage(chrome);
+    }
     const markupSafety = await evaluate(page, `(() => {
       const app = Object.create(RenNotePad.prototype);
       const raw = '<p onclick="globalThis.injected = true">Hello <strong>bold</strong><img src=x onerror="globalThis.injected = true"><a href="javascript:globalThis.injected = true">bad</a><a href="https://example.com" onclick="globalThis.injected = true">good</a></p><div class="editor-checkbox-item" onclick="globalThis.injected = true"><input type="checkbox" checked onfocus="globalThis.injected = true"><span class="checkbox-text" contenteditable="true">task</span></div><script>globalThis.injected = true</script>';
@@ -327,7 +372,7 @@ test("Ren notes in chrome.storage survive a real Chrome restart", { timeout: 30_
 
     page.close();
     await stopChrome(chrome);
-    chrome = await startChrome(profileDirectory);
+    chrome = await startChrome(profileDirectory, loadedExtensionRoot);
     page = await openExtensionPage(chrome);
 
     const reopened = await evaluate(page, `(async () => ({
@@ -364,7 +409,7 @@ test("Ren notes in chrome.storage survive a real Chrome restart", { timeout: 30_
 
     page.close();
     await stopChrome(chrome);
-    chrome = await startChrome(profileDirectory);
+    chrome = await startChrome(profileDirectory, loadedExtensionRoot);
     page = await openExtensionPage(chrome);
     const persistedImport = await evaluate(page, `(async () => ({
       notes: await renStorage.getAllNotes(),
@@ -401,5 +446,8 @@ test("Ren notes in chrome.storage survive a real Chrome restart", { timeout: 30_
     page?.close();
     if (chrome) await stopChrome(chrome);
     await rm(profileDirectory, { recursive: true, force: true });
+    if (activeExtensionRoot) {
+      await rm(activeExtensionRoot, { recursive: true, force: true });
+    }
   }
 });
