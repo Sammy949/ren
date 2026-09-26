@@ -258,6 +258,51 @@ test("replacement rejects duplicate IDs before writing a backup", async () => {
   assert.equal(fixture.setCalls, 0);
 });
 
+test("a stale import does not overwrite newer notes or the recovery backup", async () => {
+  const fixture = loadStorage({
+    initial: {
+      sylva_notes_index: ["old"],
+      note_old: note("old", "newer"),
+      ren_pre_import_backup_v1: { version: 1, createdAt: "earlier", entries: {} },
+    },
+  });
+  await assert.rejects(
+    fixture.storage.replaceAllNotesWithBackup(
+      [note("incoming")], "incoming",
+      { index: ["old"], notes: [note("old", "stale")] },
+    ),
+    (error) => error.name === "StorageConflictError",
+  );
+  assert.equal(fixture.setCalls, 0);
+  assert.equal(fixture.data.note_old.content, "newer");
+  assert.equal(fixture.data.ren_pre_import_backup_v1.createdAt, "earlier");
+});
+
+test("a stale restore cannot replace changes made after import", async () => {
+  const fixture = loadStorage({
+    initial: {
+      sylva_notes_index: ["new"],
+      note_new: note("new", "edited after import"),
+      ren_pre_import_backup_v1: {
+        version: 1, createdAt: "earlier", hadNotesIndex: true,
+        hadCurrentNote: true,
+        entries: {
+          sylva_notes_index: ["old"], sylva_current_note: "old",
+          note_old: note("old"),
+        },
+      },
+    },
+  });
+  await assert.rejects(
+    fixture.storage.restorePreImportBackup({
+      index: ["new"], notes: [note("new", "stale")],
+    }),
+    (error) => error.name === "StorageConflictError",
+  );
+  assert.equal(fixture.setCalls, 0);
+  assert.equal(fixture.data.note_new.content, "edited after import");
+});
+
 test("import validates the whole backup before replacing live state", async () => {
   const app = createImportApp();
   const replacement = [note("new", "replacement")];

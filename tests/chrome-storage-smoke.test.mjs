@@ -492,6 +492,39 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
       status: document.getElementById("autoSaveStatus")?.textContent
     }))()`);
     assert.equal(afterStaleTimer.stored, panelConflict.stored);
+
+    const bulkBaseline = await evaluate(page, `(async () => ({
+      index: (await renStorage.getAllNotes()).map(({ id }) => id),
+      notes: await renStorage.getAllNotes()
+    }))()`);
+    const bulkWrite = (client, content) => evaluate(client, `(async () => {
+      try {
+        const note = { ...${JSON.stringify(bulkBaseline.notes[0])}, content: ${JSON.stringify(content)} };
+        await renStorage.saveAllNotes(
+          [note], note.id,
+          { instanceId: ${JSON.stringify(content)}, revision: 1 },
+          ${JSON.stringify(bulkBaseline)}
+        );
+        return { outcome: "saved" };
+      } catch (error) {
+        return { outcome: error.name };
+      }
+    })()`);
+    const bulkOutcomes = await Promise.all([
+      bulkWrite(page, "<p>Structural write A</p>"),
+      bulkWrite(peerPage, "<p>Structural write B</p>"),
+    ]);
+    assert.deepEqual(
+      bulkOutcomes.map(({ outcome }) => outcome).sort(),
+      ["StorageConflictError", "saved"],
+    );
+    const preImportContent = await evaluate(page, `(async () =>
+      (await renStorage.getAllNotes())[0]?.content
+    )()`);
+    assert.ok([
+      "<p>Structural write A</p>",
+      "<p>Structural write B</p>",
+    ].includes(preImportContent));
     await peerPage.call("Page.close");
     peerPage.close();
 
@@ -551,7 +584,7 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
     })()`);
     assert.equal(restored.notes.length, 1);
     assert.equal(restored.notes[0].id, "smoke-note");
-    assert.equal(restored.notes[0].content, panelConflict.stored);
+    assert.equal(restored.notes[0].content, preImportContent);
     assert.equal(restored.currentNoteId, "smoke-note");
   } finally {
     page?.close();

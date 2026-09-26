@@ -307,6 +307,7 @@ class RenStorage {
     currentNoteId,
     writeContext = null,
     expectedNote = undefined,
+    expectedIndex = undefined,
   ) {
     try {
       const items = {
@@ -318,6 +319,11 @@ class RenStorage {
         items.ren_last_write_v1 = writeContext;
       }
       const commit = async () => {
+        if (expectedIndex !== undefined) {
+          const storedIndex = (await this.getLocal("sylva_notes_index"))
+            .sylva_notes_index || [];
+          this.assertNotebookIndex(storedIndex, expectedIndex);
+        }
         if (expectedNote !== undefined) {
           const key = `note_${note.id}`;
           const current = (await this.getLocal(key))[key];
@@ -331,14 +337,7 @@ class RenStorage {
         }
         await this.setLocal(items);
       };
-      if (globalThis.navigator?.locks?.request) {
-        await globalThis.navigator.locks.request(
-          `ren-note-write:${note.id}`,
-          commit,
-        );
-      } else {
-        await commit();
-      }
+      await this.withNotebookWriteLock(commit);
     } catch (error) {
       console.error("Storage: Failed to save note", error?.message || error);
       throw error;
@@ -370,7 +369,7 @@ class RenStorage {
    * @param {string|null} [currentNoteId] - Current note to commit atomically
    * @returns {Promise<void>}
    */
-  async saveAllNotes(notes, currentNoteId, writeContext = null) {
+  async saveAllNotes(notes, currentNoteId, writeContext = null, expectedNotebook = undefined) {
     try {
       const items = {};
       const notesIndex = [];
@@ -387,7 +386,13 @@ class RenStorage {
       if (writeContext?.instanceId) {
         items.ren_last_write_v1 = writeContext;
       }
-      await this.setLocal(items);
+      await this.withNotebookWriteLock(async () => {
+        if (expectedNotebook !== undefined) {
+          const current = await this.getLocal(null);
+          this.assertNotebookUnchanged(current, expectedNotebook);
+        }
+        await this.setLocal(items);
+      });
     } catch (error) {
       console.error(
         "Storage: Failed to save all notes",
@@ -404,7 +409,13 @@ class RenStorage {
    * @param {string} currentNoteId
    * @returns {Promise<object>} Commit and cleanup result.
    */
-  async replaceAllNotesWithBackup(notes, currentNoteId) {
+  async replaceAllNotesWithBackup(notes, currentNoteId, expectedNotebook = undefined) {
+    return this.withNotebookWriteLock(() =>
+      this.replaceAllNotesWithBackupUnlocked(notes, currentNoteId, expectedNotebook),
+    );
+  }
+
+  async replaceAllNotesWithBackupUnlocked(notes, currentNoteId, expectedNotebook) {
     if (!Array.isArray(notes) || notes.length === 0) {
       throw new Error("Replacement notebook must contain at least one note");
     }
@@ -433,6 +444,9 @@ class RenStorage {
     }
 
     const previous = await this.getLocal(null);
+    if (expectedNotebook !== undefined) {
+      this.assertNotebookUnchanged(previous, expectedNotebook);
+    }
     const previousNoteKeys = Object.keys(previous).filter((key) =>
       key.startsWith("note_"),
     );
@@ -481,7 +495,7 @@ class RenStorage {
       }
     } catch (error) {
       try {
-        await this.restorePreImportBackup();
+        await this.restorePreImportBackupUnlocked();
       } catch (restoreError) {
         throw new Error("Import failed and its backup could not be restored", {
           cause: restoreError,
@@ -544,7 +558,13 @@ class RenStorage {
    * Restore the exact note keys and selection saved before the latest import.
    * @returns {Promise<void>}
    */
-  async restorePreImportBackup() {
+  async restorePreImportBackup(expectedNotebook = undefined) {
+    return this.withNotebookWriteLock(() =>
+      this.restorePreImportBackupUnlocked(expectedNotebook),
+    );
+  }
+
+  async restorePreImportBackupUnlocked(expectedNotebook = undefined) {
     const result = await this.getLocal("ren_pre_import_backup_v1");
     const backup = result.ren_pre_import_backup_v1;
     if (
@@ -558,6 +578,9 @@ class RenStorage {
     }
 
     const current = await this.getLocal(null);
+    if (expectedNotebook !== undefined) {
+      this.assertNotebookUnchanged(current, expectedNotebook);
+    }
     const keysToRemove = Object.keys(current).filter(
       (key) =>
         (key.startsWith("note_") &&
@@ -592,6 +615,33 @@ class RenStorage {
         Object.prototype.hasOwnProperty.call(restored, "sylva_current_note"))
     ) {
       throw new Error("Pre-import backup cleanup could not be verified");
+    }
+  }
+
+  async withNotebookWriteLock(operation) {
+    if (globalThis.navigator?.locks?.request) {
+      return globalThis.navigator.locks.request("ren-notebook-write", operation);
+    }
+    return operation();
+  }
+
+  assertNotebookIndex(current, expected) {
+    if (!this.storageValuesEqual(current, expected)) {
+      const error = new Error("The notebook changed in another Ren panel");
+      error.name = "StorageConflictError";
+      throw error;
+    }
+  }
+
+  assertNotebookUnchanged(current, expected) {
+    const index = current.sylva_notes_index || [];
+    this.assertNotebookIndex(index, expected.index);
+    for (const note of expected.notes) {
+      if (!this.storageValuesEqual(current[`note_${note.id}`], note)) {
+        const error = new Error("A note changed in another Ren panel");
+        error.name = "StorageConflictError";
+        throw error;
+      }
     }
   }
 

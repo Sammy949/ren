@@ -1010,7 +1010,7 @@ class RenNotePad {
     this.noteContent?.setAttribute?.("contenteditable", "false");
     try {
       await this.queueStorageSave(() =>
-        this.storage.restorePreImportBackup(),
+        this.storage.restorePreImportBackup(this.persistedNotebook()),
       );
       const restoredNotes = await this.storage.getAllNotes();
       const restoredCurrentNoteId = await this.storage.getCurrentNoteId();
@@ -1262,9 +1262,17 @@ Happy writing! ✨`,
   }
 
   recordPersistedNotes(notes) {
+    this.persistedNoteIds = notes.map(({ id }) => id);
     this.persistedNotes = new Map(
       notes.map((note) => [note.id, { ...note }]),
     );
+  }
+
+  persistedNotebook() {
+    return {
+      index: [...(this.persistedNoteIds || [])],
+      notes: Array.from(this.persistedNotes?.values() || [], (note) => ({ ...note })),
+    };
   }
 
   assertNoStorageConflict() {
@@ -1295,7 +1303,14 @@ Happy writing! ✨`,
     };
     return this.queueStorageSave(async () => {
       this.assertNoStorageConflict();
-      await this.storage.saveAllNotes(notes, currentNoteId, writeContext);
+      try {
+        await this.storage.saveAllNotes(
+          notes, currentNoteId, writeContext, this.persistedNotebook(),
+        );
+      } catch (error) {
+        if (error.name === "StorageConflictError") this.enterStorageConflict();
+        throw error;
+      }
       this.recordPersistedNotes(notes);
     });
   }
@@ -1316,15 +1331,22 @@ Happy writing! ✨`,
     return this.queueStorageSave(async () => {
       this.assertNoStorageConflict();
       const expectedNote = this.persistedNotes?.get(noteSnapshot.id);
-      await this.storage.saveNote(
-        noteSnapshot,
-        notesIndex,
-        currentNoteId,
-        writeContext,
-        expectedNote,
-      );
+      try {
+        await this.storage.saveNote(
+          noteSnapshot,
+          notesIndex,
+          currentNoteId,
+          writeContext,
+          expectedNote,
+          this.persistedNoteIds,
+        );
+      } catch (error) {
+        if (error.name === "StorageConflictError") this.enterStorageConflict();
+        throw error;
+      }
       if (!this.persistedNotes) this.persistedNotes = new Map();
       this.persistedNotes.set(noteSnapshot.id, { ...noteSnapshot });
+      this.persistedNoteIds = [...notesIndex];
     });
   }
 
@@ -2323,6 +2345,7 @@ Happy writing! ✨`,
         this.storage.replaceAllNotesWithBackup(
           prepared.notes,
           prepared.currentNoteId,
+          this.persistedNotebook(),
         ),
       );
 

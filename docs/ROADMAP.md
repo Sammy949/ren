@@ -24,8 +24,9 @@ record private notes, extension IDs, browser-profile paths, or recovery data her
   Block shortcuts and checkboxes are custom DOM mutations; toolbar formatting
   uses `document.execCommand()` in many places. Typed inline formatting was
   disabled after formatting spilled into following text.
-- Each normal save calls `saveAllNotes(this.notes)`, writing the entire note set
-  and index. Search scans in-memory note content and rebuilds note cards.
+- Originally, each normal save called `saveAllNotes(this.notes)`, writing the
+  entire note set and index. Incremental note saves now avoid this. Search still
+  scans in-memory note content and rebuilds note cards.
 - The title has two competing sources: users can edit it, then the next body save
   derives it again from the first line. The save status can say "Saved" before the
   storage promise completes.
@@ -234,10 +235,9 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Extend multi-panel conflict checks to structural writes such as create, delete,
-and import. Then add retry/recovery messaging and a manual backup reminder.
-After that, capture the current editor formatting baseline and build the
-replacement editor spike. Keep the branch stack untagged until release gates pass.
+Add retry/recovery messaging and a manual backup reminder. Then capture the
+current editor formatting baseline and build the replacement editor spike.
+Keep the branch stack untagged until release gates pass.
 
 ## Progress log
 
@@ -310,6 +310,13 @@ replacement editor spike. Keep the branch stack untagged until release gates pas
   writes retain the confirmed baseline for retry. Two consecutive packaged
   Chrome runs raced two panels and passed. Structural operations still need the
   same concurrency gate before milestone 1 closes.
+- 26 September 2026: On branch `fix/structural-write-conflicts`, normal and
+  notebook-wide writes share one browser Web Lock. Create, delete, import, and
+  pre-import restore check the last confirmed index and note contents before
+  changing storage. Stale operations stop with a conflict and leave the newer
+  notebook intact. Focused stale save/import/restore tests pass. Two packaged
+  Chrome runs raced notebook-wide writes from separate panels: one committed,
+  one reported a conflict, and the restart/import/restore gate still passed.
 
 ## Primary references checked for this plan
 

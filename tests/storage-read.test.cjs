@@ -20,6 +20,10 @@ function loadStorage({ initial = {}, failGet, failRemove } = {}) {
         runtime.lastError = null;
         return;
       }
+      if (keys === null) {
+        callback(structuredClone(data));
+        return;
+      }
       const result = {};
       for (const key of Array.isArray(keys) ? keys : [keys]) {
         if (Object.hasOwn(data, key)) result[key] = data[key];
@@ -177,6 +181,41 @@ test("a stale panel cannot overwrite a newer note revision", async () => {
 
   assert.equal(fixture.data.note_a.content, "panel A");
   assert.equal(fixture.data.ren_last_write_v1.instanceId, "panel-a");
+});
+
+test("a stale note save cannot restore a deleted note to the index", async () => {
+  const fixture = loadStorage({
+    initial: { sylva_notes_index: ["a"], note_a: { id: "a", content: "old" } },
+  });
+  fixture.data.sylva_notes_index = [];
+  const writes = fixture.writes;
+
+  await assert.rejects(
+    fixture.storage.saveNote(
+      { id: "a", content: "stale" }, ["a"], "a", null,
+      { id: "a", content: "old" }, ["a"],
+    ),
+    (error) => error.name === "StorageConflictError",
+  );
+  assert.equal(fixture.writes, writes);
+  assert.deepEqual(fixture.data.sylva_notes_index, []);
+});
+
+test("a stale bulk save cannot replace another panel's note or index", async () => {
+  const fixture = loadStorage({
+    initial: { sylva_notes_index: ["a"], note_a: { id: "a", content: "old" } },
+  });
+  const baseline = { index: ["a"], notes: [{ id: "a", content: "old" }] };
+  fixture.data.note_a = { id: "a", content: "newer" };
+  await assert.rejects(
+    fixture.storage.saveAllNotes(
+      [{ id: "b", content: "stale" }], "b", null, baseline,
+    ),
+    (error) => error.name === "StorageConflictError",
+  );
+  assert.equal(fixture.writes, 0);
+  assert.equal(fixture.data.note_a.content, "newer");
+  assert.deepEqual(fixture.data.sylva_notes_index, ["a"]);
 });
 
 test("a failed notebook load never creates or saves a replacement note", async () => {
