@@ -743,15 +743,32 @@ class RenNotePad {
     });
   }
 
-  // Search: Highlight matching text
-  highlightText(text, query) {
-    if (!query) return text;
+  // Search: Highlight matching text without parsing it as markup.
+  appendHighlightedText(element, text, query) {
+    element.textContent = "";
+    if (!query) {
+      element.textContent = text;
+      return;
+    }
 
-    const regex = new RegExp(
-      `(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
-      "gi",
-    );
-    return text.replace(regex, '<span class="search-highlight">$1</span>');
+    const normalizedText = text.toLowerCase();
+    const normalizedQuery = query.toLowerCase();
+    let cursor = 0;
+    while (cursor < text.length) {
+      const match = normalizedText.indexOf(normalizedQuery, cursor);
+      if (match === -1) {
+        element.appendChild(document.createTextNode(text.slice(cursor)));
+        break;
+      }
+      if (match > cursor) {
+        element.appendChild(document.createTextNode(text.slice(cursor, match)));
+      }
+      const highlight = document.createElement("span");
+      highlight.className = "search-highlight";
+      highlight.textContent = text.slice(match, match + query.length);
+      element.appendChild(highlight);
+      cursor = match + query.length;
+    }
   }
 
   // Search: Focus search input (opens sidebar if closed)
@@ -1818,13 +1835,14 @@ Happy writing! ✨`,
 
     notification.innerHTML = `
       <div class="notification-icon">${iconSvg[type] || iconSvg.info}</div>
-      <span class="notification-message">${message}</span>
+      <span class="notification-message"></span>
       <button class="notification-close" aria-label="Dismiss notification">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
       </button>
     `;
+    notification.querySelector(".notification-message").textContent = String(message);
 
     // Add close button functionality
     const closeBtn = notification.querySelector(".notification-close");
@@ -1870,8 +1888,7 @@ Happy writing! ✨`,
       /<(p|div|br|h[1-6]|ul|ol|li|blockquote|strong|em|code|s|hr|span|a)[^>]*>/i;
 
     if (htmlTagPattern.test(content)) {
-      // Content is already HTML, return as-is
-      return content;
+      return this.sanitizeNoteHTML(content);
     }
 
     // Content is plain text - convert newlines to <br> tags
@@ -1884,6 +1901,121 @@ Happy writing! ✨`,
     // Convert newlines to <br> tags
     // Handle both \r\n (Windows) and \n (Unix) line endings
     return escaped.replace(/\r\n/g, "<br>").replace(/\n/g, "<br>");
+  }
+
+  sanitizeNoteHTML(html) {
+    const template = document.createElement("template");
+    template.innerHTML = String(html || "");
+    const allowedTags = new Set([
+      "A",
+      "B",
+      "BLOCKQUOTE",
+      "BR",
+      "CODE",
+      "DIV",
+      "EM",
+      "H1",
+      "H2",
+      "H3",
+      "HR",
+      "I",
+      "INPUT",
+      "LI",
+      "OL",
+      "P",
+      "S",
+      "SPAN",
+      "STRIKE",
+      "STRONG",
+      "U",
+      "UL",
+    ]);
+    const droppedTags = new Set([
+      "AUDIO",
+      "EMBED",
+      "IFRAME",
+      "IMG",
+      "MATH",
+      "OBJECT",
+      "SCRIPT",
+      "STYLE",
+      "SVG",
+      "VIDEO",
+    ]);
+
+    const sanitizeChildren = (parent) => {
+      for (const node of Array.from(parent.childNodes)) {
+        if (node.nodeType === 8) {
+          node.remove();
+          continue;
+        }
+        if (node.nodeType !== 1) continue;
+
+        const tagName = node.tagName;
+        if (droppedTags.has(tagName)) {
+          node.remove();
+          continue;
+        }
+        if (!allowedTags.has(tagName)) {
+          sanitizeChildren(node);
+          node.replaceWith(...Array.from(node.childNodes));
+          continue;
+        }
+
+        const original = {
+          checked: node.hasAttribute("checked"),
+          className: node.getAttribute("class") || "",
+          href: node.getAttribute("href"),
+          type: node.getAttribute("type"),
+        };
+        for (const attribute of Array.from(node.attributes)) {
+          node.removeAttribute(attribute.name);
+        }
+
+        if (tagName === "A" && original.href) {
+          const href = original.href.trim();
+          if (/^(https?:|mailto:)/i.test(href)) {
+            node.setAttribute("href", href);
+            node.setAttribute("target", "_blank");
+            node.setAttribute("rel", "noopener noreferrer");
+          }
+        }
+        if (tagName === "INPUT") {
+          if (
+            original.type?.toLowerCase() !== "checkbox" ||
+            !node.parentElement?.classList.contains("editor-checkbox-item")
+          ) {
+            node.remove();
+            continue;
+          }
+          node.setAttribute("type", "checkbox");
+          node.className = "checkbox-input";
+          if (original.checked) node.setAttribute("checked", "");
+        }
+        if (
+          tagName === "DIV" &&
+          original.className.split(/\s+/).includes("editor-checkbox-item")
+        ) {
+          node.className = "editor-checkbox-item";
+          if (original.className.split(/\s+/).includes("checked")) {
+            node.classList.add("checked");
+          }
+          node.setAttribute("contenteditable", "false");
+        }
+        if (
+          tagName === "SPAN" &&
+          original.className.split(/\s+/).includes("checkbox-text")
+        ) {
+          node.className = "checkbox-text";
+          node.setAttribute("contenteditable", "true");
+        }
+
+        sanitizeChildren(node);
+      }
+    };
+
+    sanitizeChildren(template.content);
+    return template.innerHTML;
   }
 
   exportNotes() {
@@ -2088,9 +2220,11 @@ Happy writing! ✨`,
           <svg class="no-results-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
           </svg>
-          <p class="no-results-text">No notes match "${this.searchQuery}"</p>
+          <p class="no-results-text"></p>
         </div>
       `;
+      this.notesList.querySelector(".no-results-text").textContent =
+        `No notes match "${this.searchQuery}"`;
       return;
     }
 
@@ -2125,27 +2259,19 @@ Happy writing! ✨`,
     const preview = textContent.substring(0, 40) || "Empty note";
     const updatedDate = new Date(note.updatedAt).toLocaleDateString();
 
-    // Highlight search matches
-    const displayTitle = this.searchQuery
-      ? this.highlightText(note.title, this.searchQuery)
-      : note.title;
-    const displayPreview = this.searchQuery
-      ? this.highlightText(preview, this.searchQuery)
-      : preview;
-
     noteItem.innerHTML = `
-      <div class="note-content-area" data-note-id="${note.id}">
-        <div class="note-title">${displayTitle}</div>
-        <div class="note-preview">${displayPreview}</div>
-        <div class="note-date">${updatedDate}</div>
+      <div class="note-content-area">
+        <div class="note-title"></div>
+        <div class="note-preview"></div>
+        <div class="note-date"></div>
       </div>
       <div class="note-icons">
-        <button class="rename-note-btn menu-item" data-note-id="${note.id}" aria-label="Rename note: ${note.title}">
+        <button class="rename-note-btn menu-item">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
           </svg>
         </button>
-        <button class="delete-note-btn menu-item" data-note-id="${note.id}" aria-label="Delete note: ${note.title}">
+        <button class="delete-note-btn menu-item">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
           </svg>
@@ -2155,6 +2281,12 @@ Happy writing! ✨`,
 
     // Bind events
     const noteContentArea = noteItem.querySelector(".note-content-area");
+    const titleElement = noteItem.querySelector(".note-title");
+    const previewElement = noteItem.querySelector(".note-preview");
+    noteContentArea.dataset.noteId = note.id;
+    this.appendHighlightedText(titleElement, note.title, this.searchQuery);
+    this.appendHighlightedText(previewElement, preview, this.searchQuery);
+    noteItem.querySelector(".note-date").textContent = updatedDate;
     noteContentArea.addEventListener("click", () => {
       this.switchToNote(note.id);
       this.toggleSidebar();
@@ -2162,6 +2294,10 @@ Happy writing! ✨`,
 
     const renameBtn = noteItem.querySelector(".rename-note-btn");
     const deleteBtn = noteItem.querySelector(".delete-note-btn");
+    renameBtn.dataset.noteId = note.id;
+    renameBtn.setAttribute("aria-label", `Rename note: ${note.title}`);
+    deleteBtn.dataset.noteId = note.id;
+    deleteBtn.setAttribute("aria-label", `Delete note: ${note.title}`);
 
     renameBtn.addEventListener("click", (e) => {
       e.stopPropagation();

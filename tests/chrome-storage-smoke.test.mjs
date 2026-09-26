@@ -240,6 +240,65 @@ test("Ren notes in chrome.storage survive a real Chrome restart", { timeout: 30_
   try {
     chrome = await startChrome(profileDirectory);
     page = await openExtensionPage(chrome);
+    const markupSafety = await evaluate(page, `(() => {
+      const app = Object.create(RenNotePad.prototype);
+      const raw = '<p onclick="globalThis.injected = true">Hello <strong>bold</strong><img src=x onerror="globalThis.injected = true"><a href="javascript:globalThis.injected = true">bad</a><a href="https://example.com" onclick="globalThis.injected = true">good</a></p><div class="editor-checkbox-item" onclick="globalThis.injected = true"><input type="checkbox" checked onfocus="globalThis.injected = true"><span class="checkbox-text" contenteditable="true">task</span></div><script>globalThis.injected = true</script>';
+      const sanitized = app.sanitizeNoteHTML(raw);
+      const prepared = app.prepareImportedNotebook({
+        notes: [{
+          id: 'hostile-note',
+          title: 'Hostile fixture',
+          content: raw,
+          createdAt: '2026-09-26T00:00:00.000Z',
+          updatedAt: '2026-09-26T00:00:00.000Z'
+        }]
+      });
+      const content = document.createElement('div');
+      content.innerHTML = sanitized;
+
+      app.searchQuery = 'title';
+      const hostileTitle = '<img src=x onerror="globalThis.injected = true">Title';
+      const card = app.createNoteElement({
+        id: 'safe-id',
+        title: hostileTitle,
+        content: '<p>Preview</p>',
+        updatedAt: '2026-09-26T00:00:00.000Z'
+      });
+
+      app.notificationContainer = document.createElement('div');
+      app.hideNotification = () => {};
+      app.showNotification(hostileTitle, 'success');
+      const notification = app.notificationContainer.firstElementChild;
+      const links = content.querySelectorAll('a');
+      return {
+        sanitized,
+        preparedContent: prepared.notes[0].content,
+        unsafeElements: content.querySelectorAll('script,img,iframe,object,embed,svg,math').length,
+        unsafeAttributes: content.querySelectorAll('[onclick],[onerror],[onfocus],[style],[id]').length,
+        badHref: links[0]?.getAttribute('href') || null,
+        goodHref: links[1]?.getAttribute('href') || null,
+        goodRel: links[1]?.getAttribute('rel') || null,
+        checkboxCount: content.querySelectorAll('.editor-checkbox-item input[type="checkbox"][checked]').length,
+        cardText: card.querySelector('.note-title').textContent,
+        cardImages: card.querySelectorAll('img').length,
+        notificationText: notification.querySelector('.notification-message').textContent,
+        notificationImages: notification.querySelectorAll('img').length,
+        injected: globalThis.injected === true
+      };
+    })()`);
+    assert.equal(markupSafety.unsafeElements, 0);
+    assert.equal(markupSafety.preparedContent, markupSafety.sanitized);
+    assert.equal(markupSafety.unsafeAttributes, 0);
+    assert.equal(markupSafety.badHref, null);
+    assert.equal(markupSafety.goodHref, "https://example.com");
+    assert.match(markupSafety.goodRel, /noopener/);
+    assert.equal(markupSafety.checkboxCount, 1);
+    assert.equal(markupSafety.cardText, '<img src=x onerror="globalThis.injected = true">Title');
+    assert.equal(markupSafety.cardImages, 0);
+    assert.equal(markupSafety.notificationText, markupSafety.cardText);
+    assert.equal(markupSafety.notificationImages, 0);
+    assert.equal(markupSafety.injected, false);
+
     const written = await evaluate(page, `(async () => {
       const note = {
         id: "smoke-note",
