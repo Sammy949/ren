@@ -1,6 +1,6 @@
 # Ren rewrite roadmap
 
-Updated: 25 September 2026. Status: milestone 0 and storage safeguards in progress.
+Updated: 26 September 2026. Status: milestone 0 and storage safeguards in progress.
 
 ## Purpose and working memory
 
@@ -62,16 +62,16 @@ record private notes, extension IDs, browser-profile paths, or recovery data her
 
 | Priority | Observation | Why it matters | Proof or status |
 | --- | --- | --- | --- |
-| P0 | `scheduleAutoSave()` sets "Saved" without awaiting `saveCurrentNote()`; `saveData()` catches storage failures and resolves. | Users can be told a failed write succeeded. | Reproduced with a failing storage mock; `saveData()` resolved and emitted an error notice. |
-| P0 | `saveCurrentNote()` calls `saveData()`, which writes every note on each save. | Write cost grows with the whole collection; overlapping writes can make ordering hard to reason about. | Direct call path in `sidepanel.js`; performance impact still needs measurement. |
-| P0 | Chrome storage reads ignore `runtime.lastError`; `getAllNotes()` also turns any caught read failure into `[]`. `loadData()` treats `[]` as a genuinely empty collection. | A transient read failure can lead Ren to create a new note and replace the visible index while old note keys remain. | Code path confirmed; failure sequence needs a packaged-browser test. |
+| P0 | Autosave previously showed "Saved" without awaiting storage; failed writes resolved as if successful. | Users could be told a failed write succeeded. | Fixed on `fix/truthful-saves`; completion-order and failed-write tests pass. |
+| P0 | Normal edits previously rewrote every note on each save. | Write cost grew with the whole collection; overlapping writes made ordering hard to reason about. | Fixed on `perf/incremental-note-saves`; normal edits now write one note and the small index metadata. |
+| P0 | Chrome storage reads previously ignored `runtime.lastError`; `getAllNotes()` also turned caught read failures into `[]`. | A transient read failure could lead Ren to create a new note and replace the visible index while old note keys remained. | Safeguarded on `fix/storage-read-failures`; focused failure tests pass. |
 | P0 | Imported content, note titles, search text, and notification messages can reach `innerHTML` without a strict allowlist or text encoding. | A crafted backup/title/query can inject markup into the extension UI. Extension CSP constrains script execution, but markup and deceptive UI remain a concern. | Code path confirmed; browser impact needs a local repro. |
 | P0 | Import replaces the index but leaves old `note_*` keys in storage. | Hidden orphan notes consume quota and make recovery confusing. | Reproduced with a mocked `chrome.storage.local`: only the new note was listed, while both keys remained. |
 | P1 | Manual title edits can be overwritten by first-line derivation on a later body save. | The title component has no stable ownership rule. | Direct call path in `finishEditingTitle()` and `saveCurrentNote()`. |
 | P1 | Undo/redo availability is tracked with booleans, and custom DOM operations bypass the editor's history model. | Toolbar state and actual undo history can disagree. | Direct code path; browser interaction matrix needed. |
 | P1 | Note IDs use `Date.now().toString()` for new notes; imports accept loosely typed IDs. | Fast creation or malformed imports can collide or produce bad keys. | Direct code path; collision test needed. |
 | P1 | Focused storage tests and a real Chrome restart smoke test now exist, but no formatting or narrow-layout browser gate exists. Store screenshots are 1280px wide, wider than a usual side panel. | Editor and narrow-layout regressions can still escape review. | Storage read/save tests and unpacked-extension restart smoke pass; editor interaction coverage remains open. |
-| P2 | `getStorageInfo()` assumes 5 MB; current Chrome documents 10 MB for `storage.local` in modern versions. | Usage UI would misreport headroom. | Current Chrome API reference. |
+| P2 | `getStorageInfo()` assumed 5 MB rather than reading Chrome's local quota. | Usage UI would misreport headroom. | Fixed on `feat/storage-health-report`; real Chrome quota and byte count are exercised by the smoke test. |
 | P2 | Onboarding says notes sync, while notes are local. Settings display "Ren v2.0" while the manifest is 1.0.0. | Product copy contradicts actual behavior. | Repository code and manifest. |
 
 Do not describe the original incident as "corruption caused by the editor." Editor
@@ -229,9 +229,9 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Add a read-only storage health report, then make import staged and validated
-with synthetic export/import round-trip coverage. Keep backup/restore work ahead
-of the editor migration and record measured baseline results.
+Make import staged and validated with a pre-import backup, a verifiable commit
+point, orphan handling, and synthetic export/import round-trip coverage. Keep
+backup/restore work ahead of the editor migration and record measured results.
 
 ## Progress log
 
@@ -260,6 +260,12 @@ of the editor migration and record measured baseline results.
   focused storage/save tests. The harness deletes its profile and never opens a
   personal browser profile. Packaged release ZIP and import/export coverage remain
   open, so milestone 0 is not yet complete.
+- 26 September 2026: On branch `feat/storage-health-report`, Ren can produce a
+  versioned, read-only health report covering malformed indexes and records,
+  duplicate IDs, missing indexed notes, orphan note keys, stale current-note
+  selection, actual bytes used, and Chrome's reported quota. Reports exclude note
+  content and never repair or delete records. Three focused health tests, all
+  fourteen storage/save tests, and the real Chrome storage smoke test pass.
 
 ## Primary references checked for this plan
 
