@@ -234,11 +234,10 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Finish milestone 1 save lifecycle coverage: pending edits during visibility
-changes, simultaneous panel instances, retry and recovery messaging, and manual
-backup reminders. Then capture the current editor formatting baseline and build
-the replacement editor spike. Keep the branch stack untagged until release gates
-pass.
+Finish milestone 1 save lifecycle coverage for simultaneous panel instances,
+then add retry/recovery messaging and a manual backup reminder. After that,
+capture the current editor formatting baseline and build the replacement editor
+spike. Keep the branch stack untagged until release gates pass.
 
 ## Progress log
 
@@ -299,6 +298,11 @@ pass.
   extracted ZIP. A same-path upgrade from the existing v1 archive preserves the
   synthetic notebook, and a panel-only close/reopen preserves it before the full
   browser restart. These results close milestone 0. No release tag was created.
+- 26 September 2026: On branch `fix/visibility-save-flush`, Ren tracks dirty and
+  persisted revisions and starts a save when the panel becomes hidden or emits
+  `pagehide`. Clean notes do not rewrite, failures remain dirty for retry, and
+  overlapping lifecycle events share one in-flight flush. Ten focused save tests
+  and the exact packaged Chrome gate pass an immediate edit/hide/restart cycle.
 
 ## Primary references checked for this plan
 
