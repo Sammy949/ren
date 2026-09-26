@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
@@ -9,6 +9,9 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const v1Fixture = JSON.parse(
+  await readFile(path.join(repoRoot, "tests/fixtures/v1-notes.json"), "utf8"),
+);
 const chromeCandidates = [
   process.env.REN_CHROME_BIN,
   "/usr/bin/google-chrome",
@@ -337,28 +340,38 @@ test("Ren notes in chrome.storage survive a real Chrome restart", { timeout: 30_
     assert.equal(reopened.currentNoteId, "smoke-note");
 
     const importRoundTrip = await evaluate(page, `(async () => {
-      const imported = {
-        id: "imported-note",
-        title: "Imported",
-        content: "Replacement notebook",
-        createdAt: "2026-09-26T00:00:00.000Z",
-        updatedAt: "2026-09-26T00:00:00.000Z"
-      };
-      await renStorage.replaceAllNotesWithBackup([imported], imported.id);
-      const replaced = await renStorage.getAllNotes();
-      await renStorage.restorePreImportBackup();
+      const fixture = ${JSON.stringify(v1Fixture)};
+      const app = Object.create(RenNotePad.prototype);
+      app.dataLoadFailed = false;
+      app.notes = fixture.notes;
+      app.currentNoteId = fixture.currentNoteId;
+      const exported = JSON.parse(JSON.stringify(app.createExportData()));
+      const prepared = app.prepareImportedNotebook(exported);
+      await renStorage.replaceAllNotesWithBackup(
+        prepared.notes,
+        prepared.currentNoteId
+      );
       return {
-        replaced,
-        restored: await renStorage.getAllNotes(),
-        currentNoteId: await renStorage.getCurrentNoteId()
+        exportVersion: exported.version,
+        prepared,
+        replaced: await renStorage.getAllNotes()
       };
     })()`);
-    assert.equal(importRoundTrip.replaced.length, 1);
-    assert.equal(importRoundTrip.replaced[0].id, "imported-note");
-    assert.equal(importRoundTrip.restored.length, 1);
-    assert.equal(importRoundTrip.restored[0].id, "smoke-note");
-    assert.equal(importRoundTrip.restored[0].content, "Stored in real Chrome storage");
-    assert.equal(importRoundTrip.currentNoteId, "smoke-note");
+    assert.equal(importRoundTrip.exportVersion, "1.0");
+    assert.deepEqual(importRoundTrip.prepared.notes, v1Fixture.notes);
+    assert.equal(importRoundTrip.prepared.currentNoteId, v1Fixture.currentNoteId);
+    assert.deepEqual(importRoundTrip.replaced, v1Fixture.notes);
+
+    page.close();
+    await stopChrome(chrome);
+    chrome = await startChrome(profileDirectory);
+    page = await openExtensionPage(chrome);
+    const persistedImport = await evaluate(page, `(async () => ({
+      notes: await renStorage.getAllNotes(),
+      currentNoteId: await renStorage.getCurrentNoteId()
+    }))()`);
+    assert.deepEqual(persistedImport.notes, v1Fixture.notes);
+    assert.equal(persistedImport.currentNoteId, v1Fixture.currentNoteId);
 
     await evaluate(page, `document.getElementById("settingsBtn").click()`);
     const restoreControl = await poll(
@@ -372,6 +385,18 @@ test("Ren notes in chrome.storage survive a real Chrome restart", { timeout: 30_
       "pre-import restore control",
     );
     assert.match(restoreControl, /Restore 1 note saved before the latest import/);
+
+    const restored = await evaluate(page, `(async () => {
+      await renStorage.restorePreImportBackup();
+      return {
+        notes: await renStorage.getAllNotes(),
+        currentNoteId: await renStorage.getCurrentNoteId()
+      };
+    })()`);
+    assert.equal(restored.notes.length, 1);
+    assert.equal(restored.notes[0].id, "smoke-note");
+    assert.equal(restored.notes[0].content, "Stored in real Chrome storage");
+    assert.equal(restored.currentNoteId, "smoke-note");
   } finally {
     page?.close();
     if (chrome) await stopChrome(chrome);

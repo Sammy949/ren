@@ -1,0 +1,27 @@
+{
+  "version": "1.0",
+  "currentNoteId": "fixture-formatting",
+  "notes": [
+    {
+      "id": "fixture-formatting",
+      "title": "Formatting <>& \"fixture\"",
+      "content": "<h1>Heading one</h1><h2>Heading two</h2><h3>Heading three</h3><p>Plain &lt; &amp; &gt; 😀<br>Second line</p><p><strong>Bold</strong> <em>Italic</em> <u>Underline</u> <s>Strike</s> <code>const value = 1;</code></p><blockquote>Quoted text</blockquote><ul><li>Bullet one</li><li>Bullet two</li></ul><ol><li>First</li><li>Second</li></ol><hr>",
+      "createdAt": "2026-09-26T00:00:00.000Z",
+      "updatedAt": "2026-09-26T00:00:00.000Z"
+    },
+    {
+      "id": "fixture-tasks-links",
+      "title": "Tasks, links & special characters",
+      "content": "<div class=\"editor-checkbox-item checked\" contenteditable=\"false\"><input type=\"checkbox\" class=\"checkbox-input\" checked=\"\"><span class=\"checkbox-text\" contenteditable=\"true\">Done &amp; verified</span></div><div class=\"editor-checkbox-item\" contenteditable=\"false\"><input type=\"checkbox\" class=\"checkbox-input\"><span class=\"checkbox-text\" contenteditable=\"true\">Still open</span></div><p><a href=\"https://example.com/path?q=ren\" target=\"_blank\" rel=\"noopener noreferrer\">Safe link</a></p>",
+      "createdAt": "2026-09-26T01:00:00.000Z",
+      "updatedAt": "2026-09-26T01:00:00.000Z"
+    },
+    {
+      "id": "fixture-empty",
+      "title": "Untitled",
+      "content": "",
+      "createdAt": "2026-09-26T02:00:00.000Z",
+      "updatedAt": "2026-09-26T02:00:00.000Z"
+    }
+  ]
+}

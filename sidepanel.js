@@ -2021,12 +2021,7 @@ Happy writing! ✨`,
   exportNotes() {
     if (this.dataLoadFailed) return;
     try {
-      const exportData = {
-        version: "1.0",
-        exportedAt: new Date().toISOString(),
-        notes: this.notes,
-        currentNoteId: this.currentNoteId,
-      };
+      const exportData = this.createExportData();
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], {
         type: "application/json",
@@ -2051,6 +2046,18 @@ Happy writing! ✨`,
       console.error("Export error:", error);
       this.showNotification("Failed to export notes", "error");
     }
+  }
+
+  createExportData() {
+    if (this.dataLoadFailed) {
+      throw new Error("Cannot export while notes have not loaded");
+    }
+    return {
+      version: "1.0",
+      exportedAt: new Date().toISOString(),
+      notes: this.notes.map((note) => ({ ...note })),
+      currentNoteId: this.currentNoteId,
+    };
   }
 
   prepareImportedNotebook(importData) {
