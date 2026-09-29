@@ -2,6 +2,7 @@ import { Editor } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import { TaskList, TaskItem } from "@tiptap/extension-list";
 import { Code } from "@tiptap/extension-code";
+import { convertLegacyNote } from "./legacy.js";
 
 const state = document.querySelector("#state");
 const editor = new Editor({
@@ -32,4 +33,5 @@ document.querySelectorAll("[data-command]").forEach((button) => {
 
 // Exposed only in this disposable extension for browser verification.
 globalThis.renEditorProof = editor;
+globalThis.renEditorProofConvert = (note) => convertLegacyNote(editor, note);
 state.textContent = `${editor.getText().length} characters`;

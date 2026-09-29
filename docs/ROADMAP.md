@@ -235,10 +235,10 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Define and test a lossless v1 HTML to editor JSON migration before wiring the
-new editor into Ren. Keep each original HTML record until round-trip checks
-pass. Then test title ownership and shortcut scope against the integrated
-editor before changing either component.
+Integrate the structured editor behind a reversible per-note conversion path.
+Keep each original HTML record; never overwrite or auto-convert a quarantined
+note. Expand the legacy fixture matrix and test real clipboard, title
+ownership, and shortcut scope before changing the release package.
 Keep the branch stack untagged until release gates pass.
 
 ## Progress log
@@ -345,6 +345,14 @@ Keep the branch stack untagged until release gates pass.
   undo/redo, IME composition, synthetic HTML paste, and 320 px fit pass. The
   proof never opens Ren storage. Migration, real clipboard behavior, all
   shortcuts, and performance remain unverified for the production editor.
+- 29 September 2026: On branch `feat/editor-v1-conversion`, the isolated proof
+  converts all three synthetic v1 fixture notes to editor JSON while retaining
+  exact source HTML. Headings, inline marks, breaks, lists, links, and checked
+  task state are asserted, and the JSON parses back identically. Unsupported
+  images, styles, classes, unsafe links, and malformed tasks are quarantined
+  without changing the editor. This covers the checked-in fixture shapes, not
+  every historical note, so production integration must keep raw HTML and show
+  unsupported records rather than silently replacing them.
 
 ## Primary references checked for this plan
 

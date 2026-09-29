@@ -17,8 +17,15 @@ Verified in packaged Chrome with Tiptap 3.31.3:
 - The editor and page fit a 320 px viewport. The page runs under a
   `chrome-extension:` URL from a local MV3 bundle.
 
-The proof does not migrate notes or replace Ren's live editor. It also does
+`src/legacy.js` is a read-only conversion prototype. It maps the checked and
+unchecked task shapes from Ren's synthetic v1 export to task nodes, converts
+the rest of that fixture to JSON, and keeps the exact source HTML alongside the
+document. JSON survives a second parse. Unknown elements, styles, classes,
+unsafe links, and malformed tasks are quarantined before the editor changes.
+
+The proof does not migrate stored notes or replace Ren's live editor. It does
 not establish full v1 HTML round trips, all shortcuts, accessibility, or large
 document performance. Those are integration gates, not assumptions from this
 spike. The paste check is a synthetic clipboard event; test real clipboard
-interaction during integration.
+interaction during integration. A production migration must keep the original
+HTML record and surface quarantined notes without writing an empty document.

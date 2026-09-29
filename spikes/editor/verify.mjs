@@ -1,12 +1,15 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 
 const root = import.meta.dirname;
+const legacyFixture = JSON.parse(await readFile(
+  path.join(root, "../../tests/fixtures/v1-notes.json"), "utf8",
+));
 const chromeBinary = process.env.REN_CHROME_BIN || "/usr/bin/google-chrome";
 if (!existsSync(chromeBinary)) throw new Error("Set REN_CHROME_BIN to Chrome");
 
@@ -211,6 +214,45 @@ try {
     return renEditorProof.getHTML();
   })()`);
 
+  const converted = await evaluate(page, `(() => {
+    const fixture = ${JSON.stringify(legacyFixture)};
+    return fixture.notes.map((note) => ({
+      id: note.id,
+      result: renEditorProofConvert(note),
+    }));
+  })()`);
+  const rejected = await evaluate(page, `(() => {
+    const before = renEditorProof.getHTML();
+    const result = renEditorProofConvert({
+      content: "<p>Keep me</p><img src=x onerror=alert(1)>"
+    });
+    return { result, editorUnchanged: before === renEditorProof.getHTML() };
+  })()`);
+  const roundTrips = await evaluate(page, `(() => {
+    const fixture = ${JSON.stringify(legacyFixture)};
+    return fixture.notes.map((note) => {
+      const result = renEditorProofConvert(note);
+      if (!result.ok) return { id: note.id, same: false };
+      renEditorProof.commands.setContent(result.doc, { emitUpdate: false });
+      return {
+        id: note.id,
+        same: JSON.stringify(renEditorProof.getJSON()) === JSON.stringify(result.doc),
+      };
+    });
+  })()`);
+  const malformedTask = await evaluate(page, `renEditorProofConvert({
+    content: '<div class="editor-checkbox-item"><span class="checkbox-text">Missing input</span></div>'
+  })`);
+  const unsupportedStyle = await evaluate(page, `renEditorProofConvert({
+    content: '<p><font style="color:red">Styled</font></p>'
+  })`);
+  const unknownClass = await evaluate(page, `renEditorProofConvert({
+    content: '<div class="custom-layout">Keep this structure</div>'
+  })`);
+  const unsafeLink = await evaluate(page, `renEditorProofConvert({
+    content: '<p><a href="javascript:alert(1)">Bad link</a></p>'
+  })`);
+
   const layout = await evaluate(page, `(() => {
     const bounds = document.querySelector(".tiptap").getBoundingClientRect();
     return {
@@ -222,6 +264,15 @@ try {
   const result = {
     inlineHTML, inlineJSON, undoHTML, redoHTML, taskHTML, selectedCodeHTML,
     imeHTML, pasteHTML,
+    converted: converted.map(({ id, result: { ok, reason, doc } }) => ({
+      id, ok, reason, nodeTypes: doc?.content?.map(({ type }) => type),
+    })),
+    rejected,
+    roundTrips,
+    malformedTask,
+    unsupportedStyle,
+    unknownClass,
+    unsafeLink,
     ...layout,
   };
   assert.equal(result.extensionProtocol, "chrome-extension:");
@@ -234,6 +285,31 @@ try {
   assert.match(result.imeHTML, /日本/);
   assert.match(result.pasteHTML, /<strong>bold<\/strong>/);
   assert.doesNotMatch(result.pasteHTML, /<script/);
+  assert.ok(converted.every(({ result: { ok } }) => ok));
+  assert.ok(converted.every(({ id, result }) =>
+    result.originalHtml === legacyFixture.notes.find((note) => note.id === id).content));
+  const tasks = converted.find(({ id }) => id === "fixture-tasks-links").result.doc;
+  assert.equal(tasks.content[0].type, "taskList");
+  assert.equal(tasks.content[0].content[0].attrs.checked, true);
+  assert.equal(tasks.content[1].content[0].attrs.checked, false);
+  const formatting = converted.find(({ id }) => id === "fixture-formatting").result.doc;
+  assert.deepEqual(formatting.content.slice(0, 3).map(({ attrs }) => attrs.level), [1, 2, 3]);
+  const inlineMarks = formatting.content[4].content.flatMap(({ marks = [] }) =>
+    marks.map(({ type }) => type));
+  for (const mark of ["bold", "italic", "underline", "strike", "code"]) {
+    assert.ok(inlineMarks.includes(mark), `Missing ${mark} mark`);
+  }
+  assert.ok(formatting.content[3].content.some(({ type }) => type === "hardBreak"));
+  const link = tasks.content[2].content.find(({ marks }) =>
+    marks?.some(({ type }) => type === "link"));
+  assert.equal(link.marks[0].attrs.href, "https://example.com/path?q=ren");
+  assert.ok(roundTrips.every(({ same }) => same));
+  assert.equal(rejected.result.ok, false);
+  assert.equal(rejected.editorUnchanged, true);
+  assert.equal(malformedTask.ok, false);
+  assert.equal(unsupportedStyle.ok, false);
+  assert.equal(unknownClass.ok, false);
+  assert.equal(unsafeLink.ok, false);
   console.log(JSON.stringify(result, null, 2));
 } finally {
   page?.close();
