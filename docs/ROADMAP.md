@@ -235,9 +235,10 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Build the replacement editor spike and prove that inline marks end without
-spilling into the following text. Test title ownership and shortcut scope
-against that editor before changing either component.
+Define and test a lossless v1 HTML to editor JSON migration before wiring the
+new editor into Ren. Keep each original HTML record until round-trip checks
+pass. Then test title ownership and shortcut scope against the integrated
+editor before changing either component.
 Keep the branch stack untagged until release gates pass.
 
 ## Progress log
@@ -337,6 +338,13 @@ Keep the branch stack untagged until release gates pass.
   undo. Chrome still extends the code mark into following typing even when the
   caret is moved to an empty sibling or parent boundary. This remains a v2
   formatting failure, not a solved inline-mark behavior.
+- 29 September 2026: On branch `spike/structured-editor`, a separate bundled
+  MV3 extension proves Tiptap 3.31.3 in a disposable Chrome profile. Typed
+  Markdown bold ends before following text; a noninclusive inline-code mark
+  keeps selected code text and places following typing outside it. Task input,
+  undo/redo, IME composition, synthetic HTML paste, and 320 px fit pass. The
+  proof never opens Ren storage. Migration, real clipboard behavior, all
+  shortcuts, and performance remain unverified for the production editor.
 
 ## Primary references checked for this plan
 

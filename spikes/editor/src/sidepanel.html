@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ren editor proof</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="bundle.js"></script>
+  </head>
+  <body>
+    <header>
+      <strong>Editor proof</strong>
+      <span>Disposable content. No Ren notes are opened.</span>
+    </header>
+    <nav aria-label="Formatting">
+      <button type="button" data-command="bold">Bold</button>
+      <button type="button" data-command="code">Code</button>
+      <button type="button" data-command="task">Task</button>
+      <button type="button" data-command="undo">Undo</button>
+      <button type="button" data-command="redo">Redo</button>
+    </nav>
+    <main>
+      <div id="editor" aria-label="Proof editor"></div>
+      <output id="state" aria-live="polite"></output>
+    </main>
+  </body>
+</html>

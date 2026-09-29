@@ -1,0 +1,16 @@
+:root { color-scheme: light dark; font: 14px system-ui, sans-serif; }
+body { margin: 0; background: Canvas; color: CanvasText; }
+header, nav { display: flex; gap: 8px; align-items: center; padding: 10px 12px; border-bottom: 1px solid GrayText; }
+header { justify-content: space-between; }
+header span { font-size: 12px; }
+nav { flex-wrap: wrap; }
+button { font: inherit; padding: 5px 8px; background: Canvas; color: CanvasText; border: 1px solid GrayText; border-radius: 3px; cursor: pointer; }
+button:focus-visible { outline: 2px solid Highlight; outline-offset: 2px; }
+main { padding: 12px; }
+.tiptap { min-height: 200px; outline: none; overflow-wrap: anywhere; }
+.tiptap:focus-visible { outline: 2px solid Highlight; outline-offset: 4px; }
+.tiptap ul[data-type="taskList"] { list-style: none; padding-left: 0; }
+.tiptap li[data-type="taskItem"] { display: flex; gap: 8px; }
+.tiptap li[data-type="taskItem"] > label { flex: 0 0 auto; }
+.tiptap li[data-type="taskItem"] > div { flex: 1; min-width: 0; }
+output { display: block; margin-top: 12px; font-size: 12px; color: GrayText; }

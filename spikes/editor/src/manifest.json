@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "Ren - Minimalist Notepad",
+  "version": "0.0.0",
+  "description": "Isolated editor behavior proof with synthetic content",
+  "side_panel": { "default_path": "sidepanel.html" },
+  "permissions": ["sidePanel"],
+  "background": { "service_worker": "background.js" }
+}
