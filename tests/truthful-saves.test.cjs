@@ -314,3 +314,75 @@ test("a panel ignores its own tagged storage event", async () => {
 
   assert.equal(app.storageConflict, false);
 });
+
+test("a new note suggests its first meaningful line only once", async () => {
+  const app = createSaveApp();
+  app.notes[0].title = "Untitled";
+  app.notes[0].titleSource = "default";
+  app.noteTitle = { textContent: "Untitled" };
+  app.noteContent.innerText = "\n  First idea  \nSecond idea";
+  app.renderNotesList = () => {};
+  app.updateNoteItemInDOM = () => {};
+  app.saveNoteData = async () => {};
+
+  await app.saveCurrentNote();
+  assert.equal(app.notes[0].title, "First idea");
+  assert.equal(app.notes[0].titleSource, "suggested");
+  app.noteContent.innerText = "Different first line";
+  await app.saveCurrentNote();
+  assert.equal(app.notes[0].title, "First idea");
+});
+
+test("existing and manually renamed titles survive body saves", async () => {
+  const app = createSaveApp();
+  app.noteTitle = { textContent: "A" };
+  app.noteContent.innerText = "Body heading";
+  app.renderNotesList = () => {};
+  app.updateNoteItemInDOM = () => {};
+  app.saveNoteData = async () => {};
+
+  await app.saveCurrentNote();
+  assert.equal(app.notes[0].title, "A");
+  app.notes[0].title = "Chosen title";
+  app.notes[0].titleSource = "manual";
+  app.noteContent.innerText = "Another body heading";
+  await app.saveCurrentNote();
+  assert.equal(app.notes[0].title, "Chosen title");
+});
+
+test("clearing a title chooses Untitled and Escape cancels a rename", async () => {
+  const app = createSaveApp();
+  app.notes[0].title = "Untitled";
+  app.notes[0].titleSource = "default";
+  const mockClassList = () => {
+    const classes = new Set();
+    return {
+      add(name) { classes.add(name); },
+      remove(name) { classes.delete(name); },
+      contains(name) { return classes.has(name); },
+    };
+  };
+  app.noteTitle = { textContent: "Untitled", classList: mockClassList() };
+  app.noteTitleInput = {
+    value: "",
+    classList: mockClassList(),
+    focus() {},
+    select() {},
+    blur() { app.finishEditingTitle(); },
+  };
+  app.updateNoteItemInDOM = () => {};
+  let saves = 0;
+  app.saveNoteData = async () => { saves++; };
+
+  app.finishEditingTitle();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(app.notes[0].title, "Untitled");
+  assert.equal(app.notes[0].titleSource, "manual");
+  assert.equal(saves, 1);
+
+  app.startEditingTitle();
+  app.noteTitleInput.value = "Cancelled title";
+  app.cancelEditingTitle();
+  assert.equal(app.notes[0].title, "Untitled");
+  assert.equal(saves, 1);
+});

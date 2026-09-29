@@ -377,6 +377,15 @@ test("invalid or duplicate imported notes are rejected without partial import", 
   assert.equal(app.notes[0].id, "old");
 });
 
+test("backup import preserves valid title ownership metadata", () => {
+  const app = createImportApp();
+  const suggested = { ...note("suggested"), titleSource: "suggested" };
+  const legacy = note("legacy");
+  const prepared = app.prepareImportedNotebook({ notes: [suggested, legacy] });
+  assert.equal(prepared.notes[0].titleSource, "suggested");
+  assert.equal(Object.hasOwn(prepared.notes[1], "titleSource"), false);
+});
+
 test("the restore action reloads live state from the pre-import backup", async () => {
   const app = createImportApp();
   let restored = false;

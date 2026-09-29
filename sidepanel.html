@@ -41,13 +41,13 @@
         <div class="flex items-center space-x-2">
           <!-- Editable Note Title -->
           <div id="noteTitleContainer" class="relative">
-            <h1
-              id="noteTitle"
-              class="text-xs font-medium text-gray-700 truncate max-w-32 cursor-pointer hover:text-gray-900"
-              aria-live="polite"
-              title="Click to edit title"
-            >
-              Untitled Note
+            <h1 aria-live="polite">
+              <button
+                id="noteTitle"
+                type="button"
+                class="block text-left text-xs font-medium text-gray-700 truncate max-w-32 hover:text-gray-900"
+                title="Edit note title"
+              >Untitled Note</button>
             </h1>
             <input
               type="text"

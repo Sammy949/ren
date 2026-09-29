@@ -409,7 +409,7 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
       currentNoteId: await renStorage.getCurrentNoteId()
     }))()`);
     assert.equal(reopened.notes.length, 1);
-    assert.equal(reopened.notes[0].title, "Saved while Ren is hidden");
+    assert.equal(reopened.notes[0].title, "Smoke test");
     assert.equal(reopened.notes[0].content, "<p>Saved while Ren is hidden</p>");
     assert.equal(reopened.currentNoteId, "smoke-note");
 
@@ -587,6 +587,73 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
     assert.equal(restored.notes[0].content, preImportContent);
     assert.equal(restored.currentNoteId, "smoke-note");
 
+    await evaluate(page, `document.getElementById("closeSettings").click()`);
+    await poll(() => evaluate(page,
+      `document.getElementById("noteTitle")?.textContent === ${JSON.stringify(restored.notes[0].title)}`),
+    "restored note to appear in the panel");
+    await evaluate(page, `document.getElementById("newNoteBtn").click()`);
+    const titledNoteId = await poll(() => evaluate(page, `(async () => {
+      const notes = await renStorage.getAllNotes();
+      return notes.length === 2 ? notes[0].id : null;
+    })()`), "new note to be saved");
+    await evaluate(page, `(() => {
+      const editor = document.getElementById("noteContent");
+      editor.innerHTML = "<p>First title</p>";
+      editor.dispatchEvent(new InputEvent("input", { bubbles: true }));
+    })()`);
+    await poll(() => evaluate(page, `(async () => {
+      const note = (await renStorage.getAllNotes()).find(({ id }) => id === ${JSON.stringify(titledNoteId)});
+      return note?.title === "First title" && note?.titleSource === "suggested";
+    })()`), "one-time title suggestion");
+    await evaluate(page, `(() => {
+      document.getElementById("noteTitle").click();
+      const input = document.getElementById("noteTitleInput");
+      input.value = "Chosen title";
+      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+    })()`);
+    await poll(() => evaluate(page, `(async () => {
+      const note = (await renStorage.getAllNotes()).find(({ id }) => id === ${JSON.stringify(titledNoteId)});
+      return note?.title === "Chosen title" && note?.titleSource === "manual";
+    })()`), "manual title to be saved");
+    await evaluate(page, `(() => {
+      const editor = document.getElementById("noteContent");
+      editor.innerHTML = "<p>Changed body heading</p>";
+      editor.dispatchEvent(new InputEvent("input", { bubbles: true }));
+    })()`);
+    await poll(() => evaluate(page, `(async () => {
+      const note = (await renStorage.getAllNotes()).find(({ id }) => id === ${JSON.stringify(titledNoteId)});
+      return note?.content === "<p>Changed body heading</p>" && note?.title === "Chosen title";
+    })()`), "manual title to survive body save");
+    page.close();
+    await stopChrome(chrome);
+    chrome = await startChrome(profileDirectory, loadedExtensionRoot);
+    page = await openExtensionPage(chrome);
+    const persistedTitle = await evaluate(page, `(async () =>
+      (await renStorage.getAllNotes()).find(({ id }) => id === ${JSON.stringify(titledNoteId)})
+    )()`);
+    assert.equal(persistedTitle.title, "Chosen title");
+    assert.equal(persistedTitle.titleSource, "manual");
+
+    await evaluate(page, `document.getElementById("noteTitle").focus()`);
+    await page.call("Input.dispatchKeyEvent", { type: "keyDown", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
+    await page.call("Input.dispatchKeyEvent", { type: "keyUp", key: "Enter", code: "Enter", windowsVirtualKeyCode: 13 });
+    const keyboardTitleState = await evaluate(page, `(() => {
+      const title = document.getElementById("noteTitle");
+      const input = document.getElementById("noteTitleInput");
+      return { titleTag: title.tagName, activeTag: document.activeElement?.tagName,
+        activeId: document.activeElement?.id, inputHidden: input.classList.contains("hidden") };
+    })()`);
+    assert.deepEqual(keyboardTitleState, {
+      titleTag: "BUTTON", activeTag: "INPUT", activeId: "noteTitleInput", inputHidden: false,
+    });
+    await evaluate(page, `document.getElementById("noteTitleInput").value = "Cancelled keyboard edit"`);
+    await page.call("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+    await page.call("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+    assert.equal(await evaluate(page, `(() => {
+      const title = document.getElementById("noteTitle");
+      return document.activeElement === title && title.textContent === "Chosen title";
+    })()`), true);
+
     await page.call("Emulation.setDeviceMetricsOverride", {
       width: 320, height: 700, deviceScaleFactor: 1, mobile: false,
     });
@@ -600,12 +667,14 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
       RenNotePad.prototype.setSaveStatus.call(app, "Could not save");
       const visible = !button.hidden && button.getBoundingClientRect().width > 0;
       const buttonBounds = button.getBoundingClientRect();
+      const titleBounds = document.getElementById("noteTitle").getBoundingClientRect();
       RenNotePad.prototype.setSaveStatus.call(app, "Saved");
       document.getElementById("settingsBtn").click();
       const modal = document.getElementById("settingsModal");
       return {
         visible,
         buttonFits: buttonBounds.left >= 0 && buttonBounds.right <= window.innerWidth,
+        titleFits: titleBounds.left >= 0 && titleBounds.right <= window.innerWidth,
         hiddenAfterSave: button.hidden,
         reminder: modal.querySelector(".settings-backup-reminder")?.textContent,
         version: modal.querySelector(".settings-version")?.textContent,
@@ -615,6 +684,7 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
     })()`);
     assert.equal(recoveryUi.visible, true);
     assert.equal(recoveryUi.buttonFits, true);
+    assert.equal(recoveryUi.titleFits, true);
     assert.equal(recoveryUi.hiddenAfterSave, true);
     assert.match(recoveryUi.reminder, /Export a copy regularly/);
     assert.match(recoveryUi.version, /Ren v1\.0\.0/);

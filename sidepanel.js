@@ -312,6 +312,12 @@ class RenNotePad {
     // Editable title - click to edit (with null check)
     if (this.noteTitle && this.noteTitleInput) {
       this.noteTitle.addEventListener("click", () => this.startEditingTitle());
+      this.noteTitle.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          this.startEditingTitle();
+        }
+      });
       this.noteTitleInput.addEventListener("blur", () =>
         this.finishEditingTitle(),
       );
@@ -319,9 +325,12 @@ class RenNotePad {
         if (e.key === "Enter") {
           e.preventDefault();
           this.finishEditingTitle();
+          this.noteTitle.focus();
         }
         if (e.key === "Escape") {
+          e.preventDefault();
           this.cancelEditingTitle();
+          this.noteTitle.focus();
         }
       });
     }
@@ -688,11 +697,17 @@ class RenNotePad {
   // Editable Title: Finish editing and save
   finishEditingTitle() {
     if (!this.noteTitle || !this.noteTitleInput) return;
-    const newTitle = this.noteTitleInput.value.trim();
-    if (newTitle && this.currentNoteId) {
+    if (this.noteTitleInput.classList.contains("hidden")) return;
+    const newTitle = this.noteTitleInput.value.trim() || "Untitled";
+    if (this.currentNoteId) {
       const note = this.getNoteById(this.currentNoteId);
-      if (note && newTitle !== note.title) {
+      if (note && (
+        newTitle !== note.title ||
+        note.titleSource === "suggested" ||
+        (note.titleSource === "default" && !this.noteTitleInput.value.trim())
+      )) {
         note.title = newTitle;
+        note.titleSource = "manual";
         note.updatedAt = new Date().toISOString();
         this.noteTitle.textContent = newTitle;
         const revision = ++this.editRevision;
@@ -722,8 +737,10 @@ class RenNotePad {
   // Editable Title: Cancel editing
   cancelEditingTitle() {
     if (!this.noteTitle || !this.noteTitleInput) return;
+    if (this.noteTitleInput.classList.contains("hidden")) return;
     this.noteTitleInput.classList.add("hidden");
     this.noteTitle.classList.remove("hidden");
+    this.noteTitleInput.blur();
   }
 
   // Search: Handle search input
@@ -1725,6 +1742,7 @@ Happy writing! ✨`,
     const newNote = {
       id: Date.now().toString(),
       title: "Untitled",
+      titleSource: "default",
       content: "",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -1758,25 +1776,24 @@ Happy writing! ✨`,
         : this.noteContent.value;
       note.updatedAt = new Date().toISOString();
 
-      // Extract title from plain text content.
-      // Normalize NBSP (contenteditable often inserts U+00A0) so a note that
-      // only contains "spaces" is still treated as empty.
-      const plainText = (this.noteContent.textContent || "").replace(
-        /\u00A0/g,
-        " ",
-      );
-      const firstLine = plainText.split("\n")[0].trim();
-      if (firstLine) {
-        const derived = firstLine.substring(0, 50);
-        if (derived !== note.title) {
-          note.title = derived;
+      // Only a new, unnamed note can take one title suggestion from its body.
+      // Older notes without titleSource keep their existing titles.
+      if (note.titleSource === "default") {
+        const plainText = (
+          this.noteContent.innerText ??
+          this.noteContent.textContent ??
+          this.noteContent.value ??
+          ""
+        ).replace(/\u00A0/g, " ");
+        const firstMeaningfulLine = plainText
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .find(Boolean);
+        if (firstMeaningfulLine) {
+          note.title = firstMeaningfulLine.substring(0, 50);
+          note.titleSource = "suggested";
           this.noteTitle.textContent = note.title;
         }
-      } else if (note.title !== "Untitled") {
-        // Content is now empty — revert to the default title instead of
-        // leaving a stale title on an empty note.
-        note.title = "Untitled";
-        this.noteTitle.textContent = note.title;
       }
 
       // Move the note to the top of the list (most recently edited first)
@@ -1982,6 +1999,7 @@ Happy writing! ✨`,
       if (note) {
         const oldTitle = note.title;
         note.title = newTitle;
+        note.titleSource = "manual";
         note.updatedAt = new Date().toISOString();
         await this.saveNoteData(note);
         // Performance: Update only the changed note in DOM
@@ -2301,6 +2319,9 @@ Happy writing! ✨`,
       notes.push({
         id: note.id,
         title: note.title,
+        ...(["default", "suggested", "manual"].includes(note.titleSource)
+          ? { titleSource: note.titleSource }
+          : {}),
         content: this.convertPlainTextToHTML(note.content),
         createdAt: note.createdAt,
         updatedAt: note.updatedAt,

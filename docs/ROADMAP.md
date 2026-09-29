@@ -1,6 +1,6 @@
 # Ren rewrite roadmap
 
-Updated: 26 September 2026. Status: milestone 0 complete; milestone 1 in progress.
+Updated: 29 September 2026. Status: milestone 0 complete; milestone 1 in progress.
 
 ## Purpose and working memory
 
@@ -27,9 +27,8 @@ record private notes, extension IDs, browser-profile paths, or recovery data her
 - Originally, each normal save called `saveAllNotes(this.notes)`, writing the
   entire note set and index. Incremental note saves now avoid this. Search still
   scans in-memory note content and rebuilds note cards.
-- The title has two competing sources: users can edit it, then the next body save
-  derives it again from the first line. The save status can say "Saved" before the
-  storage promise completes.
+- Title ownership now distinguishes a new note's one-time first-line suggestion
+  from a manual title. The save status waits for storage confirmation.
 - The September data-loss postmortem is an untracked incident note. It reports an
   extension-ID mismatch and failed recovery. The available record does **not**
   prove that frequent writes fragmented LevelDB or caused the loss. Treat that as
@@ -68,7 +67,7 @@ record private notes, extension IDs, browser-profile paths, or recovery data her
 | P0 | Chrome storage reads previously ignored `runtime.lastError`; `getAllNotes()` also turned caught read failures into `[]`. | A transient read failure could lead Ren to create a new note and replace the visible index while old note keys remained. | Safeguarded on `fix/storage-read-failures`; focused failure tests pass. |
 | P0 | Imported content, note titles, search text, and notification messages previously reached `innerHTML` without a strict allowlist or text encoding. | A crafted backup/title/query could inject markup or deceptive controls into the extension UI. | Fixed on `fix/import-markup-safety`; hostile browser fixtures verify the content allowlist and text-only UI paths. |
 | P0 | Import previously replaced the index while leaving old `note_*` keys in storage. | Hidden orphan notes consumed quota and made recovery confusing. | Fixed on `fix/recoverable-note-import`; old keys are removed only after verified replacement and remain recoverable from the pre-import backup. |
-| P1 | Manual title edits can be overwritten by first-line derivation on a later body save. | The title component has no stable ownership rule. | Direct call path in `finishEditingTitle()` and `saveCurrentNote()`. |
+| P1 | Manual title edits were overwritten by first-line derivation on a later body save. | The title component had no stable ownership rule. | Fixed on `fix/title-ownership`; packaged Chrome verifies suggestion, rename, body save, restart, keyboard access, and narrow header fit. |
 | P1 | Undo/redo availability is tracked with booleans, and custom DOM operations bypass the editor's history model. | Toolbar state and actual undo history can disagree. | Direct code path; browser interaction matrix needed. |
 | P1 | Note IDs use `Date.now().toString()` for new notes; imports accept loosely typed IDs. | Fast creation or malformed imports can collide or produce bad keys. | Direct code path; collision test needed. |
 | P1 | Focused storage tests and a real Chrome restart smoke test now exist, but no formatting or narrow-layout browser gate exists. Store screenshots are 1280px wide, wider than a usual side panel. | Editor and narrow-layout regressions can still escape review. | Storage read/save tests and unpacked-extension restart smoke pass; editor interaction coverage remains open. |
@@ -224,21 +223,18 @@ users retain a tested export path.
 
 These do not block the first safeguard milestone.
 
-1. Should a new note's first line ever suggest its title, or should titles always
-   start as "Untitled" until edited? Recommendation: suggest once, then respect
-   manual edits permanently.
-2. Should import default to **replace after automatic pre-import backup** or
+1. Should import default to **replace after automatic pre-import backup** or
    **merge with duplicate review**? Recommendation: replace only with a tested
    pre-import backup and a clear confirmation; offer merge later.
-3. Should v2 stay strictly local, or is cross-device note sync a separate future
+2. Should v2 stay strictly local, or is cross-device note sync a separate future
    product goal? Recommendation: keep v2 local and describe it honestly.
 
 ## Next action
 
 Integrate the structured editor behind a reversible per-note conversion path.
 Keep each original HTML record; never overwrite or auto-convert a quarantined
-note. Expand the legacy fixture matrix and test real clipboard, title
-ownership, and shortcut scope before changing the release package.
+note. Expand the legacy fixture matrix and test real clipboard and shortcut
+scope before changing the release package.
 Keep the branch stack untagged until release gates pass.
 
 ## Progress log
@@ -353,6 +349,14 @@ Keep the branch stack untagged until release gates pass.
   without changing the editor. This covers the checked-in fixture shapes, not
   every historical note, so production integration must keep raw HTML and show
   unsupported records rather than silently replacing them.
+- 29 September 2026: Samuel chose a one-time title suggestion from the first
+  meaningful line. On `fix/title-ownership`, new notes record whether the title
+  is default, suggested, or manual. Existing and imported titles stay fixed
+  unless their own metadata says otherwise. Clearing a title chooses a manual
+  "Untitled"; Escape cancels. The header title is keyboard reachable. Focused
+  tests and packaged Chrome verify the suggestion, rename, body save, restart,
+  Enter/Escape editing, and 320 px header fit. Export/import and screen-reader
+  behavior still need a separate check before the title milestone closes.
 
 ## Primary references checked for this plan
 
