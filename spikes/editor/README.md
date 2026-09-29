@@ -21,7 +21,10 @@ Verified in packaged Chrome with Tiptap 3.31.3:
 unchecked task shapes from Ren's synthetic v1 export to task nodes, converts
 the rest of that fixture to JSON, and keeps the exact source HTML alongside the
 document. JSON survives a second parse. Unknown elements, styles, classes,
-unsafe links, and malformed tasks are quarantined before the editor changes.
+unsafe links, and malformed tasks are quarantined. Conversion parses into a
+detached document and leaves the open editor state untouched for accepted and
+rejected notes. A trailing paragraph is included where StarterKit adds one on
+load, keeping the JSON stable across its first parse.
 
 The proof does not migrate stored notes or replace Ren's live editor. It does
 not establish full v1 HTML round trips, all shortcuts, accessibility, or large

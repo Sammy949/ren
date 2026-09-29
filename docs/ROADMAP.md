@@ -358,6 +358,13 @@ Keep the branch stack untagged until release gates pass.
   Enter/Escape editing, and 320 px header fit. Export/import and screen-reader
   behavior still need a separate check before the title milestone closes.
 
+- 29 September 2026: On `fix/editor-conversion-isolation`, the isolated v1
+  converter parses against the editor schema without mutating the open editor.
+  Browser verification compares the editor document and selection state before
+  and after accepted and quarantined conversions. It also confirms the JSON
+  stays stable when the editor adds its trailing paragraph after a final block.
+  This remains an isolated proof; stored Ren notes are unchanged.
+
 ## Primary references checked for this plan
 
 - [Chrome storage API](https://developer.chrome.com/docs/extensions/reference/api/storage): current local quota, failures, bytes in use, access levels.

@@ -216,17 +216,19 @@ try {
 
   const converted = await evaluate(page, `(() => {
     const fixture = ${JSON.stringify(legacyFixture)};
-    return fixture.notes.map((note) => ({
+    const before = JSON.stringify(renEditorProof.state.toJSON());
+    const notes = fixture.notes.map((note) => ({
       id: note.id,
       result: renEditorProofConvert(note),
     }));
+    return { notes, editorUnchanged: before === JSON.stringify(renEditorProof.state.toJSON()) };
   })()`);
   const rejected = await evaluate(page, `(() => {
-    const before = renEditorProof.getHTML();
+    const before = JSON.stringify(renEditorProof.state.toJSON());
     const result = renEditorProofConvert({
       content: "<p>Keep me</p><img src=x onerror=alert(1)>"
     });
-    return { result, editorUnchanged: before === renEditorProof.getHTML() };
+    return { result, editorUnchanged: before === JSON.stringify(renEditorProof.state.toJSON()) };
   })()`);
   const roundTrips = await evaluate(page, `(() => {
     const fixture = ${JSON.stringify(legacyFixture)};
@@ -234,9 +236,10 @@ try {
       const result = renEditorProofConvert(note);
       if (!result.ok) return { id: note.id, same: false };
       renEditorProof.commands.setContent(result.doc, { emitUpdate: false });
+      const actual = renEditorProof.getJSON();
       return {
         id: note.id,
-        same: JSON.stringify(renEditorProof.getJSON()) === JSON.stringify(result.doc),
+        same: JSON.stringify(actual) === JSON.stringify(result.doc),
       };
     });
   })()`);
@@ -252,6 +255,9 @@ try {
   const unsafeLink = await evaluate(page, `renEditorProofConvert({
     content: '<p><a href="javascript:alert(1)">Bad link</a></p>'
   })`);
+  const unsupportedSuperscript = await evaluate(page, `renEditorProofConvert({
+    content: '<p><sup>Preserve this formatting</sup></p>'
+  })`);
 
   const layout = await evaluate(page, `(() => {
     const bounds = document.querySelector(".tiptap").getBoundingClientRect();
@@ -264,15 +270,17 @@ try {
   const result = {
     inlineHTML, inlineJSON, undoHTML, redoHTML, taskHTML, selectedCodeHTML,
     imeHTML, pasteHTML,
-    converted: converted.map(({ id, result: { ok, reason, doc } }) => ({
+    converted: converted.notes.map(({ id, result: { ok, reason, doc } }) => ({
       id, ok, reason, nodeTypes: doc?.content?.map(({ type }) => type),
     })),
+    conversionLeftEditorUnchanged: converted.editorUnchanged,
     rejected,
     roundTrips,
     malformedTask,
     unsupportedStyle,
     unknownClass,
     unsafeLink,
+    unsupportedSuperscript,
     ...layout,
   };
   assert.equal(result.extensionProtocol, "chrome-extension:");
@@ -285,14 +293,15 @@ try {
   assert.match(result.imeHTML, /日本/);
   assert.match(result.pasteHTML, /<strong>bold<\/strong>/);
   assert.doesNotMatch(result.pasteHTML, /<script/);
-  assert.ok(converted.every(({ result: { ok } }) => ok));
-  assert.ok(converted.every(({ id, result }) =>
+  assert.equal(result.conversionLeftEditorUnchanged, true);
+  assert.ok(converted.notes.every(({ result: { ok } }) => ok));
+  assert.ok(converted.notes.every(({ id, result }) =>
     result.originalHtml === legacyFixture.notes.find((note) => note.id === id).content));
-  const tasks = converted.find(({ id }) => id === "fixture-tasks-links").result.doc;
+  const tasks = converted.notes.find(({ id }) => id === "fixture-tasks-links").result.doc;
   assert.equal(tasks.content[0].type, "taskList");
   assert.equal(tasks.content[0].content[0].attrs.checked, true);
   assert.equal(tasks.content[1].content[0].attrs.checked, false);
-  const formatting = converted.find(({ id }) => id === "fixture-formatting").result.doc;
+  const formatting = converted.notes.find(({ id }) => id === "fixture-formatting").result.doc;
   assert.deepEqual(formatting.content.slice(0, 3).map(({ attrs }) => attrs.level), [1, 2, 3]);
   const inlineMarks = formatting.content[4].content.flatMap(({ marks = [] }) =>
     marks.map(({ type }) => type));
@@ -303,13 +312,14 @@ try {
   const link = tasks.content[2].content.find(({ marks }) =>
     marks?.some(({ type }) => type === "link"));
   assert.equal(link.marks[0].attrs.href, "https://example.com/path?q=ren");
-  assert.ok(roundTrips.every(({ same }) => same));
+  assert.ok(roundTrips.every(({ same }) => same), JSON.stringify(roundTrips));
   assert.equal(rejected.result.ok, false);
   assert.equal(rejected.editorUnchanged, true);
   assert.equal(malformedTask.ok, false);
   assert.equal(unsupportedStyle.ok, false);
   assert.equal(unknownClass.ok, false);
   assert.equal(unsafeLink.ok, false);
+  assert.equal(unsupportedSuperscript.ok, false);
   console.log(JSON.stringify(result, null, 2));
 } finally {
   page?.close();

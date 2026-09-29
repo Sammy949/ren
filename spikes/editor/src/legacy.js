@@ -1,3 +1,5 @@
+import { DOMParser as ProseMirrorDOMParser } from "@tiptap/pm/model";
+
 const allowedTags = new Set([
   "A", "B", "BLOCKQUOTE", "BR", "CODE", "DIV", "EM", "H1", "H2",
   "H3", "HR", "I", "INPUT", "LI", "OL", "P", "S", "SPAN", "STRIKE",
@@ -117,10 +119,16 @@ export function convertLegacyNote(editor, note) {
     element.replaceWith(...element.childNodes);
   }
 
-  editor.commands.setContent(template.innerHTML, { emitUpdate: false });
-  const doc = editor.getJSON();
-  if (normalizeText(editor.getText()) !== originalText) {
+  // Parse against the production schema without touching the open document,
+  // selection, or undo history. Conversion remains a read-only decision.
+  const parsed = ProseMirrorDOMParser.fromSchema(editor.schema).parse(template.content);
+  if (normalizeText(parsed.textContent) !== originalText) {
     return quarantine(originalHtml, "Converted text differs from the original");
   }
-  return { ok: true, version: 2, doc, originalHtml };
+  // StarterKit's trailing-node extension adds a paragraph after a final
+  // non-paragraph block. Include it now so the first open is a stable round trip.
+  const doc = parsed.lastChild?.type.name === "paragraph"
+    ? parsed
+    : parsed.copy(parsed.content.addToEnd(editor.schema.nodes.paragraph.create()));
+  return { ok: true, version: 2, doc: doc.toJSON(), originalHtml };
 }
