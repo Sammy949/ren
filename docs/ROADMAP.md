@@ -1,6 +1,6 @@
 # Ren rewrite roadmap
 
-Updated: 29 September 2026. Status: milestone 0 complete; milestone 1 in progress.
+Updated: 30 September 2026. Status: milestone 0 complete; milestone 1 in progress.
 
 ## Purpose and working memory
 
@@ -229,12 +229,34 @@ These do not block the first safeguard milestone.
 2. Should v2 stay strictly local, or is cross-device note sync a separate future
    product goal? Recommendation: keep v2 local and describe it honestly.
 
+## Remaining work, in execution order
+
+- [x] Fix title-bar height and alignment, theme selection, and internal notes-list resizing.
+- [ ] Integrate the structured editor with real transaction history; derive Undo/Redo
+  availability from history and prevent history crossing note boundaries.
+- [ ] Verify all advertised shortcuts with native browser key events in editor,
+  title, search, and dialog contexts. Include Ctrl/Cmd variants and redo aliases.
+- [ ] Preserve original HTML during per-note conversion. Validate saved JSON,
+  keep unsupported notes readable/exportable, and prove rollback and import/export.
+- [ ] Complete the formatting matrix: adjacent marks, nested lists, task toggles,
+  real clipboard, cursor movement, IME, repeated undo/redo, save, and reopen.
+- [ ] Close reliability gates for quota exhaustion, rapid switching, shutdown,
+  and colliding note IDs. Existing restart/concurrency tests cover part of this.
+- [ ] Close title checks for export/import, long names, screen-reader operation,
+  and interaction with editor history.
+- [ ] Measure typing, startup, search, save cost, and heap use at 10/100/1,000 notes
+  and a large note. Set budgets from the measurements, then optimize.
+- [ ] Finish focus order, dialogs, zoom, reduced motion, and all theme checks;
+  correct onboarding sync/capacity claims and review privacy/store copy.
+- [ ] Run release/upgrade/rollback checks, review the package, reconcile the branch
+  stack, and create the version/tag only when the release gates pass.
+
 ## Next action
 
-Integrate the structured editor behind a reversible per-note conversion path.
-Keep each original HTML record; never overwrite or auto-convert a quarantined
-note. Expand the legacy fixture matrix and test real clipboard and shortcut
-scope before changing the release package.
+Rebuild editor history and shortcut scope while integrating the structured editor
+through a reversible per-note conversion path. Keep each original HTML record;
+never overwrite a quarantined note. The internal notes list overlays below the
+header at narrow widths and docks when the viewport has enough room.
 Keep the branch stack untagged until release gates pass.
 
 ## Progress log
@@ -364,6 +386,15 @@ Keep the branch stack untagged until release gates pass.
   and after accepted and quarantined conversions. It also confirms the JSON
   stays stable when the editor adds its trailing paragraph after a final block.
   This remains an isolated proof; stored Ren notes are unchanged.
+
+- 30 September 2026: On `fix/sidebar-layout-selection`, the title bar is a stable
+  48 px while displaying and editing a title. The internal notes list starts below
+  it, resizes by pointer and keyboard, remembers width, and docks at wide widths.
+  Hidden navigation is inert. Selection uses shared theme tokens on root text,
+  nested content, and inputs. Packaged Chrome tests cover 320/400/600/900 px,
+  pointer dragging, keyboard bounds, reload, docking, and both selection themes.
+  Screenshots were inspected; the existing packaged storage/upgrade suite passes.
+  The browser harness now waits for Ren rather than an initially blank target.
 
 ## Primary references checked for this plan
 

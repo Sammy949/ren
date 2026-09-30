@@ -13,7 +13,7 @@
     <div class="flex flex-col h-full">
       <!-- Top Bar -->
       <header
-        class="flex items-center justify-between px-3 py-2 bg-white border-b border-gray-200 shadow-sm"
+        class="app-header flex items-center justify-between px-3 bg-white border-b border-gray-200"
         role="banner"
       >
         <button
@@ -38,7 +38,7 @@
             ></path>
           </svg>
         </button>
-        <div class="flex items-center space-x-2">
+        <div class="header-title-group">
           <!-- Editable Note Title -->
           <div id="noteTitleContainer" class="relative">
             <h1 aria-live="polite">
@@ -61,7 +61,7 @@
       </header>
 
       <!-- Main Content Area -->
-      <main class="flex-1 relative" role="main">
+      <main class="workspace flex-1 relative" role="main">
         <!-- Sidebar Overlay -->
         <div
           id="sidebarOverlay"
@@ -76,6 +76,7 @@
           role="navigation"
           aria-label="Notes navigation"
           aria-hidden="true"
+          inert
         >
           <div class="p-4">
             <div class="flex items-center justify-between mb-4">
@@ -237,10 +238,14 @@
               />
             </div>
           </div>
+          <div id="sidebarResizeHandle" role="separator" tabindex="0"
+            aria-label="Resize notes list" aria-orientation="vertical"
+            aria-controls="sidebar" aria-valuemin="220" aria-valuemax="480"
+            aria-valuenow="288"></div>
         </nav>
 
         <!-- Writing Canvas -->
-        <div class="h-full flex flex-col">
+        <div class="writing-canvas h-full flex flex-col">
           <!-- Editor Toolbar -->
           <div
             class="editor-toolbar"

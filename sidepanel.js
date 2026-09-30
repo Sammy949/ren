@@ -70,6 +70,7 @@ class RenNotePad {
 
     this.initializeElements();
     this.bindEvents();
+    this.initializeSidebarResize();
     this.bindKeyboardShortcuts();
 
     // Async initialization
@@ -1416,6 +1417,70 @@ Happy writing! ✨`,
     }
   }
 
+  initializeSidebarResize() {
+    const handle = document.getElementById("sidebarResizeHandle");
+    if (!handle) return;
+    this.sidebarPreferredWidth = 288;
+    try {
+      const stored = Number(localStorage.getItem("ren-sidebar-width"));
+      if (Number.isFinite(stored) && stored >= 160) this.sidebarPreferredWidth = stored;
+    } catch { /* Layout preferences must never block note loading. */ }
+    const apply = () => {
+      const max = Math.max(160, Math.min(480, window.innerWidth - (window.innerWidth >= 760 ? 320 : 32)));
+      const min = Math.min(220, max);
+      this.sidebarWidth = Math.max(min, Math.min(max, this.sidebarPreferredWidth));
+      document.documentElement.style.setProperty("--sidebar-width", `${this.sidebarWidth}px`);
+      handle.setAttribute("aria-valuemin", String(min));
+      handle.setAttribute("aria-valuemax", String(max));
+      handle.setAttribute("aria-valuenow", String(this.sidebarWidth));
+      handle.setAttribute("aria-valuetext", `${this.sidebarWidth} pixels`);
+    };
+    const remember = () => {
+      this.sidebarPreferredWidth = this.sidebarWidth;
+      try { localStorage.setItem("ren-sidebar-width", String(this.sidebarWidth)); } catch {}
+    };
+    let drag = null;
+    handle.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
+      handle.focus();
+      drag = { id: event.pointerId, x: event.clientX, width: this.sidebarWidth };
+      handle.setPointerCapture(event.pointerId);
+      document.body.classList.add("resizing-sidebar");
+    });
+    handle.addEventListener("pointermove", (event) => {
+      if (!drag || drag.id !== event.pointerId) return;
+      this.sidebarPreferredWidth = drag.width + event.clientX - drag.x;
+      apply();
+    });
+    const finish = () => {
+      if (!drag) return;
+      drag = null;
+      document.body.classList.remove("resizing-sidebar");
+      remember();
+    };
+    handle.addEventListener("pointerup", finish);
+    handle.addEventListener("pointercancel", finish);
+    handle.addEventListener("lostpointercapture", finish);
+    handle.addEventListener("keydown", (event) => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const step = event.shiftKey ? 48 : 16;
+      this.sidebarPreferredWidth = event.key === "Home" ? Number(handle.getAttribute("aria-valuemin"))
+        : event.key === "End" ? Number(handle.getAttribute("aria-valuemax"))
+        : this.sidebarWidth + (event.key === "ArrowRight" ? step : -step);
+      apply();
+      remember();
+    });
+    handle.addEventListener("dblclick", () => {
+      this.sidebarPreferredWidth = 288;
+      apply();
+      remember();
+    });
+    window.addEventListener("resize", apply);
+    apply();
+  }
+
   toggleSidebar() {
     const isVisible = !this.sidebar.classList.contains("-translate-x-full");
 
@@ -1425,6 +1490,8 @@ Happy writing! ✨`,
       // a11y: Update ARIA states
       this.hamburgerBtn.setAttribute("aria-expanded", "false");
       this.sidebar.setAttribute("aria-hidden", "true");
+      this.sidebar.inert = true;
+      document.body.classList.remove("sidebar-open");
       // a11y: Return focus to trigger
       this.hamburgerBtn.focus();
     } else {
@@ -1433,6 +1500,8 @@ Happy writing! ✨`,
       // a11y: Update ARIA states
       this.hamburgerBtn.setAttribute("aria-expanded", "true");
       this.sidebar.setAttribute("aria-hidden", "false");
+      this.sidebar.inert = false;
+      document.body.classList.add("sidebar-open");
       // a11y: Focus first interactive element in sidebar
       setTimeout(() => this.newNoteBtn.focus(), 100);
     }
