@@ -11,12 +11,14 @@ from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
 ROOT = Path(__file__).resolve().parent.parent
 RUNTIME_FILES = (
+    "THIRD_PARTY_NOTICES.txt",
     "background.js",
     "editor.js",
     "icons/icon16.png",
     "icons/icon32.png",
     "icons/icon48.png",
     "icons/icon128.png",
+    "icons/ren.svg",
     "manifest.json",
     "sidepanel.html",
     "sidepanel.js",

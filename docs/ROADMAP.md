@@ -1,6 +1,6 @@
 # Ren rewrite roadmap
 
-Updated: 30 September 2026. Status: milestone 0 complete; milestone 1 in progress.
+Updated: 30 September 2026. Status: milestone 0 complete; reliability and editor milestones in progress.
 
 ## Purpose and working memory
 
@@ -15,15 +15,16 @@ record private notes, extension IDs, browser-profile paths, or recovery data her
 
 ## What exists today
 
-- MV3 extension, plain JavaScript, no package manager or build step. The manifest
-  loads `background.js`, `sidepanel.html`, `storage.js`, `editor.js`, and
-  `sidepanel.js` directly.
+- MV3 extension with a Bun-built local Tiptap/ProseMirror bundle. The manifest
+  loads `background.js`, `sidepanel.html`, `storage.js`, generated `editor.js`,
+  and `sidepanel.js` directly. Source and build notes are in
+  `docs/EDITOR_INTEGRATION.md`.
 - Notes live in `chrome.storage.local`; theme and onboarding preference live in
   `chrome.storage.sync`. Legacy `sylva_*` keys are intentional compatibility data.
-- Rich content is stored as HTML from a hand-built `contenteditable` editor.
-  Block shortcuts and checkboxes are custom DOM mutations; toolbar formatting
-  uses `document.execCommand()` in many places. Typed inline formatting was
-  disabled after formatting spilled into following text.
+- Editing now uses a structured document and transaction history. Stored notes
+  and exports still use compatible HTML during integration. An edited legacy
+  note retains its source in `originalContent`; unsupported source opens read-only.
+  Permanent versioned JSON persistence remains open.
 - Originally, each normal save called `saveAllNotes(this.notes)`, writing the
   entire note set and index. Incremental note saves now avoid this. Search still
   scans in-memory note content and rebuilds note cards.
@@ -39,11 +40,11 @@ record private notes, extension IDs, browser-profile paths, or recovery data her
 1. **Reliability before feature breadth.** Preserve existing notes and exports
    before changing editor or storage formats. Do not add categories, cloud sync,
    accounts, or a broad visual redesign to this rewrite.
-2. **Replace the editor engine, preserve the product shell.** Spike a bundled,
+2. **Replace the editor engine, preserve the product shell.** Use a bundled,
    headless Tiptap/ProseMirror editor with Ren's existing toolbar and CSS.
    Tiptap supports vanilla JavaScript, structured documents, history, task
-   lists, and input rules. Add TypeScript and a local build tool if the spike
-   passes. React is not a prerequisite for fixing formatting.
+   lists, and input rules. Bun now builds the local bundle; TypeScript adoption
+   remains a separate engineering decision. React is not a prerequisite for fixing formatting.
 3. **Use a structured document as the new canonical editor format.** Keep the
    original v1 HTML intact during migration. Convert through an explicit,
    versioned allowlist; preserve unsupported content for recovery rather than
@@ -68,11 +69,11 @@ record private notes, extension IDs, browser-profile paths, or recovery data her
 | P0 | Imported content, note titles, search text, and notification messages previously reached `innerHTML` without a strict allowlist or text encoding. | A crafted backup/title/query could inject markup or deceptive controls into the extension UI. | Fixed on `fix/import-markup-safety`; hostile browser fixtures verify the content allowlist and text-only UI paths. |
 | P0 | Import previously replaced the index while leaving old `note_*` keys in storage. | Hidden orphan notes consumed quota and made recovery confusing. | Fixed on `fix/recoverable-note-import`; old keys are removed only after verified replacement and remain recoverable from the pre-import backup. |
 | P1 | Manual title edits were overwritten by first-line derivation on a later body save. | The title component had no stable ownership rule. | Fixed on `fix/title-ownership`; packaged Chrome verifies suggestion, rename, body save, restart, keyboard access, and narrow header fit. |
-| P1 | Undo/redo availability is tracked with booleans, and custom DOM operations bypass the editor's history model. | Toolbar state and actual undo history can disagree. | Direct code path; browser interaction matrix needed. |
+| P1 | Undo/redo used guessed flags and custom DOM edits outside history. | Toolbar availability and actual history disagreed. | Rebuilt with transaction history; packaged keyboard/toolbar/selection tests pass. Full formatting matrix remains open. |
 | P1 | Note IDs use `Date.now().toString()` for new notes; imports accept loosely typed IDs. | Fast creation or malformed imports can collide or produce bad keys. | Direct code path; collision test needed. |
-| P1 | Focused storage tests and a real Chrome restart smoke test now exist, but no formatting or narrow-layout browser gate exists. Store screenshots are 1280px wide, wider than a usual side panel. | Editor and narrow-layout regressions can still escape review. | Storage read/save tests and unpacked-extension restart smoke pass; editor interaction coverage remains open. |
+| P1 | Browser coverage originally omitted formatting and realistic side-panel geometry. | Editor and layout regressions escaped review. | Packaged layout, selection, resizing, history, IME, and clipboard gates now exist. Full formatting and accessibility matrices remain open. |
 | P2 | `getStorageInfo()` assumed 5 MB rather than reading Chrome's local quota. | Usage UI would misreport headroom. | Fixed on `feat/storage-health-report`; real Chrome quota and byte count are exercised by the smoke test. |
-| P2 | Onboarding says notes sync, while notes are local. Settings display "Ren v2.0" while the manifest is 1.0.0. | Product copy contradicts actual behavior. | Repository code and manifest. |
+| P2 | Onboarding says notes sync, while notes are local. Settings previously displayed "Ren v2.0" while the manifest is 1.0.0; this now reads the manifest. | Product copy contradicts actual behavior. | Repository code and manifest. |
 
 Do not describe the original incident as "corruption caused by the editor." Editor
 bugs can damage a note's formatting or serialized content. Extension identity,
@@ -232,12 +233,13 @@ These do not block the first safeguard milestone.
 ## Remaining work, in execution order
 
 - [x] Fix title-bar height and alignment, theme selection, and internal notes-list resizing.
-- [ ] Integrate the structured editor with real transaction history; derive Undo/Redo
+- [x] Integrate the structured editor with real transaction history; derive Undo/Redo
   availability from history and prevent history crossing note boundaries.
-- [ ] Verify all advertised shortcuts with native browser key events in editor,
-  title, search, and dialog contexts. Include Ctrl/Cmd variants and redo aliases.
-- [ ] Preserve original HTML during per-note conversion. Validate saved JSON,
-  keep unsupported notes readable/exportable, and prove rollback and import/export.
+- [x] Verify in-panel Ctrl shortcuts with native browser key events in editor,
+  title, search, and dialog contexts, including redo aliases.
+- [ ] Verify native macOS bindings and the browser-managed Open Ren command.
+- [x] Retain original HTML on edited saves and keep unsupported source readable/exportable.
+- [ ] Implement and validate versioned JSON persistence; prove full rollback and import/export.
 - [ ] Complete the formatting matrix: adjacent marks, nested lists, task toggles,
   real clipboard, cursor movement, IME, repeated undo/redo, save, and reopen.
 - [ ] Close reliability gates for quota exhaustion, rapid switching, shutdown,
@@ -248,16 +250,17 @@ These do not block the first safeguard milestone.
   and a large note. Set budgets from the measurements, then optimize.
 - [ ] Finish focus order, dialogs, zoom, reduced motion, and all theme checks;
   correct onboarding sync/capacity claims and review privacy/store copy.
+- [ ] Resolve clean dependency installation integrity failures before release.
 - [ ] Run release/upgrade/rollback checks, review the package, reconcile the branch
   stack, and create the version/tag only when the release gates pass.
 
 ## Next action
 
-Rebuild editor history and shortcut scope while integrating the structured editor
-through a reversible per-note conversion path. Keep each original HTML record;
-never overwrite a quarantined note. The internal notes list overlays below the
-header at narrow widths and docks when the viewport has enough room.
-Keep the branch stack untagged until release gates pass.
+Expand the production formatting and historical-note matrix, then complete the
+versioned JSON persistence and recovery path. Measure performance before changing
+storage architecture. Resolve clean dependency installation and finish native
+platform/accessibility checks before any release tag. The internal notes list
+overlays below the header at narrow widths and docks at wide widths.
 
 ## Progress log
 
@@ -395,6 +398,20 @@ Keep the branch stack untagged until release gates pass.
   pointer dragging, keyboard bounds, reload, docking, and both selection themes.
   Screenshots were inspected; the existing packaged storage/upgrade suite passes.
   The browser harness now waits for Ren rather than an initially blank target.
+
+- 30 September 2026: On `feat/structured-editor-history`, the bundled production
+  editor uses actual transaction history and fresh history per note. Native input
+  history stays in title/search fields; dialogs suppress application shortcuts.
+  Packaged Chrome checks cover keyboard and toolbar undo/redo, heading conversion,
+  selection/code boundaries, task toggles and reload, IME, actual clipboard paste,
+  in-panel application shortcuts, and downloaded backups with source metadata.
+  Distinct storage write markers prevent repeated saves from triggering a false
+  external reload. Ctrl+S also commits title edits. Canvas-based toolbar layout
+  follows sidebar width, empty-note cleanup preserves non-text content, and the
+  package now includes the title/welcome SVG asset. The existing packaged storage/recovery and layout gates pass.
+  HTML remains the persistence format; JSON migration and the full matrix remain
+  open. `docs/EDITOR_INTEGRATION.md` records coverage and the unresolved clean-install
+  integrity failures. No release tag was created.
 
 ## Primary references checked for this plan
 

@@ -386,3 +386,22 @@ test("clearing a title chooses Untitled and Escape cancels a rename", async () =
   assert.equal(app.notes[0].title, "Untitled");
   assert.equal(saves, 1);
 });
+
+test("empty-note cleanup preserves formatting-only, manual, and quarantined notes", async () => {
+  for (const scenario of [
+    { content: "<hr>", titleSource: "default", keep: true },
+    { content: '<div class="editor-checkbox-item"><input type="checkbox"></div>', titleSource: "default", keep: true },
+    { content: "", titleSource: "manual", keep: true },
+    { content: "<img src=x>", titleSource: "default", readOnly: true, keep: true },
+    { content: "<p><br></p>", titleSource: "default", keep: false },
+  ]) {
+    const app = createSaveApp();
+    Object.assign(app.notes[0], { title: "Untitled", content: scenario.content, titleSource: scenario.titleSource });
+    app.notes.push({ id: "b", title: "Other", content: "Keep" });
+    app.editor = { readOnly: Boolean(scenario.readOnly) };
+    app.removeNoteItemFromDOM = () => {};
+    app.saveData = async () => {};
+    await app.removeEmptyNote("a");
+    assert.equal(app.notes.some(note => note.id === "a"), scenario.keep);
+  }
+});

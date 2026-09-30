@@ -2,7 +2,7 @@
 
 Captured on 26 September 2026 in the packaged Chrome extension, at a 320 px
 panel width, using synthetic text. The browser test inserts text through native
-editing commands, then inspects the rendered editor DOM. The current editor is
+editing commands, then inspects the rendered editor DOM. The editor at that baseline was
 `contenteditable` with custom block changes and `document.execCommand()`.
 
 | Sequence | Observed result | Expected direction |
@@ -12,7 +12,7 @@ editing commands, then inspects the rendered editor DOM. The current editor is
 | Select `selected`, invoke inline code, type ` after` | The code node initially contains `selected`. The next insertion removes it and leaves a styled `font`/`span` containing ` after`. | Preserve `selected` as code and put the continuation outside the code mark. |
 | Type `[] task`, toggle checkbox, serialize and reload | Task element is created; checked property, attribute, and container class survive reload. | Preserve this behavior with a structured task node. |
 
-The inline code continuation is a confirmed content-loss bug in the current
+The inline code continuation is a confirmed content-loss bug in the original
 editor. Typed bold syntax remaining literal is intentional in v1 because the
 older inline shortcut spilled formatting into following text. Neither should be
 treated as an acceptable v2 outcome.
@@ -32,3 +32,13 @@ move the cursor, undo, redo, save, reopen, export, and import. Include IME,
 selection crossing blocks, empty task items, pasted HTML, adjacent marks,
 nested lists, and a narrow side panel. Record the exact package used for each
 run; keep all fixtures synthetic.
+
+## Production integration, 30 September 2026
+
+`tests/chrome-editor.test.mjs` now uses real keyboard and pointer events against
+Ren's integrated Tiptap editor. The observed failures above are historical.
+Heading conversion undoes/redoes; typed bold ends before the following plain
+text; inline code preserves the selected text and keeps continuation outside
+code; checked tasks survive v1 serialization and reload. History exhaustion,
+redo invalidation, note switching, native input undo, IME, and real clipboard
+paste pass. See `EDITOR_INTEGRATION.md` for exact coverage and remaining gates.

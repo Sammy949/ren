@@ -21,6 +21,10 @@ test("Ren workspace alignment, sidebar resizing, and theme selection", { timeout
   try {
     chrome = await startChrome(profile);
     page = await openExtensionPage(chrome);
+    assert.equal(await evaluate(page, `(async () => {
+      const logo = new Image(); logo.src = chrome.runtime.getURL("icons/ren.svg");
+      await logo.decode(); return logo.naturalWidth > 0;
+    })()`),true);
     const screenshot = async (name) => {
       if (!process.env.REN_UI_ARTIFACT_DIR) return;
       await mkdir(process.env.REN_UI_ARTIFACT_DIR,{recursive:true});
@@ -76,6 +80,11 @@ test("Ren workspace alignment, sidebar resizing, and theme selection", { timeout
     await poll(() => evaluate(page, `Math.abs(document.getElementById("sidebar").getBoundingClientRect().x)<0.1`),"docked sidebar");
     assert.equal(await evaluate(page, `document.querySelector(".writing-canvas").getBoundingClientRect().left`),236);
     await screenshot("sidebar-docked");
+    await evaluate(page, `document.getElementById("sidebarResizeHandle").focus()`);
+    await press(page,"End","End");
+    assert.equal(await evaluate(page, `document.querySelector(".writing-canvas").getBoundingClientRect().width`),420);
+    assert.equal(await evaluate(page, `getComputedStyle(document.querySelector(".toolbar-headings-expanded")).display`),"none");
+    assert.equal(await evaluate(page, `(() => {const bar=document.querySelector(".editor-toolbar");return bar.scrollWidth<=bar.clientWidth;})()`),true);
     await click(page,"#hamburgerBtn");
     await poll(() => evaluate(page, `document.getElementById("sidebar").getBoundingClientRect().right<=0.1`),"sidebar closed");
     const colors=[];

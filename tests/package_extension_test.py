@@ -1,4 +1,5 @@
 import importlib.util
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -28,6 +29,8 @@ class PackageExtensionTest(unittest.TestCase):
                 self.assertEqual(names, sorted(PACKAGE.RUNTIME_FILES))
                 for name in names:
                     self.assertEqual(archive.read(name), (ROOT / name).read_bytes())
+                for reference in re.findall(r'url\(["\']?([^"\')]+)', (ROOT / "styles.css").read_text()):
+                    self.assertIn(reference, names, f"Missing CSS asset: {reference}")
 
 
 if __name__ == "__main__":

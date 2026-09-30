@@ -1,0 +1,2 @@
+# Generated bundle includes meaningful Markdown spaces in dependency string literals.
+editor.js whitespace=-blank-at-eol linguist-generated=true

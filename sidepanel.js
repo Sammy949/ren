@@ -31,6 +31,7 @@ class RenNotePad {
         keys: "Alt+Shift+S",
         action: "openExtension",
         description: "Open Ren",
+        scope: "browser",
       },
       {
         keys: "Ctrl+Alt+N",
@@ -62,6 +63,7 @@ class RenNotePad {
       },
       { keys: "Ctrl+Z", action: "undo", description: "Undo" },
       { keys: "Ctrl+Y", action: "redo", description: "Redo" },
+      { keys: "Ctrl+Shift+Z", action: "redo", description: "Redo" },
     ];
     this.shortcutsHelpVisible = false;
 
@@ -84,6 +86,7 @@ class RenNotePad {
     this.dataLoadFailed = true;
     this.autoSaveStatus.textContent = "Could not load notes";
     this.noteContent.setAttribute("contenteditable", "false");
+    this.editor?.setEditable?.(false);
     this.newNoteBtn.disabled = true;
     this.showNotification("Could not load notes. Reopen Ren to retry.", "error");
   }
@@ -138,15 +141,17 @@ class RenNotePad {
       this.editor = new RenEditor(this.noteContent, {
         placeholder:
           "Start writing... (Try # for headings, ** for bold, - for lists)",
-        onInput: () => this.handleInput(),
+        onInput: () => this.updateWordCount(),
         onChange: () => {
           this.scheduleAutoSave();
-          // After any change, undo becomes available, redo is cleared
-          this.canUndo = true;
-          this.canRedo = false;
+        },
+        onHistoryChange: ({ canUndo, canRedo }) => {
+          this.canUndo = canUndo;
+          this.canRedo = canRedo;
           this.updateUndoRedoButtons();
         },
       });
+      this.noteContent = this.editor.element;
     }
 
     // Initialize undo/redo button states
@@ -202,6 +207,7 @@ class RenNotePad {
       this.editorToolbar
         .querySelectorAll(".editor-toolbar-btn")
         .forEach((btn) => {
+          btn.addEventListener("mousedown", (event) => event.preventDefault());
           btn.addEventListener("click", (e) => {
             const action = btn.dataset.action;
             // Handle the "More" button separately
@@ -238,6 +244,7 @@ class RenNotePad {
         ".toolbar-dropdown-item",
       );
       dropdownItems.forEach((item) => {
+        item.addEventListener("mousedown", (event) => event.preventDefault());
         item.addEventListener("click", () => {
           const action = item.dataset.action;
           this.handleToolbarAction(action);
@@ -357,7 +364,7 @@ class RenNotePad {
     );
     this.renameInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") this.confirmRenameNote();
-      if (e.key === "Escape") this.hideRenameModal();
+      if (e.key === "Escape") { e.preventDefault(); this.hideRenameModal(); }
     });
 
     // Delete modal events
@@ -368,7 +375,7 @@ class RenNotePad {
 
     // a11y: Delete modal keyboard handling
     this.deleteModal.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") this.hideDeleteModal();
+      if (e.key === "Escape") { e.preventDefault(); this.hideDeleteModal(); }
       // Focus trap within modal
       if (e.key === "Tab") {
         this.trapFocus(e, this.deleteModal);
@@ -389,8 +396,12 @@ class RenNotePad {
 
     // a11y: Global Escape key to close sidebar
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        if (!this.renameModal.classList.contains("hidden")) {
+      if (e.key === "Escape" && !e.defaultPrevented) {
+        if (this.shortcutsHelpVisible) {
+          this.hideShortcutsHelp();
+        } else if (this.settingsModalVisible) {
+          this.hideSettingsModal();
+        } else if (!this.renameModal.classList.contains("hidden")) {
           this.hideRenameModal();
         } else if (!this.deleteModal.classList.contains("hidden")) {
           this.hideDeleteModal();
@@ -490,6 +501,10 @@ class RenNotePad {
 
   // Keyboard Shortcuts: Handle keyboard shortcut events
   handleKeyboardShortcut(e) {
+    if (e.defaultPrevented || e.isComposing || e.getModifierState?.("AltGraph")) return;
+    const target = document.activeElement;
+    const inEditor = target === this.noteContent || this.noteContent.contains(target);
+    if (document.querySelector('[role="dialog"]:not(.hidden):not([aria-hidden="true"])')) return;
     // Build the key combination string
     const combo = [];
     if (e.ctrlKey || e.metaKey) combo.push("Ctrl");
@@ -497,7 +512,7 @@ class RenNotePad {
     if (e.altKey) combo.push("Alt");
 
     // Normalize key - handle special characters properly
-    let key = e.key;
+    let key = e.altKey && /^Key[A-Z]$/.test(e.code) ? e.code.slice(3) : e.key;
     if (key === " ") key = "Space";
     // Keep special keys as-is, uppercase letters
     if (key.length === 1 && /[a-zA-Z]/.test(key)) {
@@ -513,10 +528,11 @@ class RenNotePad {
     // Find matching shortcut
     const shortcut = this.keyboardShortcuts.find((s) => {
       const normalizedKeys = s.keys.replace(/\s/g, "");
-      return normalizedKeys.toLowerCase() === pressedCombo.toLowerCase();
+      return s.scope !== "browser" && normalizedKeys.toLowerCase() === pressedCombo.toLowerCase();
     });
 
     if (shortcut) {
+      if (["undo", "redo", "insertCheckbox"].includes(shortcut.action) && !inEditor) return;
       // Check if typing in an input
       const isTyping = ["INPUT", "TEXTAREA"].includes(
         document.activeElement.tagName,
@@ -552,6 +568,10 @@ class RenNotePad {
         break;
       case "forceSave":
         if (this.dataLoadFailed) return;
+        if (document.activeElement === this.noteTitleInput) {
+          this.finishEditingTitle();
+          this.noteTitle.focus();
+        }
         clearTimeout(this.autoSaveTimeout);
         this.saveCurrentNoteWithStatus({ notifySuccess: true });
         break;
@@ -573,26 +593,13 @@ class RenNotePad {
       case "insertCheckbox":
         if (this.editor) {
           this.editor.execCheckbox();
-          this.scheduleAutoSave();
         }
         break;
       case "undo":
-        if (this.editor && this.canUndo) {
-          this.editor.execUndo();
-          // After undo, redo becomes available
-          this.canRedo = true;
-          // Check if we can still undo (simplified: assume we can if we had changes)
-          // In real implementation, we'd track undo stack depth
-          this.updateUndoRedoButtons();
-        }
+        this.editor?.execUndo();
         break;
       case "redo":
-        if (this.editor && this.canRedo) {
-          this.editor.execRedo();
-          // After redo, undo is available again
-          this.canUndo = true;
-          this.updateUndoRedoButtons();
-        }
+        this.editor?.execRedo();
         break;
     }
   }
@@ -658,7 +665,7 @@ class RenNotePad {
         if (e.target === modal) this.hideShortcutsHelp();
       });
       modal.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") this.hideShortcutsHelp();
+        if (e.key === "Escape") { e.preventDefault(); this.hideShortcutsHelp(); }
       });
     }
 
@@ -668,7 +675,7 @@ class RenNotePad {
     this.lastFocusedElement = document.activeElement;
 
     // Focus close button
-    setTimeout(() => modal.querySelector("#closeShortcutsHelp").focus(), 100);
+    modal.querySelector("#closeShortcutsHelp").focus();
   }
 
   // Keyboard Shortcuts: Hide help modal
@@ -974,7 +981,7 @@ class RenNotePad {
         if (e.target === modal) this.hideSettingsModal();
       });
       modal.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") this.hideSettingsModal();
+        if (e.key === "Escape") { e.preventDefault(); this.hideSettingsModal(); }
       });
     }
 
@@ -984,7 +991,7 @@ class RenNotePad {
     this.settingsModalVisible = true;
     this.lastFocusedElement = document.activeElement;
 
-    setTimeout(() => modal.querySelector("#closeSettings").focus(), 100);
+    modal.querySelector("#closeSettings").focus();
   }
 
   // Settings Modal: Hide settings
@@ -1031,6 +1038,7 @@ class RenNotePad {
     const previousEditable =
       this.noteContent?.getAttribute?.("contenteditable") ?? "true";
     this.noteContent?.setAttribute?.("contenteditable", "false");
+    this.editor?.setEditable?.(false);
     try {
       await this.queueStorageSave(() =>
         this.storage.restorePreImportBackup(this.persistedNotebook()),
@@ -1052,6 +1060,7 @@ class RenNotePad {
     } finally {
       this.importInProgress = false;
       this.noteContent?.setAttribute?.("contenteditable", previousEditable);
+      this.editor?.setEditable?.(previousEditable !== "false");
     }
   }
 
@@ -1232,8 +1241,11 @@ Happy writing! ✨`,
     if (!this.currentNoteId) return;
     const note = this.getNoteById(this.currentNoteId);
     if (!note) return;
+    if (this.editor?.changed && typeof note.originalContent !== "string") {
+      note.originalContent = this.editor.sourceHTML;
+    }
     note.content = this.editor
-      ? this.noteContent.innerHTML
+      ? (this.editor.getHTML?.() ?? this.noteContent.innerHTML)
       : this.noteContent.value;
   }
 
@@ -1319,6 +1331,13 @@ Happy writing! ✨`,
     return this.notesCache.get(noteId) || null;
   }
 
+  createWriteContext() {
+    // Chrome omits unchanged keys from onChanged. Reusing a marker for two
+    // writes at the same edit revision makes our second write look external.
+    this.writeSequence = (this.writeSequence || 0) + 1;
+    return { instanceId: this.instanceId, revision: this.editRevision, sequence: this.writeSequence };
+  }
+
   async saveData() {
     if (this.dataLoadFailed) {
       throw new Error("Cannot save while notes have not loaded");
@@ -1328,10 +1347,7 @@ Happy writing! ✨`,
     // Snapshot at queue time so a later edit cannot change an earlier write.
     const notes = this.notes.map((note) => ({ ...note }));
     const currentNoteId = this.currentNoteId;
-    const writeContext = {
-      instanceId: this.instanceId,
-      revision: this.editRevision,
-    };
+    const writeContext = this.createWriteContext();
     return this.queueStorageSave(async () => {
       this.assertNoStorageConflict();
       try {
@@ -1355,10 +1371,7 @@ Happy writing! ✨`,
     const noteSnapshot = { ...note };
     const notesIndex = this.notes.map(({ id }) => id);
     const currentNoteId = this.currentNoteId;
-    const writeContext = {
-      instanceId: this.instanceId,
-      revision: this.editRevision,
-    };
+    const writeContext = this.createWriteContext();
     return this.queueStorageSave(async () => {
       this.assertNoStorageConflict();
       const expectedNote = this.persistedNotes?.get(noteSnapshot.id);
@@ -1387,10 +1400,7 @@ Happy writing! ✨`,
     }
 
     const currentNoteId = this.currentNoteId;
-    const writeContext = {
-      instanceId: this.instanceId,
-      revision: this.editRevision,
-    };
+    const writeContext = this.createWriteContext();
     return this.queueStorageSave(() => {
       this.assertNoStorageConflict();
       return this.storage.setCurrentNoteId(currentNoteId, writeContext);
@@ -1503,7 +1513,7 @@ Happy writing! ✨`,
       this.sidebar.inert = false;
       document.body.classList.add("sidebar-open");
       // a11y: Focus first interactive element in sidebar
-      setTimeout(() => this.newNoteBtn.focus(), 100);
+      this.newNoteBtn.focus();
     }
   }
 
@@ -1618,6 +1628,9 @@ Happy writing! ✨`,
    * Update undo/redo button states based on availability
    */
   updateUndoRedoButtons() {
+    this.editorToolbar?.querySelectorAll("button").forEach((button) => {
+      if (!["undo", "redo"].includes(button.dataset.action)) button.disabled = Boolean(this.editor?.readOnly);
+    });
     if (this.undoBtn) {
       this.undoBtn.disabled = !this.canUndo;
       this.undoBtn.classList.toggle("disabled", !this.canUndo);
@@ -1659,19 +1672,11 @@ Happy writing! ✨`,
 
     switch (action) {
       case "undo":
-        if (this.canUndo) {
-          this.editor.execUndo();
-          this.canRedo = true;
-          this.updateUndoRedoButtons();
-        }
-        return; // Don't schedule auto-save for undo
+        this.editor.execUndo();
+        return;
       case "redo":
-        if (this.canRedo) {
-          this.editor.execRedo();
-          this.canUndo = true;
-          this.updateUndoRedoButtons();
-        }
-        return; // Don't schedule auto-save for redo
+        this.editor.execRedo();
+        return;
       case "bold":
         this.editor.execBold();
         break;
@@ -1713,14 +1718,13 @@ Happy writing! ✨`,
         break;
     }
 
-    // Trigger save after formatting
-    this.scheduleAutoSave();
+    // The editor update transaction schedules the save.
   }
 
   updateWordCount() {
     // Use textContent for contenteditable, fallback to value for textarea
     const text = this.editor
-      ? this.noteContent.textContent
+      ? (this.editor.getText?.() ?? this.noteContent.textContent)
       : this.noteContent.value;
     const words = text.trim() ? text.trim().split(/\s+/).length : 0;
     const chars = text.length;
@@ -1830,6 +1834,7 @@ Happy writing! ✨`,
   }
 
   async saveCurrentNote() {
+    if (this.editor?.readOnly) return;
     if (this.dataLoadFailed) return;
     if (this.storageConflict) {
       throw new Error("Cannot save while another panel has changed the notebook");
@@ -1840,8 +1845,11 @@ Happy writing! ✨`,
     const note = this.getNoteById(this.currentNoteId);
     if (note) {
       // Use innerHTML for rich editor, value for textarea
+      if (this.editor?.changed && typeof note.originalContent !== "string") {
+        note.originalContent = this.editor.sourceHTML;
+      }
       note.content = this.editor
-        ? this.noteContent.innerHTML
+        ? (this.editor.getHTML?.() ?? this.noteContent.innerHTML)
         : this.noteContent.value;
       note.updatedAt = new Date().toISOString();
 
@@ -1895,7 +1903,7 @@ Happy writing! ✨`,
       // Use innerHTML for rich editor, value for textarea
       // Convert plain text to HTML to preserve line breaks
       if (this.editor) {
-        this.editor.setHTML(this.convertPlainTextToHTML(note.content || ""));
+        this.editor.setHTML(note.content || "", this.convertPlainTextToHTML(note.content || ""));
       } else {
         this.noteContent.value = note.content;
       }
@@ -1933,6 +1941,8 @@ Happy writing! ✨`,
   async removeEmptyNote(noteId) {
     const note = this.getNoteById(noteId);
     if (!note) return;
+    if (noteId === this.currentNoteId && this.editor?.readOnly) return;
+    if (note.titleSource === "manual") return;
 
     // Check if note has default title (starts with "Untitled")
     const hasDefaultTitle =
@@ -1940,7 +1950,7 @@ Happy writing! ✨`,
 
     // Check if content is empty (strip HTML tags and whitespace)
     const textContent = note.content
-      .replace(/<[^>]*>/g, "") // Remove HTML tags
+      .replace(/<\/?(?:p|div|br)\s*\/?>/gi, "") // Only empty text blocks count as empty
       .replace(/&nbsp;/g, " ") // Replace &nbsp; with space
       .replace(/\s+/g, "") // Remove all whitespace
       .trim();
@@ -2392,6 +2402,7 @@ Happy writing! ✨`,
           ? { titleSource: note.titleSource }
           : {}),
         content: this.convertPlainTextToHTML(note.content),
+        ...(typeof note.originalContent === "string" ? { originalContent: note.originalContent } : {}),
         createdAt: note.createdAt,
         updatedAt: note.updatedAt,
       });
@@ -2436,6 +2447,7 @@ Happy writing! ✨`,
       this.importInProgress = true;
       previousEditable = this.noteContent?.getAttribute?.("contenteditable");
       this.noteContent?.setAttribute?.("contenteditable", "false");
+      this.editor?.setEditable?.(false);
 
       // Include the latest editor contents in the recovery snapshot.
       await this.saveCurrentNote();
@@ -2475,6 +2487,7 @@ Happy writing! ✨`,
           "contenteditable",
           previousEditable ?? "true",
         );
+        this.editor?.setEditable?.(previousEditable !== "false");
       }
       this.importFileInput.value = "";
     }

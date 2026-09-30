@@ -1,0 +1,16 @@
+{
+  "name": "ren",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "bun run scripts/build_editor.mjs",
+    "test": "node --test tests/*.test.cjs"
+  },
+  "dependencies": {
+    "@tiptap/core": "^3.31.3",
+    "@tiptap/extension-code": "3.31.3",
+    "@tiptap/extension-list": "^3.31.3",
+    "@tiptap/pm": "^3.31.3",
+    "@tiptap/starter-kit": "^3.31.3"
+  }
+}

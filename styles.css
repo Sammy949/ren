@@ -2439,6 +2439,7 @@ main[role="main"]>.h-full.flex.flex-col {
 #noteTitle { display: block; max-width: min(320px, calc(100vw - 100px)); }
 #noteTitleInput { box-sizing: border-box; height: 28px; }
 .workspace, .writing-canvas { min-height: 0; min-width: 0; }
+.writing-canvas { container-type: inline-size; }
 #sidebar {
   top: var(--header-height);
   bottom: 0;
@@ -2478,4 +2479,23 @@ body.resizing-sidebar { cursor: col-resize; user-select: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .sidebar-transition, .sidebar-overlay { transition: none; }
+}
+
+.editor-host { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+.editor-host[hidden] { display: none; }
+.ren-editor { min-height: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ren-editor[hidden], .editor-recovery-notice[hidden] { display: none; }
+.ren-editor p:first-child { margin-top: 0; }
+.ren-editor p:last-child { margin-bottom: 0; }
+.ren-editor ul[data-type="taskList"] { list-style: none; padding-left: 0; }
+.ren-editor li[data-type="taskItem"] { display: flex; align-items: flex-start; gap: 8px; }
+.ren-editor li[data-type="taskItem"] > label { flex: 0 0 auto; user-select: none; }
+.ren-editor li[data-type="taskItem"] > div { flex: 1; min-width: 0; }
+.ren-editor li[data-type="taskItem"] input { accent-color: var(--color-primary-500); }
+.ren-editor li[data-checked="true"] > div { text-decoration: line-through; color: var(--text-muted); }
+.editor-recovery-notice { margin: 0; padding: 12px 16px; font-size: 12px; color: var(--text-secondary); background: var(--bg-tertiary); }
+.ren-editor:focus-visible { outline: none; }
+@container (max-width: 600px) {
+  .toolbar-headings-expanded, .toolbar-blocks { display: none; }
+  .toolbar-headings-compact, .toolbar-more { display: flex; align-items: center; }
 }

@@ -224,3 +224,28 @@ export async function stopChrome(chrome) {
   ]);
   if (chrome.processHandle.exitCode === null) chrome.processHandle.kill("SIGKILL");
 }
+
+export async function press(client, key, code, modifiers = 0) {
+  const special = { Enter:13, Escape:27, Tab:9, Backspace:8, Delete:46, ArrowLeft:37, ArrowUp:38, ArrowRight:39, ArrowDown:40, Home:36, End:35, Space:32, Comma:188, Slash:191 };
+  const windowsVirtualKeyCode = /^Key[A-Z]$/.test(code) ? code.charCodeAt(3) : special[code] || 0;
+  const params = {key,code,modifiers,windowsVirtualKeyCode};
+  await client.call("Input.dispatchKeyEvent", {type:"keyDown",...params});
+  await client.call("Input.dispatchKeyEvent", {type:"keyUp",...params});
+}
+export async function click(client, selector) {
+  const point=await evaluate(client, `(() => {const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()`);
+  await client.call("Input.dispatchMouseEvent", {type:"mousePressed",...point,button:"left",clickCount:1});
+  await client.call("Input.dispatchMouseEvent", {type:"mouseReleased",...point,button:"left",clickCount:1});
+}
+export async function typeText(client, text) {
+  for(const character of text) await client.call("Input.insertText",{text:character});
+}
+export async function loadNotebook(client, notes, currentNoteId = notes[0].id) {
+  await evaluate(client, `(async () => {
+    await renStorage.completeOnboarding();
+    await renStorage.saveAllNotes(${JSON.stringify(notes)}, ${JSON.stringify(currentNoteId)});
+  })()`);
+  await client.call("Page.reload");
+  const current=notes.find(note=>note.id===currentNoteId);
+  await poll(()=>evaluate(client, `document.getElementById("noteTitle")?.textContent === ${JSON.stringify(current.title)}`),"notebook load");
+}
