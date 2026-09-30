@@ -21,18 +21,22 @@ extracted release ZIP to test the packaged runtime. Set `REN_UPGRADE_FROM_ROOT`
 to the extracted previous release to exercise the same-path upgrade. Then run:
 
 ```sh
-node --test tests/chrome-editor.test.mjs tests/chrome-interactions.test.mjs tests/chrome-storage-smoke.test.mjs
+node --test --test-concurrency=1 tests/chrome-editor.test.mjs tests/chrome-formatting.test.mjs tests/chrome-interactions.test.mjs tests/chrome-storage-smoke.test.mjs
 ```
 
 The tests create disposable profiles containing synthetic notes. Optional
 `REN_UI_ARTIFACT_DIR` captures synthetic layout/selection screenshots.
 
-On 30 September 2026, normal and clean-cache installs failed tarball integrity
-checks for ProseMirror dependencies. Verification used the existing spike's
-installed dependencies, with all 42 package versions checked against `bun.lock`.
-The bundle builds and passes the packaged browser gates. A clean dependency
-installation remains a release gate; version matching is not a tarball-integrity
-check. Do not disable integrity verification to get past this failure.
+On 30 September 2026, earlier installs failed integrity checks. A later independent
+SHA-512 comparison confirmed the three affected tarballs match both npm registry
+metadata and the lockfile. A fresh isolated frozen-lockfile installation then
+succeeded with integrity checks enabled (42 packages). Building from that clean
+installation produced a byte-for-byte identical editor bundle. The original
+failure's cause was not established; no checksums were changed or bypassed.
+
+Run browser suites sequentially to limit resource contention. One parallel run
+hit the storage suite's 45-second timeout; the isolated run passed. CDP calls now
+reject on socket closure or a 15-second command timeout instead of hanging.
 
 ## Data boundary
 
@@ -76,11 +80,16 @@ at one edit revision could look like an external write and reload the editor.
 - Toolbar layout follows available canvas width after sidebar resizing. Empty-note
   cleanup preserves manual, quarantined, divider-only, and task-only notes.
 - The package includes the title/welcome SVG; asset checks catch omitted CSS URLs.
+- Every formatting toolbar action survives undo, redo, save, and reopen. Nested
+  lists, adjacent marks, links, hard breaks, and empty tasks remain editable.
+- Numbered lists starting at 7 preserve their start through save, reload, and
+  import preparation. The legacy converter previously quarantined this valid
+  editor output; the sanitizer previously removed its numbering.
 
 ## Still open
 
 Real macOS keyboard behavior and the browser-managed Open Ren command require a
-native browser pass. The full formatting matrix remains open, including complex
-nested lists, selections spanning blocks, all toolbar actions, large documents,
+native browser pass. The full formatting matrix remains open, including deeper list editing,
+selections spanning blocks, large documents,
 and wider historical note shapes. JSON persistence, full rollback, performance
 budgets, and the remaining roadmap release gates are separate work.

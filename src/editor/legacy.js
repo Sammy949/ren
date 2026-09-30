@@ -45,6 +45,9 @@ export function convertLegacyNote(editor, note) {
     for (const attribute of element.attributes) {
       const allowed =
         (element.tagName === "A" && ["href", "target", "rel"].includes(attribute.name)) ||
+        (element.tagName === "OL" && attribute.name === "start" &&
+          /^-?\d+$/.test(attribute.value) && Number.isSafeInteger(Number(attribute.value))) ||
+        (element.tagName === "OL" && attribute.name === "type" && /^[1aAiI]$/.test(attribute.value)) ||
         (element.tagName === "DIV" && ["class", "contenteditable"].includes(attribute.name)) ||
         (element.tagName === "INPUT" && ["class", "type", "checked"].includes(attribute.name)) ||
         (element.tagName === "SPAN" && ["class", "contenteditable"].includes(attribute.name));

@@ -250,7 +250,7 @@ These do not block the first safeguard milestone.
   and a large note. Set budgets from the measurements, then optimize.
 - [ ] Finish focus order, dialogs, zoom, reduced motion, and all theme checks;
   correct onboarding sync/capacity claims and review privacy/store copy.
-- [ ] Resolve clean dependency installation integrity failures before release.
+- [x] Verify a clean frozen-lockfile dependency installation and identical rebuilt bundle.
 - [ ] Run release/upgrade/rollback checks, review the package, reconcile the branch
   stack, and create the version/tag only when the release gates pass.
 
@@ -258,7 +258,7 @@ These do not block the first safeguard milestone.
 
 Expand the production formatting and historical-note matrix, then complete the
 versioned JSON persistence and recovery path. Measure performance before changing
-storage architecture. Resolve clean dependency installation and finish native
+storage architecture. Finish native
 platform/accessibility checks before any release tag. The internal notes list
 overlays below the header at narrow widths and docks at wide widths.
 
@@ -412,6 +412,22 @@ overlays below the header at narrow widths and docks at wide widths.
   HTML remains the persistence format; JSON migration and the full matrix remain
   open. `docs/EDITOR_INTEGRATION.md` records coverage and the unresolved clean-install
   integrity failures. No release tag was created.
+
+### 30 September 2026: formatting round-trip matrix
+
+- Added packaged Chrome coverage for every formatting toolbar action through
+  undo, redo, save, and reopen; nested lists, adjacent marks, links, hard breaks,
+  and empty task editing are also covered.
+- Reproduced and fixed ordered lists starting above 1 becoming read-only after
+  reopen. Preserve validated ordered-list start/type attributes during conversion
+  and import sanitization.
+- Independently verified the previously failing tarballs against registry and
+  lockfile hashes. A fresh isolated install succeeded with integrity checks on;
+  its generated bundle exactly matches the working bundle. Original install
+  failure cause remains unknown.
+- A parallel storage browser run timed out; its isolated rerun passed. Added
+  explicit CDP command timeouts and rejection on browser disconnect. Use
+  sequential browser execution for release checks.
 
 ## Primary references checked for this plan
 

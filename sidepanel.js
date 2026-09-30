@@ -2253,6 +2253,7 @@ Happy writing! ✨`,
           className: node.getAttribute("class") || "",
           href: node.getAttribute("href"),
           type: node.getAttribute("type"),
+          start: node.getAttribute("start"),
         };
         for (const attribute of Array.from(node.attributes)) {
           node.removeAttribute(attribute.name);
@@ -2265,6 +2266,12 @@ Happy writing! ✨`,
             node.setAttribute("target", "_blank");
             node.setAttribute("rel", "noopener noreferrer");
           }
+        }
+        if (tagName === "OL") {
+          if (/^-?\d+$/.test(original.start || "") && Number.isSafeInteger(Number(original.start))) {
+            node.setAttribute("start", original.start);
+          }
+          if (/^[1aAiI]$/.test(original.type || "")) node.setAttribute("type", original.type);
         }
         if (tagName === "INPUT") {
           if (

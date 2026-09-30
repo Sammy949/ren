@@ -47,12 +47,20 @@ class CdpClient {
     this.socket = socket;
     this.nextId = 1;
     this.pending = new Map();
+    socket.addEventListener("close", () => {
+      for (const pending of this.pending.values()) {
+        clearTimeout(pending.timer);
+        pending.reject(new Error(`Chrome connection closed during ${pending.method}`));
+      }
+      this.pending.clear();
+    });
     socket.addEventListener("message", ({ data }) => {
       const message = JSON.parse(data);
       if (!message.id) return;
       const pending = this.pending.get(message.id);
       if (!pending) return;
       this.pending.delete(message.id);
+      clearTimeout(pending.timer);
       if (message.error) pending.reject(new Error(message.error.message));
       else pending.resolve(message.result);
     });
@@ -70,7 +78,11 @@ class CdpClient {
   call(method, params = {}) {
     const id = this.nextId++;
     return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        reject(new Error(`Chrome command timed out: ${method}`));
+      }, 15000);
+      this.pending.set(id, { resolve, reject, timer, method });
       this.socket.send(JSON.stringify({ id, method, params }));
     });
   }
