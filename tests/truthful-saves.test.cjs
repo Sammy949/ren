@@ -16,12 +16,13 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
-function loadNotePad() {
+function loadNotePad(overrides = {}) {
   const context = {
     document: { addEventListener() {} },
     console: { error() {} },
     setTimeout,
     clearTimeout,
+    ...overrides,
   };
   vm.createContext(context);
   vm.runInContext(
@@ -31,6 +32,27 @@ function loadNotePad() {
   );
   return context.RenNotePad;
 }
+
+test("rapid note creation cannot reuse an existing or newly allocated ID", async () => {
+  const fixedId = "1750000000000";
+  const FixedDate = class extends Date { static now() { return Number(fixedId); } };
+  const RenNotePad = loadNotePad({ Date: FixedDate, crypto: { randomUUID: () => fixedId } });
+  const app = Object.create(RenNotePad.prototype);
+  const existing = { id: fixedId, title: "Keep", content: "Original" };
+  app.notes = [existing];
+  app.notesCache = new Map([[fixedId, existing]]);
+  app.currentNoteId = fixedId;
+  app.saveCurrentNote = app.removeEmptyNote = async () => {};
+  app.loadCurrentNote = app.renderNotesList = app.showNotification = () => {};
+  app.noteContent = { focus() {} };
+  let persisted;
+  app.saveData = async () => { persisted = app.notes.map(note => ({ ...note })); };
+  await Promise.all(Array.from({ length: 4 }, () => app.createNewNote()));
+  assert.equal(persisted.length, 5);
+  assert.equal(new Set(persisted.map(note => note.id)).size, 5);
+  assert.equal(app.notesCache.size, 5);
+  assert.equal(app.notesCache.get(fixedId).content, "Original");
+});
 
 function createSaveApp() {
   const RenNotePad = loadNotePad();

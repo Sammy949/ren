@@ -240,10 +240,13 @@ These do not block the first safeguard milestone.
 - [ ] Verify native macOS bindings and the browser-managed Open Ren command.
 - [x] Retain original HTML on edited saves and keep unsupported source readable/exportable.
 - [ ] Implement and validate versioned JSON persistence; prove full rollback and import/export.
-- [ ] Complete the formatting matrix: adjacent marks, nested lists, task toggles,
-  real clipboard, cursor movement, IME, repeated undo/redo, save, and reopen.
-- [ ] Close reliability gates for quota exhaustion, rapid switching, shutdown,
-  and colliding note IDs. Existing restart/concurrency tests cover part of this.
+- [x] Verify toolbar actions, adjacent marks, nested-list round trips, task toggles,
+  real clipboard, code cursor movement, IME, undo/redo, save, and reopen.
+- [ ] Extend coverage to deeper list editing, cross-block selections, large notes,
+  and export/import of the full formatting matrix.
+- [ ] Close reliability gates for quota exhaustion, rapid switching,
+  and shutdown during pending writes. ID collisions are now guarded; existing
+  restart/concurrency tests cover part of this.
 - [ ] Close title checks for export/import, long names, screen-reader operation,
   and interaction with editor history.
 - [ ] Measure typing, startup, search, save cost, and heap use at 10/100/1,000 notes
@@ -256,10 +259,9 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Expand the production formatting and historical-note matrix, then complete the
-versioned JSON persistence and recovery path. Measure performance before changing
-storage architecture. Finish native
-platform/accessibility checks before any release tag. The internal notes list
+Complete the versioned JSON persistence and recovery path with the remaining
+formatting, export/import, and historical-note matrix. Measure performance before changing
+storage architecture. Finish native platform/accessibility checks before any release tag. The internal notes list
 overlays below the header at narrow widths and docks at wide widths.
 
 ## Progress log
@@ -427,7 +429,17 @@ overlays below the header at narrow widths and docks at wide widths.
   failure cause remains unknown.
 - A parallel storage browser run timed out; its isolated rerun passed. Added
   explicit CDP command timeouts and rejection on browser disconnect. Use
-  sequential browser execution for release checks.
+  sequential browser execution for release checks. All four packaged browser
+  suites then passed sequentially, including prior-package upgrade.
+
+### 30 September 2026: note ID collision guard
+
+- A deterministic rapid-creation test reproduced four new records reusing one
+  millisecond ID and replacing the existing cache entry.
+- Onboarding and new notes now use UUIDs, with an explicit local collision check
+  even if the candidate generator repeats. Existing IDs are retained.
+- The same test now preserves all five records and the original cached content.
+  This closes ID allocation collisions, not all concurrent notebook mutations.
 
 ## Primary references checked for this plan
 

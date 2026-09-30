@@ -1174,7 +1174,7 @@ class RenNotePad {
 
     // Create the first note with welcome content
     const welcomeNote = {
-      id: Date.now().toString(),
+      id: this.createNoteId(),
       title: "Welcome to Ren! 🌿",
       content: `Welcome to Ren! 🌿
 
@@ -1801,6 +1801,14 @@ Happy writing! ✨`,
     return this.flushSavePromise;
   }
 
+  createNoteId() {
+    const base = globalThis.crypto?.randomUUID?.() || Date.now().toString();
+    let id = base;
+    let suffix = 0;
+    while (this.notes.some((note) => note.id === id)) id = `${base}-${++suffix}`;
+    return id;
+  }
+
   async createNewNote() {
     if (this.dataLoadFailed || this.storageConflict) return;
     // Store previous note ID and save it before creating new
@@ -1813,7 +1821,7 @@ Happy writing! ✨`,
     }
 
     const newNote = {
-      id: Date.now().toString(),
+      id: this.createNoteId(),
       title: "Untitled",
       titleSource: "default",
       content: "",
