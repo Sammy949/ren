@@ -19,6 +19,18 @@ test("onboarding and dialogs retain native keyboard focus", { timeout: 45000 }, 
     }
     await click(page, "#startWritingBtn");
     await poll(() => evaluate(page, 'document.getElementById("noteContent").textContent.includes("Notes stay in this browser")'), "welcome note");
+    for (const width of [400, 900]) {
+      await page.call("Emulation.setDeviceMetricsOverride", { width, height: 700, deviceScaleFactor: 1, mobile: false });
+      await click(page, "#hamburgerBtn");
+      await poll(() => evaluate(page, 'Math.abs(document.getElementById("sidebar").getBoundingClientRect().x) < 0.1'), "sidebar open");
+      await click(page, "#settingsBtn");
+      assert.equal(await evaluate(page, 'document.getElementById("settingsModal")?.getAttribute("aria-hidden")'), "false", "Settings click opens dialog");
+      assert.equal(await evaluate(page, 'document.activeElement.id'), "closeSettings", "Settings click puts focus in dialog");
+      await click(page, "#themeDark");
+      await poll(() => evaluate(page, 'document.documentElement.getAttribute("data-theme") === "dark"'), "clicked theme");
+      await click(page, "#closeSettings");
+      assert.equal(await evaluate(page, 'document.activeElement.id'), "hamburgerBtn", "closing Settings restores a visible control");
+    }
     for (const [key, code, modal] of [[",", "Comma", "settingsModal"], ["/", "Slash", "shortcutsHelpModal"]]) {
       await click(page, "#noteContent");
       await press(page, key, code, 2);

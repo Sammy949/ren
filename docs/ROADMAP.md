@@ -454,6 +454,12 @@ overlays below the header at narrow widths and docks at wide widths.
   release gates in [FINAL_REVIEW.md](FINAL_REVIEW.md). This checkpoint does not
   complete the versioned-storage, performance, or native-accessibility milestones.
 
+### 1 October 2026: Settings button follow-up
+
+- Fixed sidebar-close focus overriding the Settings dialog opened by a click.
+- Added actual Settings-button, theme-button, and close-button clicks at narrow
+  and wide widths. Previous dialog tests exercised keyboard opening only.
+
 ## Primary references checked for this plan
 
 - [Chrome storage API](https://developer.chrome.com/docs/extensions/reference/api/storage): current local quota, failures, bytes in use, access levels.

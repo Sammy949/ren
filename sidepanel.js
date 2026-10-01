@@ -299,8 +299,10 @@ class RenNotePad {
     // Settings button (with null check)
     if (this.settingsBtn) {
       this.settingsBtn.addEventListener("click", () => {
+        // Close navigation first so it cannot steal the dialog's focus, and
+        // returning from Settings targets the visible navigation trigger.
+        if (!this.sidebar.classList.contains("-translate-x-full")) this.toggleSidebar();
         this.showSettingsModal();
-        this.toggleSidebar();
       });
     }
 

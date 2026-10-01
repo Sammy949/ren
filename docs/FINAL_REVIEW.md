@@ -91,3 +91,16 @@ it is not a comprehensive dependency or security certification.
 
 See `ROADMAP.md` for the continuing work and `EDITOR_INTEGRATION.md` for the
 document-conversion boundary and recovery behavior.
+
+## Settings-button follow-up (1 October 2026)
+
+Samuel reported the Settings button failing. Native pointer coverage reproduced
+focus leaving the opened dialog: the button opened Settings before closing the
+sidebar, whose close handler then focused the hamburger. Closing navigation
+first fixes the ordering and leaves a visible focus-return target. Earlier
+keyboard-only dialog checks did not exercise this button path.
+
+The regression now clicks Settings at 400 and 900 pixels, checks focus, clicks a
+theme, and closes the dialog. The updated review ZIP is 181530 bytes, SHA-256
+`80a248099b6814604c2c17c7c4f023ab737b3de64dfce34212c82d6940cb2806`.
+The earlier full-run checksum above remains the historical checkpoint.
