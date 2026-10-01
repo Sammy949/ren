@@ -419,11 +419,12 @@ class RenNotePad {
 
   // a11y: Focus trap for modals
   trapFocus(e, container) {
-    const focusableElements = container.querySelectorAll(
+    const focusableElements = [...container.querySelectorAll(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
-    );
+    )].filter((element) => !element.disabled && element.tabIndex >= 0 && element.getClientRects().length > 0);
     const firstElement = focusableElements[0];
     const lastElement = focusableElements[focusableElements.length - 1];
+    if (!firstElement) { e.preventDefault(); return; }
 
     if (e.shiftKey && document.activeElement === firstElement) {
       e.preventDefault();
@@ -666,6 +667,7 @@ class RenNotePad {
       });
       modal.addEventListener("keydown", (e) => {
         if (e.key === "Escape") { e.preventDefault(); this.hideShortcutsHelp(); }
+        if (e.key === "Tab") this.trapFocus(e, modal);
       });
     }
 
@@ -830,10 +832,8 @@ class RenNotePad {
     }
     // Focus search input
     if (this.searchInput) {
-      setTimeout(() => {
-        this.searchInput.focus();
-        this.searchInput.select();
-      }, 150);
+      this.searchInput.focus();
+      this.searchInput.select();
     }
   }
 
@@ -982,6 +982,7 @@ class RenNotePad {
       });
       modal.addEventListener("keydown", (e) => {
         if (e.key === "Escape") { e.preventDefault(); this.hideSettingsModal(); }
+        if (e.key === "Tab") this.trapFocus(e, modal);
       });
     }
 
@@ -1035,6 +1036,7 @@ class RenNotePad {
 
     clearTimeout(this.autoSaveTimeout);
     this.importInProgress = true;
+    this.storageRefreshSequence = (this.storageRefreshSequence || 0) + 1;
     const previousEditable =
       this.noteContent?.getAttribute?.("contenteditable") ?? "true";
     this.noteContent?.setAttribute?.("contenteditable", "false");
@@ -1130,7 +1132,7 @@ class RenNotePad {
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
                 </svg>
               </div>
-              <p class="welcome-feature-text"><strong>Multiple notes</strong> - Create and organize unlimited notes</p>
+              <p class="welcome-feature-text"><strong>Multiple notes</strong> - Keep your ideas organized</p>
             </div>
             <div class="welcome-feature-item">
               <div class="welcome-feature-icon">
@@ -1154,12 +1156,15 @@ class RenNotePad {
       modal.querySelector("#startWritingBtn").addEventListener("click", () => {
         this.completeOnboarding();
       });
+      modal.addEventListener("keydown", (e) => {
+        if (e.key === "Tab") this.trapFocus(e, modal);
+      });
     }
 
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
 
-    setTimeout(() => modal.querySelector("#startWritingBtn").focus(), 100);
+    modal.querySelector("#startWritingBtn").focus();
   }
 
   // Onboarding: Complete onboarding and create first note
@@ -1184,7 +1189,7 @@ This is your first note. Here are some tips to get started:
 • Your notes auto-save as you write
 • Click the ☰ menu to see all your notes
 • Click on the note title above to edit it
-• Your notes sync across devices!
+• Notes stay in this browser. Export a backup from Settings.
 
 Keyboard shortcuts:
 • Ctrl+Alt+N - Create new note
@@ -1203,7 +1208,7 @@ Happy writing! ✨`,
     this.loadCurrentNote();
     this.renderNotesList();
 
-    setTimeout(() => this.noteContent.focus(), 100);
+    this.noteContent.focus();
   }
 
   async loadData() {
@@ -1271,14 +1276,24 @@ Happy writing! ✨`,
     const writer = changes.ren_last_write_v1?.newValue;
     if (writer?.instanceId === this.instanceId) return;
 
+    const refreshSequence = this.storageRefreshSequence = (this.storageRefreshSequence || 0) + 1;
+    const revision = this.editRevision;
+
     if (this.editRevision > this.savedRevision) {
       this.enterStorageConflict();
       return;
     }
 
-    const previousCurrentNoteId = this.currentNoteId;
     const notes = await this.storage.getAllNotes();
     const storedCurrentNoteId = await this.storage.getCurrentNoteId();
+    if (refreshSequence !== this.storageRefreshSequence || this.importInProgress) return;
+    // Loading is asynchronous: the user may have started typing while storage
+    // was being read. Keep those edits exportable instead of replacing them.
+    if (this.storageConflict || this.editRevision !== revision || this.editRevision > this.savedRevision) {
+      this.enterStorageConflict();
+      return;
+    }
+    const previousCurrentNoteId = this.currentNoteId;
     this.notes = notes;
     this.currentNoteId = notes.some(({ id }) => id === previousCurrentNoteId)
       ? previousCurrentNoteId
@@ -1838,7 +1853,7 @@ Happy writing! ✨`,
     this.renderNotesList();
     this.showNotification("New note created", "success");
 
-    setTimeout(() => this.noteContent.focus(), 100);
+    this.noteContent.focus();
   }
 
   async saveCurrentNote() {
@@ -1999,7 +2014,7 @@ Happy writing! ✨`,
       // a11y: Update ARIA state
       this.deleteModal.setAttribute("aria-hidden", "false");
       // a11y: Focus the cancel button (safer default)
-      setTimeout(() => this.cancelDelete.focus(), 100);
+      this.cancelDelete.focus();
     }
   }
 
@@ -2460,6 +2475,7 @@ Happy writing! ✨`,
 
       clearTimeout(this.autoSaveTimeout);
       this.importInProgress = true;
+      this.storageRefreshSequence = (this.storageRefreshSequence || 0) + 1;
       previousEditable = this.noteContent?.getAttribute?.("contenteditable");
       this.noteContent?.setAttribute?.("contenteditable", "false");
       this.editor?.setEditable?.(false);

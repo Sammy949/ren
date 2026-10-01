@@ -337,6 +337,39 @@ test("a panel ignores its own tagged storage event", async () => {
   assert.equal(app.storageConflict, false);
 });
 
+test("typing during an external refresh keeps local edits recoverable", async () => {
+  const app = createSaveApp();
+  const pending = deferred();
+  let loaded = 0;
+  app.storage = { getAllNotes: () => pending.promise, getCurrentNoteId: async () => "a" };
+  app.loadCurrentNote = () => { loaded++; };
+  app.renderNotesList = () => {};
+  const refresh = app.handleStorageChanges({ note_a: { newValue: {} } });
+  app.editRevision++;
+  app.noteContent.innerHTML = "Typed while reading storage";
+  pending.resolve([{ id: "a", content: "External contents" }]);
+  await refresh;
+  assert.equal(loaded, 0);
+  assert.equal(app.storageConflict, true);
+  assert.equal(app.createExportData().notes[0].content, "Typed while reading storage");
+});
+
+test("an older external refresh cannot replace a newer refresh", async () => {
+  const app = createSaveApp();
+  const first = deferred();
+  let reads = 0;
+  app.storage = {
+    getAllNotes: () => ++reads === 1 ? first.promise : Promise.resolve([{ id: "a", content: "Newest" }]),
+    getCurrentNoteId: async () => "a",
+  };
+  app.loadCurrentNote = app.renderNotesList = () => {};
+  const earlier = app.handleStorageChanges({ note_a: { newValue: {} } });
+  await app.handleStorageChanges({ note_a: { newValue: {} } });
+  first.resolve([{ id: "a", content: "Older" }]);
+  await earlier;
+  assert.equal(app.notes[0].content, "Newest");
+});
+
 test("a new note suggests its first meaningful line only once", async () => {
   const app = createSaveApp();
   app.notes[0].title = "Untitled";

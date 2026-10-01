@@ -441,6 +441,19 @@ overlays below the header at narrow widths and docks at wide widths.
 - The same test now preserves all five records and the original cached content.
   This closes ID allocation collisions, not all concurrent notebook mutations.
 
+### 1 October 2026: final implementation review
+
+- Reproduced and fixed late external reads replacing in-flight edits and older
+  reads replacing newer results. Pending refreshes are invalidated for import
+  and restore; conflict content remains exportable.
+- Added native keyboard checks for onboarding, settings, and help focus. Fixed
+  missing Tab containment and delayed callbacks stealing focus from a dialog.
+- Corrected onboarding sync/capacity claims, store save guarantees, and privacy
+  deletion guidance against Chrome's storage documentation.
+- Recorded the reviewed package, repeatable verification commands, and remaining
+  release gates in [FINAL_REVIEW.md](FINAL_REVIEW.md). This checkpoint does not
+  complete the versioned-storage, performance, or native-accessibility milestones.
+
 ## Primary references checked for this plan
 
 - [Chrome storage API](https://developer.chrome.com/docs/extensions/reference/api/storage): current local quota, failures, bytes in use, access levels.

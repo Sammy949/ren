@@ -37,7 +37,7 @@ a click away, never in your way. Open it, start writing. No accounts, no setup,
 no clutter.
 
 **Write the moment an idea hits**
-Ren opens instantly in the side panel and stays open while you browse — perfect
+Ren opens in the side panel and stays open while you browse — perfect
 for capturing thoughts, drafting, and taking notes while you research.
 
 **Markdown shortcuts that just work**
@@ -51,9 +51,9 @@ Prefer clicking? The formatting toolbar (and Ctrl+B / Ctrl+I / Ctrl+U) has
 bold, italic, underline, strikethrough, and inline code covered.
 
 **Everything you'd expect, nothing you wouldn't**
-• Unlimited notes with titles
-• Instant search across every note
-• Auto-save as you type — never lose a word
+• Multiple notes with titles, within browser storage limits
+• Search across your notes
+• Automatic saving with visible save status and JSON backups
 • Light, dark, and system themes
 • Full keyboard shortcuts for power users
 • Word and character count
