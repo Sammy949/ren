@@ -342,7 +342,7 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
     const restoreControl = await poll(
       () => evaluate(page, `(() => {
         const button = document.getElementById("settingsRestoreImportBtn");
-        if (!button || button.classList.contains("hidden") || button.disabled) {
+        if (!button || button.hidden || button.disabled) {
           return null;
         }
         return button.querySelector(".settings-btn-desc").textContent;

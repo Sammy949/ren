@@ -460,6 +460,16 @@ overlays below the header at narrow widths and docks at wide widths.
 - Added actual Settings-button, theme-button, and close-button clicks at narrow
   and wide widths. Previous dialog tests exercised keyboard opening only.
 
+### 1 October 2026: Settings rewrite
+
+- Replaced dynamic overlay construction with one static native dialog and a
+  dedicated controller. Pointer and keyboard entry now share lifecycle/state.
+- Theme writes are serialized, successful persistence precedes selected state,
+  and failures appear inline with retry. Recovery reads ignore stale results.
+- Verified theme persistence/failure, repeated open/close, backdrop and keyboard
+  use, actual export/import/restore controls, and small-window layout.
+- Architecture, verification, and package checksum: [SETTINGS.md](SETTINGS.md).
+
 ## Primary references checked for this plan
 
 - [Chrome storage API](https://developer.chrome.com/docs/extensions/reference/api/storage): current local quota, failures, bytes in use, access levels.

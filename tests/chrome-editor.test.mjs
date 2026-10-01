@@ -139,7 +139,7 @@ test("structured editor history, selection, shortcuts, and source recovery",{tim
   await poll(()=>evaluate(page,`document.getElementById("hamburgerBtn").getAttribute("aria-expanded")==="true"`),"sidebar binding");
   await press(page,"Escape","Escape");
   await press(page,",","Comma",2);
-  await poll(()=>evaluate(page,`!document.getElementById("settingsModal").classList.contains("hidden")`),"settings binding");
+  await poll(()=>evaluate(page,`document.getElementById("settingsModal").matches(":modal")`),"settings binding");
   await press(page,"n","KeyN",3);
   assert.equal(await evaluate(page,`(async()=>(await renStorage.getAllNotes()).length)()`),1);
   await press(page,"Escape","Escape");

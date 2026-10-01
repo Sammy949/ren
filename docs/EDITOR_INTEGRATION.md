@@ -21,7 +21,7 @@ extracted release ZIP to test the packaged runtime. Set `REN_UPGRADE_FROM_ROOT`
 to the extracted previous release to exercise the same-path upgrade. Then run:
 
 ```sh
-node --test --test-concurrency=1 tests/chrome-dialogs.test.mjs tests/chrome-editor.test.mjs tests/chrome-formatting.test.mjs tests/chrome-interactions.test.mjs tests/chrome-storage-smoke.test.mjs
+node --test --test-concurrency=1 tests/chrome-settings.test.mjs tests/chrome-dialogs.test.mjs tests/chrome-editor.test.mjs tests/chrome-formatting.test.mjs tests/chrome-interactions.test.mjs tests/chrome-storage-smoke.test.mjs
 ```
 
 The tests create disposable profiles containing synthetic notes. Optional

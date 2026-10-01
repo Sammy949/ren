@@ -22,6 +22,7 @@ RUNTIME_FILES = (
     "manifest.json",
     "sidepanel.html",
     "sidepanel.js",
+    "settings.js",
     "storage.js",
     "styles.css",
 )

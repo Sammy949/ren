@@ -922,6 +922,42 @@
       </div>
     </div>
 
+    <dialog id="settingsModal" class="ren-settings-dialog" role="dialog" aria-labelledby="settingsTitle" aria-hidden="true">
+      <div class="settings-modal-content">
+        <div class="settings-header">
+          <h2 id="settingsTitle" class="settings-title">Settings</h2>
+          <button type="button" id="closeSettings" class="settings-close-btn" aria-label="Close settings" autofocus>Close</button>
+        </div>
+        <section class="settings-section" aria-labelledby="settingsThemeLabel">
+          <h3 id="settingsThemeLabel" class="settings-label">Appearance</h3>
+          <div class="theme-toggle-group" role="group" aria-label="Theme">
+            <button type="button" id="themeLight" class="theme-btn" data-theme="light" aria-pressed="false">Light</button>
+            <button type="button" id="themeDark" class="theme-btn" data-theme="dark" aria-pressed="false">Dark</button>
+            <button type="button" id="themeSystem" class="theme-btn" data-theme="system" aria-pressed="false">System</button>
+          </div>
+        </section>
+        <section class="settings-section" aria-labelledby="settingsDataLabel">
+          <h3 id="settingsDataLabel" class="settings-label">Your notes</h3>
+          <div class="settings-buttons">
+            <button type="button" id="settingsExportBtn" class="settings-action-btn">
+              <span><span class="settings-btn-title">Export notes</span><span class="settings-btn-desc">Download a JSON backup</span></span>
+            </button>
+            <button type="button" id="settingsImportBtn" class="settings-action-btn">
+              <span><span class="settings-btn-title">Import notes</span><span class="settings-btn-desc">Replace notes from a backup, with a recovery copy</span></span>
+            </button>
+            <button type="button" id="settingsRestoreImportBtn" class="settings-action-btn" hidden disabled>
+              <span><span class="settings-btn-title">Restore before import</span><span class="settings-btn-desc">Restore notes saved before the latest import</span></span>
+            </button>
+          </div>
+          <p class="settings-backup-reminder">Notes are stored in this browser. Export a copy regularly and keep the file somewhere safe.</p>
+        </section>
+        <p id="settingsStatus" class="settings-status" role="status" aria-live="polite"></p>
+        <div class="settings-footer">
+          <p class="settings-version"><span id="settingsVersion"></span> · <button type="button" id="settingsShortcutsBtn" class="settings-link">Keyboard shortcuts</button></p>
+        </div>
+      </div>
+    </dialog>
+
     <!-- Notification Container - Screen reader announcements -->
     <div
       id="notificationContainer"
@@ -942,6 +978,7 @@
 
     <script src="storage.js"></script>
     <script src="editor.js"></script>
+    <script src="settings.js"></script>
     <script src="sidepanel.js"></script>
   </body>
 </html>
