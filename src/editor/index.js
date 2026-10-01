@@ -5,6 +5,7 @@ import { Code } from "@tiptap/extension-code";
 import { EditorState } from "@tiptap/pm/state";
 import { undoDepth, redoDepth } from "@tiptap/pm/history";
 import { convertLegacyNote } from "./legacy.js";
+import { installContextMenu } from "./context-menu.js";
 
 // The adapter keeps the v1 HTML backup shape while all editing and history
 // run through ProseMirror transactions. Persistent JSON is a separate migration.
@@ -40,6 +41,7 @@ class RenEditor {
     this.element = this.engine.view.dom;
     this.preview = document.getElementById("legacyNotePreview");
     this.notice = document.getElementById("editorRecoveryNotice");
+    this.contextMenu = installContextMenu(this);
   }
   notifyHistory() {
     if (!this.engine) return;
@@ -49,6 +51,7 @@ class RenEditor {
     });
   }
   setHTML(html, safePreview = "") {
+    this.contextMenu.close();
     const result = convertLegacyNote(this.engine, {content: html});
     this.sourceHTML = html;
     this.changed = false;
