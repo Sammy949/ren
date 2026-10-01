@@ -1501,7 +1501,7 @@ main[role="main"]>.h-full.flex.flex-col {
    27. Component: Settings Modal (Themed)
    ========================================================================== */
 
-.ren-settings-dialog {
+.ren-modal {
   width: min(360px, calc(100vw - 24px));
   max-width: none;
   max-height: calc(100dvh - 24px);
@@ -1514,8 +1514,8 @@ main[role="main"]>.h-full.flex.flex-col {
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-.ren-settings-dialog:not([open]) { display: none; }
-.ren-settings-dialog::backdrop { background: rgb(0 0 0 / 45%); }
+.ren-modal:not([open]) { display: none; }
+.ren-modal::backdrop { background: rgb(0 0 0 / 45%); }
 .settings-modal-content {
   background-color: var(--bg-primary);
   border-radius: var(--radius-lg);
@@ -2228,24 +2228,6 @@ main[role="main"]>.h-full.flex.flex-col {
    Minimalist Shortcuts Modal
    ========================================================================== */
 
-.shortcuts-modal {
-  position: fixed;
-  inset: 0;
-  background-color: var(--bg-modal);
-  z-index: var(--z-modal);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity var(--transition-normal), visibility var(--transition-normal);
-}
-
-.shortcuts-modal.visible {
-  opacity: 1;
-  visibility: visible;
-}
-
 .shortcuts-modal-content {
   background-color: var(--bg-primary);
   border-radius: var(--radius-lg);
@@ -2518,4 +2500,29 @@ body.resizing-sidebar { cursor: col-resize; user-select: none; }
 @container (max-width: 600px) {
   .toolbar-headings-expanded, .toolbar-blocks { display: none; }
   .toolbar-headings-compact, .toolbar-more { display: flex; align-items: center; }
+}
+
+/* Shared dialog geometry and restrained action hierarchy. */
+.ren-modal-content { padding: 20px; }
+.ren-modal-content h2 { margin: 0 0 16px; font-size: 17px; font-weight: 600; }
+.ren-modal-content p { font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.ren-modal-content label { display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 13px; }
+.ren-modal-content input { width: 100%; box-sizing: border-box; padding: 10px; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-medium); border-radius: 6px; }
+.ren-modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
+.ren-modal-actions button { padding: 8px 10px; background: transparent; border: 0; border-radius: 6px; color: var(--text-primary); cursor: pointer; }
+.ren-modal-actions button:hover { background: var(--bg-hover); }
+.ren-modal-actions .destructive-action { color: var(--color-error, #cf4949); }
+.ren-modal .shortcuts-modal-content, .ren-modal .welcome-modal-content { box-sizing: border-box; width: 100%; max-width: none; margin: 0; box-shadow: none; }
+.settings-label { text-transform: none; letter-spacing: normal; font-size: 13px; }
+.settings-action-btn { border: 0; border-radius: 6px; padding: 10px 0; }
+.settings-action-btn:hover { background: var(--bg-hover); }
+.settings-btn-desc { margin-top: 4px; line-height: 1.4; }
+.settings-footer { border: 0; padding-top: 8px; }
+.theme-btn { flex-direction: row; justify-content: center; min-height: 36px; font-size: 13px; }
+.theme-btn.active { color: var(--text-primary); background: var(--bg-tertiary); border-color: var(--text-muted); }
+.shortcut-item { gap: 12px; }
+.shortcut-description { min-width: 0; }
+.shortcut-keys { white-space: nowrap; flex-shrink: 0; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }

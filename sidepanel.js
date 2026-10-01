@@ -71,6 +71,7 @@ class RenNotePad {
     this.currentTheme = "system";
 
     this.initializeElements();
+    this.modals = new RenModals(this);
     this.bindEvents();
     this.initializeSidebarResize();
     this.bindKeyboardShortcuts();
@@ -372,22 +373,6 @@ class RenNotePad {
       this.confirmDeleteNote(),
     );
 
-    // a11y: Delete modal keyboard handling
-    this.deleteModal.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") { e.preventDefault(); this.hideDeleteModal(); }
-      // Focus trap within modal
-      if (e.key === "Tab") {
-        this.trapFocus(e, this.deleteModal);
-      }
-    });
-
-    // a11y: Rename modal focus trap
-    this.renameModal.addEventListener("keydown", (e) => {
-      if (e.key === "Tab") {
-        this.trapFocus(e, this.renameModal);
-      }
-    });
-
     // a11y: Keyboard navigation for notes list
     this.notesList.addEventListener("keydown", (e) =>
       this.handleNotesListKeydown(e),
@@ -400,9 +385,9 @@ class RenNotePad {
           this.hideShortcutsHelp();
         } else if (this.settingsModalVisible) {
           this.hideSettingsModal();
-        } else if (!this.renameModal.classList.contains("hidden")) {
+        } else if (this.renameModal.open) {
           this.hideRenameModal();
-        } else if (!this.deleteModal.classList.contains("hidden")) {
+        } else if (this.deleteModal.open) {
           this.hideDeleteModal();
         } else if (!this.sidebar.classList.contains("-translate-x-full")) {
           this.toggleSidebar();
@@ -504,7 +489,7 @@ class RenNotePad {
     if (e.defaultPrevented || e.isComposing || e.getModifierState?.("AltGraph")) return;
     const target = document.activeElement;
     const inEditor = target === this.noteContent || this.noteContent.contains(target);
-    if (document.querySelector('[role="dialog"]:not(.hidden):not([aria-hidden="true"])')) return;
+    if (document.querySelector('dialog[open], [role="dialog"]:not(.hidden):not([aria-hidden="true"])')) return;
     // Build the key combination string
     const combo = [];
     if (e.ctrlKey || e.metaKey) combo.push("Ctrl");
@@ -618,9 +603,9 @@ class RenNotePad {
     // Create modal if it doesn't exist
     let modal = document.getElementById("shortcutsHelpModal");
     if (!modal) {
-      modal = document.createElement("div");
+      modal = document.createElement("dialog");
       modal.id = "shortcutsHelpModal";
-      modal.className = "shortcuts-modal";
+      modal.className = "ren-modal";
       modal.setAttribute("role", "dialog");
       modal.setAttribute("aria-modal", "true");
       modal.setAttribute("aria-labelledby", "shortcutsHelpTitle");
@@ -661,36 +646,13 @@ class RenNotePad {
       modal
         .querySelector("#closeShortcutsHelp")
         .addEventListener("click", () => this.hideShortcutsHelp());
-      modal.addEventListener("click", (e) => {
-        if (e.target === modal) this.hideShortcutsHelp();
-      });
-      modal.addEventListener("keydown", (e) => {
-        if (e.key === "Escape") { e.preventDefault(); this.hideShortcutsHelp(); }
-        if (e.key === "Tab") this.trapFocus(e, modal);
-      });
     }
-
-    modal.classList.add("visible");
-    modal.setAttribute("aria-hidden", "false");
     this.shortcutsHelpVisible = true;
-    this.lastFocusedElement = document.activeElement;
-
-    // Focus close button
-    modal.querySelector("#closeShortcutsHelp").focus();
+    this.modals.open(modal, { focus: "#closeShortcutsHelp", onClose: () => { this.shortcutsHelpVisible = false; } });
   }
 
-  // Keyboard Shortcuts: Hide help modal
   hideShortcutsHelp() {
-    const modal = document.getElementById("shortcutsHelpModal");
-    if (modal) {
-      modal.classList.remove("visible");
-      modal.setAttribute("aria-hidden", "true");
-    }
-    this.shortcutsHelpVisible = false;
-
-    if (this.lastFocusedElement) {
-      this.lastFocusedElement.focus();
-    }
+    this.modals.close(document.getElementById("shortcutsHelpModal"));
   }
 
   // Editable Title: Start editing the note title
@@ -919,10 +881,9 @@ class RenNotePad {
   showWelcomeScreen() {
     let modal = document.getElementById("welcomeModal");
     if (!modal) {
-      modal = document.createElement("div");
+      modal = document.createElement("dialog");
       modal.id = "welcomeModal";
-      modal.className =
-        "fixed inset-0 bg-black bg-opacity-50 z-60 flex items-center justify-center";
+      modal.className = "ren-modal";
       modal.setAttribute("role", "dialog");
       modal.setAttribute("aria-modal", "true");
       modal.setAttribute("aria-labelledby", "welcomeTitle");
@@ -934,30 +895,9 @@ class RenNotePad {
           <p class="welcome-subtitle">Your minimalist notepad for quick thoughts, ideas, and more.</p>
           
           <div class="welcome-features">
-            <div class="welcome-feature-item">
-              <div class="welcome-feature-icon">
-                <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-              </div>
-              <p class="welcome-feature-text"><strong>Auto-save</strong> - Your notes save automatically as you type</p>
-            </div>
-            <div class="welcome-feature-item">
-              <div class="welcome-feature-icon">
-                <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
-                </svg>
-              </div>
-              <p class="welcome-feature-text"><strong>Multiple notes</strong> - Keep your ideas organized</p>
-            </div>
-            <div class="welcome-feature-item">
-              <div class="welcome-feature-icon">
-                <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
-                </svg>
-              </div>
-              <p class="welcome-feature-text"><strong>Keyboard shortcuts</strong> - Press <kbd class="welcome-kbd">Ctrl+/</kbd> anytime</p>
-            </div>
+            <p class="welcome-feature-text">Write, format, and organize notes alongside your browsing.</p>
+            <p class="welcome-feature-text">Notes stay in this browser. Export a backup from Settings.</p>
+            <p class="welcome-feature-text">Right-click text for formatting. Press <kbd class="welcome-kbd">Ctrl+/</kbd> for shortcuts.</p>
           </div>
           
           <button id="startWritingBtn" class="welcome-btn">
@@ -972,15 +912,10 @@ class RenNotePad {
       modal.querySelector("#startWritingBtn").addEventListener("click", () => {
         this.completeOnboarding();
       });
-      modal.addEventListener("keydown", (e) => {
-        if (e.key === "Tab") this.trapFocus(e, modal);
-      });
+
     }
 
-    modal.classList.remove("hidden");
-    modal.setAttribute("aria-hidden", "false");
-
-    modal.querySelector("#startWritingBtn").focus();
+    this.modals.open(modal, {focus: "#startWritingBtn", dismissible: false});
   }
 
   // Onboarding: Complete onboarding and create first note
@@ -989,15 +924,14 @@ class RenNotePad {
 
     const modal = document.getElementById("welcomeModal");
     if (modal) {
-      modal.classList.add("hidden");
-      modal.setAttribute("aria-hidden", "true");
+      this.modals.close(modal);
     }
 
     // Create the first note with welcome content
     const welcomeNote = {
       id: this.createNoteId(),
-      title: "Welcome to Ren! 🌿",
-      content: `Welcome to Ren! 🌿
+      title: "Welcome to Ren",
+      content: `Welcome to Ren
 
 This is your first note. Here are some tips to get started:
 
@@ -1012,7 +946,7 @@ Keyboard shortcuts:
 • Ctrl+S - Save note
 • Ctrl+/ - View all shortcuts
 
-Happy writing! ✨`,
+Keep a backup of anything important.`,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -1822,121 +1756,67 @@ Happy writing! ✨`,
     // Performance: O(1) lookup
     const note = this.getNoteById(noteId);
     if (note) {
-      // a11y: Store focus to restore later
-      this.lastFocusedElement = document.activeElement;
+      this.deleteModal.querySelector(".modal-error").textContent = "";
       this.noteToDelete = noteId;
       this.deleteNoteTitle.textContent = note.title;
-      this.deleteModal.classList.remove("hidden");
-      // a11y: Update ARIA state
-      this.deleteModal.setAttribute("aria-hidden", "false");
-      // a11y: Focus the cancel button (safer default)
-      this.cancelDelete.focus();
+      this.modals.open(this.deleteModal, {focus: this.cancelDelete, onClose: () => { this.noteToDelete = null; } });
     }
   }
 
-  hideDeleteModal() {
-    this.deleteModal.classList.add("hidden");
-    // a11y: Update ARIA state
-    this.deleteModal.setAttribute("aria-hidden", "true");
-    this.noteToDelete = null;
-    // a11y: Restore focus
-    if (this.lastFocusedElement) {
-      this.lastFocusedElement.focus();
-      this.lastFocusedElement = null;
-    }
-  }
+  hideDeleteModal() { this.modals.close(this.deleteModal); }
 
   async confirmDeleteNote() {
-    if (!this.noteToDelete) return;
-
-    try {
-      // Performance: O(1) lookup
-      const noteTitle = this.getNoteById(this.noteToDelete)?.title || "Note";
-
-      // Performance: Remove from cache
-      this.notesCache.delete(this.noteToDelete);
-
-      // Performance: Remove DOM element directly
-      this.removeNoteItemFromDOM(this.noteToDelete);
-
-      this.notes = this.notes.filter((n) => n.id !== this.noteToDelete);
-
-      if (this.currentNoteId === this.noteToDelete) {
-        this.currentNoteId = this.notes[0]?.id || null;
-        this.loadCurrentNote();
-      }
-
-      await this.saveData();
-      // Update active state on remaining notes
-      this.updateActiveNoteState();
-      this.showNotification(`"${noteTitle}" deleted successfully`, "success");
-    } catch (error) {
-      this.showNotification("Error deleting note", "error");
-    }
-
-    this.hideDeleteModal();
+    const id = this.noteToDelete;
+    if (!id || this.notes.length <= 1) return;
+    return this.modals.run(this.deleteModal, async () => {
+      if (!await this.flushPendingSave()) throw new Error("Pending save failed");
+      const remaining = this.notes.filter(note => note.id !== id);
+      const current = this.currentNoteId === id ? remaining[0].id : this.currentNoteId;
+      const context = this.createWriteContext();
+      await this.queueStorageSave(() => {
+        this.assertNoStorageConflict();
+        return this.storage.saveAllNotes(remaining, current, context, this.persistedNotebook());
+      });
+      this.notes = remaining;
+      const switched = this.currentNoteId !== current;
+      this.currentNoteId = current;
+      this.rebuildCache();
+      this.recordPersistedNotes(remaining);
+      if (switched) this.loadCurrentNote();
+      this.renderNotesList();
+      this.showNotification("Note deleted", "success");
+    });
   }
 
   showRenameModal(noteId) {
     // Performance: O(1) lookup
     const note = this.getNoteById(noteId);
     if (note) {
-      // a11y: Store focus to restore later
-      this.lastFocusedElement = document.activeElement;
+      this.renameModal.querySelector(".modal-error").textContent = "";
       this.renameInput.value = note.title;
       this.renameInput.dataset.noteId = noteId;
-      this.renameModal.classList.remove("hidden");
-      // a11y: Update ARIA state
-      this.renameModal.setAttribute("aria-hidden", "false");
-      this.renameInput.focus();
+      this.modals.open(this.renameModal, {focus: this.renameInput, onClose: () => { delete this.renameInput.dataset.noteId; } });
       this.renameInput.select();
     }
   }
 
-  hideRenameModal() {
-    this.renameModal.classList.add("hidden");
-    // a11y: Update ARIA state
-    this.renameModal.setAttribute("aria-hidden", "true");
-    delete this.renameInput.dataset.noteId;
-    // a11y: Restore focus
-    if (this.lastFocusedElement) {
-      this.lastFocusedElement.focus();
-      this.lastFocusedElement = null;
-    }
-  }
+  hideRenameModal() { this.modals.close(this.renameModal); }
 
   async confirmRenameNote() {
-    const newTitle = this.renameInput.value.trim();
-    const noteId = this.renameInput.dataset.noteId;
-
-    if (!newTitle || !noteId) return;
-
-    try {
-      // Performance: O(1) lookup
-      const note = this.getNoteById(noteId);
-      if (note) {
-        const oldTitle = note.title;
-        note.title = newTitle;
-        note.titleSource = "manual";
-        note.updatedAt = new Date().toISOString();
-        await this.saveNoteData(note);
-        // Performance: Update only the changed note in DOM
-        this.updateNoteItemInDOM(note);
-
-        if (noteId === this.currentNoteId) {
-          this.noteTitle.textContent = newTitle;
-        }
-
-        this.showNotification(
-          `Note renamed from "${oldTitle}" to "${newTitle}"`,
-          "success",
-        );
-      }
-    } catch (error) {
-      this.showNotification("Error renaming note", "error");
-    }
-
-    this.hideRenameModal();
+    const title = this.renameInput.value.trim();
+    const id = this.renameInput.dataset.noteId;
+    if (!id || !title) return;
+    return this.modals.run(this.renameModal, async () => {
+      if (!await this.flushPendingSave()) throw new Error("Pending save failed");
+      const note = this.getNoteById(id);
+      if (!note) throw new Error("Note not found");
+      const updated = {...note, title, titleSource: "manual", updatedAt: new Date().toISOString()};
+      await this.saveNoteData(updated);
+      Object.assign(note, updated);
+      this.updateNoteItemInDOM(note);
+      if (id === this.currentNoteId) this.noteTitle.textContent = title;
+      this.showNotification("Note renamed", "success");
+    });
   }
 
   showNotification(message, type = "info") {
@@ -2451,13 +2331,11 @@ Happy writing! ✨`,
     renameBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       this.showRenameModal(note.id);
-      this.toggleSidebar();
     });
 
     deleteBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       this.showDeleteModal(note.id);
-      this.toggleSidebar();
     });
 
     return noteItem;

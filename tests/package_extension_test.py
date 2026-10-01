@@ -31,6 +31,8 @@ class PackageExtensionTest(unittest.TestCase):
                     self.assertEqual(archive.read(name), (ROOT / name).read_bytes())
                 for reference in re.findall(r'url\(["\']?([^"\')]+)', (ROOT / "styles.css").read_text()):
                     self.assertIn(reference, names, f"Missing CSS asset: {reference}")
+                for reference in re.findall(r'<script\b[^>]*\bsrc=["\']([^"\']+)', (ROOT / "sidepanel.html").read_text()):
+                    self.assertIn(reference, names, f"Missing runtime script: {reference}")
 
 
 if __name__ == "__main__":

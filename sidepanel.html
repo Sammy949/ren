@@ -818,111 +818,31 @@
       </footer>
     </div>
 
-    <!-- Rename Modal -->
-    <div
-      id="renameModal"
-      class="fixed inset-0 bg-black bg-opacity-50 z-60 hidden flex items-center justify-center"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="renameModalTitle"
-      aria-hidden="true"
-    >
-      <div class="bg-white rounded-lg p-4 w-80 mx-4 shadow-xl" role="document">
-        <h3 id="renameModalTitle" class="text-base font-semibold mb-3">
-          Rename Note
-        </h3>
-        <label for="renameInput" class="sr-only">New note name</label>
-        <input
-          type="text"
-          id="renameInput"
-          placeholder="Enter new name..."
-          class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-          aria-describedby="renameModalTitle"
-        />
-        <div class="flex justify-end space-x-2 mt-3">
-          <button
-            id="cancelRename"
-            class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
-            aria-label="Cancel rename"
-          >
-            Cancel
-          </button>
-          <button
-            id="confirmRename"
-            class="px-3 py-2 bg-blue-500 text-white hover:bg-blue-600 rounded-lg text-sm"
-            aria-label="Confirm rename"
-          >
-            Rename
-          </button>
+    <dialog id="renameModal" class="ren-modal" role="dialog" aria-labelledby="renameModalTitle" aria-hidden="true">
+      <div class="ren-modal-content">
+        <h2 id="renameModalTitle">Rename note</h2>
+        <label for="renameInput">Note title</label>
+        <input id="renameInput" type="text" autocomplete="off" placeholder="Enter a title">
+        <p class="modal-error" role="alert"></p>
+        <div class="ren-modal-actions">
+          <button id="cancelRename" type="button">Cancel</button>
+          <button id="confirmRename" type="button">Save title</button>
         </div>
       </div>
-    </div>
-
-    <!-- Delete Confirmation Modal -->
-    <div
-      id="deleteModal"
-      class="fixed inset-0 bg-black bg-opacity-50 z-60 hidden flex items-center justify-center"
-      role="alertdialog"
-      aria-modal="true"
-      aria-labelledby="deleteModalTitle"
-      aria-describedby="deleteModalDesc"
-      aria-hidden="true"
-    >
-      <div class="bg-white rounded-lg p-4 w-80 mx-4 shadow-xl" role="document">
-        <div class="flex items-center mb-3">
-          <div
-            class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3"
-            aria-hidden="true"
-          >
-            <svg
-              class="w-4 h-4 text-red-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              ></path>
-            </svg>
-          </div>
-          <h3
-            id="deleteModalTitle"
-            class="text-base font-semibold text-gray-900"
-          >
-            Delete Note
-          </h3>
-        </div>
-        <p id="deleteModalDesc" class="text-sm text-gray-600 mb-4">
-          Are you sure you want to delete "<span
-            id="deleteNoteTitle"
-            class="font-medium"
-          ></span
-          >"? This action cannot be undone.
-        </p>
-        <div class="flex justify-end space-x-2">
-          <button
-            id="cancelDelete"
-            class="px-3 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm"
-            aria-label="Cancel delete"
-          >
-            Cancel
-          </button>
-          <button
-            id="confirmDelete"
-            class="px-3 py-2 bg-red-500 text-white hover:bg-red-600 rounded-lg text-sm"
-            aria-label="Confirm delete"
-          >
-            Delete
-          </button>
+    </dialog>
+    <dialog id="deleteModal" class="ren-modal" role="alertdialog" aria-labelledby="deleteModalTitle" aria-describedby="deleteModalDesc" aria-hidden="true">
+      <div class="ren-modal-content">
+        <h2 id="deleteModalTitle">Delete note?</h2>
+        <p id="deleteModalDesc">“<span id="deleteNoteTitle"></span>” will be removed. This cannot be undone.</p>
+        <p class="modal-error" role="alert"></p>
+        <div class="ren-modal-actions">
+          <button id="cancelDelete" type="button">Keep note</button>
+          <button id="confirmDelete" type="button" class="destructive-action">Delete note</button>
         </div>
       </div>
-    </div>
+    </dialog>
 
-    <dialog id="settingsModal" class="ren-settings-dialog" role="dialog" aria-labelledby="settingsTitle" aria-hidden="true">
+    <dialog id="settingsModal" class="ren-modal ren-settings-dialog" role="dialog" aria-labelledby="settingsTitle" aria-hidden="true">
       <div class="settings-modal-content">
         <div class="settings-header">
           <h2 id="settingsTitle" class="settings-title">Settings</h2>
@@ -978,6 +898,7 @@
 
     <script src="storage.js"></script>
     <script src="editor.js"></script>
+    <script src="modals.js"></script>
     <script src="settings.js"></script>
     <script src="sidepanel.js"></script>
   </body>

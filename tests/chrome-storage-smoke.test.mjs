@@ -463,7 +463,7 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
     assert.equal(recoveryUi.titleFits, true);
     assert.equal(recoveryUi.hiddenAfterSave, true);
     assert.match(recoveryUi.reminder, /Export a copy regularly/);
-    assert.match(recoveryUi.version, /Ren v1\.0\.0/);
+    assert.ok(recoveryUi.version.includes(`Ren v${JSON.parse(await readFile(path.join(extensionRoot, "manifest.json"), "utf8")).version}`));
     assert.ok(recoveryUi.documentWidth <= recoveryUi.viewportWidth);
 
     // Editor interactions are exercised with native key/pointer events in chrome-editor.test.mjs.

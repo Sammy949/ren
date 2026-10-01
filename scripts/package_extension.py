@@ -20,6 +20,7 @@ RUNTIME_FILES = (
     "icons/icon128.png",
     "icons/ren.svg",
     "manifest.json",
+    "modals.js",
     "sidepanel.html",
     "sidepanel.js",
     "settings.js",
