@@ -259,8 +259,9 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Complete the versioned JSON persistence and recovery path with the remaining
-formatting, export/import, and historical-note matrix. Measure performance before changing
+Verify the packaged 1.1.0 Settings flow in Samuel’s existing installation, then
+reconcile the branch stack for release. Versioned JSON persistence and the remaining
+formatting/export/import matrix follow this scoped update. Measure performance before changing
 storage architecture. Finish native platform/accessibility checks before any release tag. The internal notes list
 overlays below the header at narrow widths and docks at wide widths.
 
@@ -469,6 +470,17 @@ overlays below the header at narrow widths and docks at wide widths.
 - Verified theme persistence/failure, repeated open/close, backdrop and keyboard
   use, actual export/import/restore controls, and small-window layout.
 - Architecture, verification, and package checksum: [SETTINGS.md](SETTINGS.md).
+
+### 1 October 2026: scoped 1.1.0 workspace
+
+- Samuel selected the existing improvements, context menu, modal rewrite, and
+  layout cleanup as 1.1.0 scope; JSON storage and extra editor extensions follow.
+- Added a transaction-backed, keyboard-accessible editor context menu with a
+  browser-menu fallback and bounded placement.
+- Shared native modal lifecycle now covers Settings/help/welcome/rename/delete.
+  Confirmed rename/delete failure and retry preserve notes until storage succeeds.
+- Set the manifest to 1.1.0. The build and its known verification limits are
+  recorded in [RELEASE_1.1.0.md](RELEASE_1.1.0.md). Store submission is not done.
 
 ## Primary references checked for this plan
 

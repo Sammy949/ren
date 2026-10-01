@@ -45,3 +45,10 @@ Review package: 14 runtime files, 182620 bytes. SHA-256:
 
 No release version or tag was created. Native screen-reader and platform checks
 remain on the roadmap. This package supersedes the earlier Settings-button ZIP.
+
+## 1.1.0 follow-up
+
+The shared lifecycle now lives in `modals.js`; `settings.js` retains theme and
+backup actions. Help, onboarding, rename, and delete use the same modal controller.
+See [RELEASE_1.1.0.md](RELEASE_1.1.0.md) for the current package and scope. Earlier
+checksums in this document identify historical review builds.
