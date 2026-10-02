@@ -452,7 +452,7 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
         buttonFits: buttonBounds.left >= 0 && buttonBounds.right <= window.innerWidth,
         titleFits: titleBounds.left >= 0 && titleBounds.right <= window.innerWidth,
         hiddenAfterSave: button.hidden,
-        reminder: modal.querySelector(".settings-backup-reminder")?.textContent,
+        backupAction: modal.querySelector("#settingsFolderBackupBtn")?.textContent,
         version: modal.querySelector(".settings-version")?.textContent,
         viewportWidth: window.innerWidth,
         documentWidth: document.documentElement.scrollWidth,
@@ -462,7 +462,7 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
     assert.equal(recoveryUi.buttonFits, true);
     assert.equal(recoveryUi.titleFits, true);
     assert.equal(recoveryUi.hiddenAfterSave, true);
-    assert.match(recoveryUi.reminder, /Export a copy regularly/);
+    assert.match(recoveryUi.backupAction, /Back up to folder/);
     assert.ok(recoveryUi.version.includes(`Ren v${JSON.parse(await readFile(path.join(extensionRoot, "manifest.json"), "utf8")).version}`));
     assert.ok(recoveryUi.documentWidth <= recoveryUi.viewportWidth);
 

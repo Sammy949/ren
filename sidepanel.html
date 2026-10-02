@@ -846,30 +846,42 @@
       <div class="settings-modal-content">
         <div class="settings-header">
           <h2 id="settingsTitle" class="settings-title">Settings</h2>
-          <button type="button" id="closeSettings" class="settings-close-btn" aria-label="Close settings" autofocus>Close</button>
+          <button type="button" id="closeSettings" class="settings-close-btn" aria-label="Close settings" autofocus><svg class="modal-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-width="2" d="m6 6 12 12M6 18 18 6"/></svg></button>
         </div>
         <section class="settings-section" aria-labelledby="settingsThemeLabel">
           <h3 id="settingsThemeLabel" class="settings-label">Appearance</h3>
           <div class="theme-toggle-group" role="group" aria-label="Theme">
-            <button type="button" id="themeLight" class="theme-btn" data-theme="light" aria-pressed="false">Light</button>
-            <button type="button" id="themeDark" class="theme-btn" data-theme="dark" aria-pressed="false">Dark</button>
-            <button type="button" id="themeSystem" class="theme-btn" data-theme="system" aria-pressed="false">System</button>
+            <button type="button" id="themeLight" class="theme-btn" data-theme="light" aria-pressed="false"><svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg> Light</button>
+            <button type="button" id="themeDark" class="theme-btn" data-theme="dark" aria-pressed="false"><svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                </svg> Dark</button>
+            <button type="button" id="themeSystem" class="theme-btn" data-theme="system" aria-pressed="false"><svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg> System</button>
           </div>
         </section>
         <section class="settings-section" aria-labelledby="settingsDataLabel">
-          <h3 id="settingsDataLabel" class="settings-label">Your notes</h3>
+          <h3 id="settingsDataLabel" class="settings-label">Backup &amp; restore</h3>
           <div class="settings-buttons">
+            <button type="button" id="settingsFolderBackupBtn" class="settings-action-btn">
+              <svg class="modal-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7V5a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Zm9 3v7m-3-3 3 3 3-3"/></svg>
+              <span><span class="settings-btn-title">Back up to folder</span><span class="settings-btn-desc">Choose a folder for a new dated copy</span></span>
+            </button>
             <button type="button" id="settingsExportBtn" class="settings-action-btn">
+              <svg class="modal-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
               <span><span class="settings-btn-title">Export notes</span><span class="settings-btn-desc">Download a JSON backup</span></span>
             </button>
             <button type="button" id="settingsImportBtn" class="settings-action-btn">
+              <svg class="modal-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
               <span><span class="settings-btn-title">Import notes</span><span class="settings-btn-desc">Replace notes from a backup, with a recovery copy</span></span>
             </button>
             <button type="button" id="settingsRestoreImportBtn" class="settings-action-btn" hidden disabled>
+              <svg class="modal-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h11a4 4 0 014 4v1m-15-5l4-4m-4 4l4 4m11 3v.01"/></svg>
               <span><span class="settings-btn-title">Restore before import</span><span class="settings-btn-desc">Restore notes saved before the latest import</span></span>
             </button>
           </div>
-          <p class="settings-backup-reminder">Notes are stored in this browser. Export a copy regularly and keep the file somewhere safe.</p>
         </section>
         <p id="settingsStatus" class="settings-status" role="status" aria-live="polite"></p>
         <div class="settings-footer">
@@ -898,8 +910,9 @@
 
     <script src="storage.js"></script>
     <script src="editor.js"></script>
-    <script src="modals.js"></script>
-    <script src="settings.js"></script>
+    <script src="src/ui/modals.js"></script>
+    <script src="src/ui/backups.js"></script>
+    <script src="src/ui/settings.js"></script>
     <script src="sidepanel.js"></script>
   </body>
 </html>

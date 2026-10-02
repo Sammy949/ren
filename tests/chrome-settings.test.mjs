@@ -22,9 +22,15 @@ test("Settings owns theme, backup actions, and repeated modal lifecycles", { tim
       await poll(() => evaluate(page, 'document.getElementById("settingsModal").matches(":modal")'), "native modal");
     };
     await open();
+    assert.equal(await evaluate(page, 'getComputedStyle(document.getElementById("settingsModal")).outlineStyle'), "none");
+    await press(page, "Tab", "Tab");
+    assert.equal(await evaluate(page, 'document.activeElement.id'), "themeLight");
+    assert.equal(await evaluate(page, 'getComputedStyle(document.activeElement).outlineStyle'), "none");
+    assert.equal(await evaluate(page, 'getComputedStyle(document.activeElement).backgroundColor === getComputedStyle(document.getElementById("settingsModal")).color'), true, "keyboard focus remains visible through fill");
     await poll(() => evaluate(page, 'document.getElementById("settingsRestoreImportBtn").hidden'), "no recovery action without backup");
     await click(page, "#themeLight");
-    await poll(() => evaluate(page, 'document.getElementById("settingsStatus").textContent === "Theme saved."'), "saved theme");
+    await poll(() => evaluate(page, 'document.getElementById("themeLight").getAttribute("aria-pressed") === "true" && !document.getElementById("themeLight").disabled'), "saved theme");
+    assert.equal(await evaluate(page, 'document.getElementById("settingsStatus").textContent'), "");
     await evaluate(page, 'window.originalSetTheme = renStorage.setTheme; renStorage.setTheme = async () => { throw new Error("Simulated settings write failure"); };');
     await click(page, "#themeDark");
     await poll(() => evaluate(page, 'document.getElementById("settingsStatus").textContent.includes("Could not save")'), "theme failure");

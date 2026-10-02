@@ -1,6 +1,6 @@
 # Ren — Privacy Policy
 
-_Last updated: 1 October 2026_
+_Last updated: 2 October 2026_
 
 Ren ("the extension") is a notepad that runs in the Google Chrome side panel.
 
@@ -23,13 +23,18 @@ We operate no servers and have no ability to see your notes or settings.
 - **`sidePanel`** — to display Ren inside Chrome's native side panel.
 - **`storage`** — to save your notes and settings on your device.
 
-Ren requests no other permissions and accesses no web page content.
+Ren requests no other extension permissions and accesses no web page content.
+If you choose **Back up to folder**, Chrome asks you to select and allow access
+to a folder. Ren writes a new JSON backup there and reads it back to verify the
+write. Ren does not scan other files in that folder or upload the backup.
+Backups are plain text, not encrypted; a folder synced by another application
+may be uploaded by that application.
 
 ## Data deletion
 
 Uninstalling Ren removes its local note storage. Clearing browsing history or
 cache does not clear notes stored in Chrome's extension storage. You can delete
-individual notes in Ren and export a JSON backup from Settings. Downloaded
+individual notes in Ren and export a JSON backup from Settings. Downloaded and folder
 backups remain wherever you saved them and must be deleted separately.
 
 See [Chrome's storage documentation](https://developer.chrome.com/docs/extensions/reference/api/storage)
