@@ -489,7 +489,7 @@ class RenNotePad {
     if (e.defaultPrevented || e.isComposing || e.getModifierState?.("AltGraph")) return;
     const target = document.activeElement;
     const inEditor = target === this.noteContent || this.noteContent.contains(target);
-    if (document.querySelector('dialog[open], [role="dialog"]:not(.hidden):not([aria-hidden="true"])')) return;
+    if (document.querySelector("dialog[open]")) return;
     // Build the key combination string
     const combo = [];
     if (e.ctrlKey || e.metaKey) combo.push("Ctrl");
@@ -1264,11 +1264,11 @@ Keep a backup of anything important.`,
       this.sidebarOverlay.classList.add("opacity-0", "pointer-events-none");
       // a11y: Update ARIA states
       this.hamburgerBtn.setAttribute("aria-expanded", "false");
+      // Move focus before hiding the subtree from assistive technology.
+      this.hamburgerBtn.focus();
       this.sidebar.setAttribute("aria-hidden", "true");
       this.sidebar.inert = true;
       document.body.classList.remove("sidebar-open");
-      // a11y: Return focus to trigger
-      this.hamburgerBtn.focus();
     } else {
       this.sidebar.classList.remove("-translate-x-full");
       this.sidebarOverlay.classList.remove("opacity-0", "pointer-events-none");

@@ -96,7 +96,7 @@ test("Settings owns theme, backup actions, and repeated modal lifecycles", { tim
     await open();
     await click(page, "#settingsShortcutsBtn");
     assert.equal(await evaluate(page, 'document.getElementById("settingsModal").open'), false);
-    assert.equal(await evaluate(page, 'document.getElementById("shortcutsHelpModal").getAttribute("aria-hidden")'), "false");
+    assert.equal(await evaluate(page, 'document.getElementById("shortcutsHelpModal").open'), true);
   } finally {
     page?.close(); if (chrome) await stopChrome(chrome);
     await rm(profile, {recursive:true,force:true});

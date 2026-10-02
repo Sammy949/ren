@@ -144,7 +144,7 @@ test("structured editor history, selection, shortcuts, and source recovery",{tim
   assert.equal(await evaluate(page,`(async()=>(await renStorage.getAllNotes()).length)()`),1);
   await press(page,"Escape","Escape");
   await press(page,"/","Slash",2);
-  await poll(()=>evaluate(page,`document.getElementById("shortcutsHelpModal")?.getAttribute("aria-hidden")==="false"`),"help binding");
+  await poll(()=>evaluate(page,`document.getElementById("shortcutsHelpModal")?.open===true`),"help binding");
   await press(page,"Escape","Escape");
   const downloads=path.join(profile,"downloads");await mkdir(downloads);
   await page.call("Browser.setDownloadBehavior",{behavior:"allow",downloadPath:downloads});

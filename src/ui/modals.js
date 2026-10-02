@@ -38,7 +38,6 @@ class RenModals {
     this.active = { dialog, returnFocus, dismissible, onClose };
     document.dispatchEvent(new Event("ren:modal-open"));
     dialog.classList.remove("hidden");
-    dialog.setAttribute("aria-hidden", "false");
     dialog.showModal();
     (typeof focus === "string" ? dialog.querySelector(focus) : focus)?.focus();
   }
@@ -75,7 +74,6 @@ class RenModals {
     const state = this.active;
     if (!state) return;
     this.active = null;
-    state.dialog.setAttribute("aria-hidden", "true");
     state.onClose();
     if (restoreFocus) {
       const target = state.returnFocus;

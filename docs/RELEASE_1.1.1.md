@@ -29,7 +29,8 @@ This build has not been submitted to the Chrome Web Store.
 ## Verification
 
 - Build and JavaScript syntax checks passed; four unit suites and deterministic
-  packaging passed. Nine browser suites passed against the extracted ZIP.
+  packaging passed. Nine browser suites passed before the accessibility follow-up;
+  all five affected browser suites passed against the rebuilt ZIP afterward.
 - The first full run found the context-menu focus race, a focus assertion during
   a color transition, and an obsolete assertion for the removed reminder. The
   runtime fixes and updated assertions passed the subsequent full run.
@@ -74,6 +75,23 @@ and [directory picker options](https://developer.mozilla.org/en-US/docs/Web/API/
 
 ## Artifact
 
-`ren-v1.1.1.zip`: 186835 bytes, 17 runtime files.
+`ren-v1.1.1.zip`: 186795 bytes, 17 runtime files. Rebuilt with the dialog
+accessibility fix; replaces the earlier untagged 1.1.1 review archive.
 
-SHA-256: `cfe477be0b1fe97350b2a6e9d3919ad9a3f02cd63f7880ada77ece1a4ae580b5`
+SHA-256: `84a3d0119778addfff0a1f5611b44e3ff85dcedd0bc0ad7a6adfaf2d034a59b6`
+
+## Accessibility follow-up
+
+Reproduced Samuel's welcome-dialog warning: the shared close handler applied
+`aria-hidden=true` while Start Writing retained focus. Removed redundant
+`aria-hidden` from native dialogs; the browser's open/close state controls their
+visibility and accessibility. Shortcut suppression now checks `dialog[open]`.
+The sidebar moves focus before setting its hidden/inert state.
+
+The regression test fails on the old code and passes on the fix. It records
+attempts to aria-hide a focused subtree, enables Chrome's accessibility tree,
+and checks browser logs for the reported warning. Onboarding, Settings, help,
+focus return, and Tab/Escape are exercised. The rebuilt package also passed
+editor, note-dialog, Settings-action, and folder-backup suites, plus four unit
+suites, syntax checks, and deterministic packaging. Screen-reader testing remains
+manual.

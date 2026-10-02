@@ -510,3 +510,13 @@ automatic scheduler or a replacement for browser storage.
 - Nine packaged Chrome suites, four unit suites, build/syntax, and deterministic
   packaging pass. OS chooser interaction and native browser/OS key routing remain
   manual checks. See [RELEASE_1.1.1.md](RELEASE_1.1.1.md).
+
+### 2 October 2026: focused-dialog accessibility correction
+
+- Reproduced the welcome-modal `aria-hidden` warning with a failing regression.
+- Removed redundant native-dialog ARIA visibility; use the actual open state for
+  shortcut suppression. Sidebar now returns focus before hiding its subtree.
+- Five affected packaged browser suites and four unit suites pass; Chrome logs
+  contain no blocked-ARIA warning in the regression flow.
+- Rebuilt the untagged 1.1.1 ZIP. The release record contains its replacement
+  checksum. Local workspace and GitHub branch both carry this correction.
