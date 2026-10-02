@@ -24,6 +24,7 @@ test("context menu retains selection, executes transactions, and supports keyboa
     assert.equal(await evaluate(page, 'document.querySelector("#editorContextMenu [data-command=undo]").disabled'), true);
     await click(page,'#editorContextMenu [data-command="toggleBold"]');
     assert.equal(await html(),"<p><strong>Menu text</strong></p>");
+    assert.equal(await evaluate(page, "document.activeElement.id"), "noteContent", "command restores focus before the next shortcut");
     await press(page,"z","KeyZ",2); assert.equal(await html(),"<p>Menu text</p>");
     await press(page,"y","KeyY",2); assert.match(await html(),/<strong>/);
     await rightClick();

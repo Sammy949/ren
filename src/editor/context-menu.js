@@ -26,7 +26,7 @@ export function installContextMenu(adapter) {
   const close = (focus = false) => {
     if (menu.hidden) return;
     menu.hidden = true;
-    if (focus && editor.isEditable) editor.commands.focus();
+    if (focus && editor.isEditable) editor.view.focus();
   };
   const place = () => {
     menu.style.left = "8px"; menu.style.top = "8px";
@@ -48,7 +48,7 @@ export function installContextMenu(adapter) {
       if (!["submenu", "back"].includes(command)) button.disabled = !editor.can()[command](...args);
       button.addEventListener("click", () => {
         if (command === "submenu" || command === "back") { submenu = command === "submenu"; render(); return; }
-        close();
+        close(true);
         adapter.command(command, ...args);
       });
       menu.append(button);
