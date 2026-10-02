@@ -22,15 +22,17 @@ This build has not been submitted to the Chrome Web Store.
 - Backups are manual and unencrypted. There is no background schedule, cloud
   service, persistent folder-handle database, or change to note storage keys.
 - Modal controllers and styles live under `src/ui`; duplicate Settings rules
-  were consolidated. No new dependencies or extension manifest permissions.
+  were consolidated. No new dependencies. The unlimited-storage follow-up adds the
+  `unlimitedStorage` extension permission.
 - Context-menu commands restore editor focus synchronously. An immediate undo
   after formatting previously could arrive before Tiptap's deferred focus.
 
 ## Verification
 
 - Build and JavaScript syntax checks passed; four unit suites and deterministic
-  packaging passed. Nine browser suites passed before the accessibility follow-up;
-  all five affected browser suites passed against the rebuilt ZIP afterward.
+  packaging passed. Earlier passes covered nine browser suites and the
+  accessibility follow-up. See the unlimited-storage verification below for the
+  final package.
 - The first full run found the context-menu focus race, a focus assertion during
   a color transition, and an obsolete assertion for the removed reminder. The
   runtime fixes and updated assertions passed the subsequent full run.
@@ -75,10 +77,10 @@ and [directory picker options](https://developer.mozilla.org/en-US/docs/Web/API/
 
 ## Artifact
 
-`ren-v1.1.1.zip`: 186795 bytes, 17 runtime files. Rebuilt with the dialog
-accessibility fix; replaces the earlier untagged 1.1.1 review archive.
+`ren-v1.1.1.zip`: 186837 bytes, 17 runtime files. Rebuilt with the dialog
+accessibility and unlimited-storage fixes; replaces earlier untagged 1.1.1 archives.
 
-SHA-256: `84a3d0119778addfff0a1f5611b44e3ff85dcedd0bc0ad7a6adfaf2d034a59b6`
+SHA-256: `69a7015996cc45864db74eafbae3dc3e2a24217978b0930eae19dfc583ba76f2`
 
 ## Accessibility follow-up
 
@@ -95,3 +97,43 @@ focus return, and Tab/Escape are exercised. The rebuilt package also passed
 editor, note-dialog, Settings-action, and folder-backup suites, plus four unit
 suites, syntax checks, and deterministic packaging. Screen-reader testing remains
 manual.
+
+## Unlimited-storage follow-up
+
+- Added required `unlimitedStorage`; no schema migration or storage-key change.
+  Local note storage no longer has Chrome's default 10 MB byte quota. Settings
+  remain in quota-limited sync storage. Available disk and browser memory still
+  constrain operation; this does not claim infinite physical capacity.
+- Diagnostics report used bytes, `unlimited: true`, and null quota/percentage.
+  Chrome's constant QUOTA_BYTES is unchanged by the permission and must not be
+  displayed as an effective storage ceiling.
+- Removed the 10 MB import-file and 10,000-note import caps. IDs, duplicate IDs,
+  content, dates, and title validation remain. Export/import currently load JSON
+  in memory; streaming and performance at very large scales remain future work.
+- The initial large-notebook test passed persistence and file restoration but
+  expected one recovery record after a helper had left 13 unindexed records.
+  Recovery correctly preserved all 14. The test now uses the production notebook
+  replacement operation to prepare the one-note restore target.
+
+### Final unlimited-storage verification
+
+All ten packaged Chrome suites passed in the final run, including the 1.0
+upgrade path. Four unit suites, syntax, build, and deterministic packaging passed.
+The new test measured **12,962,201 local bytes** and a **12,962,433-byte JSON
+export**, above Chrome's default 10,485,760-byte quota. All 13 notes matched by
+SHA-256 after restarting Chrome and again after importing the downloaded file
+through the real file input. Pre-import recovery remained available. The import
+validator also accepted 10,001 valid note records. This is capacity/round-trip
+coverage, not a performance guarantee for arbitrarily large notebooks.
+
+### Store permission justification
+
+Ren uses unlimitedStorage to keep notes and pre-import recovery copies locally
+without Chrome's default storage quota. It does not grant website access or send
+notes to a server. Available device space still applies.
+
+The privacy policy now lists this permission. Use the revised policy and package
+when submitting the existing Store item's update.
+
+References: [Chrome storage quota behavior](https://developer.chrome.com/docs/extensions/reference/api/storage)
+and [unlimitedStorage permission](https://developer.chrome.com/docs/extensions/reference/permissions-list#unlimitedStorage).

@@ -22,6 +22,8 @@ We operate no servers and have no ability to see your notes or settings.
 
 - **`sidePanel`** — to display Ren inside Chrome's native side panel.
 - **`storage`** — to save your notes and settings on your device.
+- **`unlimitedStorage`** — to remove Chrome's fixed local-storage byte quota for
+  notes and recovery copies. Storage still depends on available device space.
 
 Ren requests no other extension permissions and accesses no web page content.
 If you choose **Back up to folder**, Chrome asks you to select and allow access

@@ -75,7 +75,8 @@ formatted text:
 
 ### Hybrid Chrome Storage
 
-- **Local storage** for notes (5MB+ capacity for lots of notes)
+- **Local storage** for notes with Chrome's fixed byte quota removed through
+  `unlimitedStorage`; available device space and browser resources still apply
 - **Sync storage** for settings (syncs across all Chrome-signed-in devices)
 
 ### Auto-Save

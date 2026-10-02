@@ -144,7 +144,7 @@ test("Ren notes survive Chrome restarts and package upgrades", { timeout: 45_000
     assert.equal(written.health.indexedNoteCount, 1);
     assert.equal(written.health.storedNoteCount, 1);
     assert.ok(written.health.bytesInUse > 0);
-    assert.ok(written.health.quotaBytes >= written.health.bytesInUse);
+    assert.equal(written.health.quotaBytes, null);
 
     await page.call("Page.close");
     page.close();

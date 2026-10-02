@@ -5,7 +5,8 @@
   "description": "A minimalist notepad that lives in your Chrome sidebar",
   "permissions": [
     "sidePanel",
-    "storage"
+    "storage",
+    "unlimitedStorage"
   ],
   "action": {
     "default_title": "Open Ren Notepad",

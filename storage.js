@@ -4,7 +4,7 @@
  *
  * Storage Strategy (Hybrid):
  * - chrome.storage.SYNC for settings (small data, syncs across devices)
- * - chrome.storage.LOCAL for notes (large data, 5MB+ quota)
+ * - chrome.storage.LOCAL for notes (unlimitedStorage removes the API byte quota)
  *
  * This ensures:
  * - Settings sync across devices where user is logged into Chrome
@@ -927,11 +927,14 @@ class RenStorage {
             reject(new Error(chrome.runtime.lastError.message));
             return;
           }
-          const quota = chrome.storage.local.QUOTA_BYTES || 10 * 1024 * 1024;
+          // QUOTA_BYTES stays at 10 MB even when Chrome does not enforce it.
+          const unlimited = Boolean(chrome.runtime.getManifest?.()?.permissions?.includes("unlimitedStorage"));
+          const quota = unlimited ? null : (chrome.storage.local.QUOTA_BYTES || 10 * 1024 * 1024);
           resolve({
             bytesInUse,
             quota,
-            percentUsed: ((bytesInUse / quota) * 100).toFixed(1),
+            percentUsed: unlimited ? null : ((bytesInUse / quota) * 100).toFixed(1),
+            unlimited,
             type: "local",
           });
         });

@@ -520,3 +520,21 @@ automatic scheduler or a replacement for browser storage.
   contain no blocked-ARIA warning in the regression flow.
 - Rebuilt the untagged 1.1.1 ZIP. The release record contains its replacement
   checksum. Local workspace and GitHub branch both carry this correction.
+
+### 2 October 2026: unlimited local storage
+
+- Samuel explicitly approved `unlimitedStorage`. Added the required permission
+  without changing storage keys, the note schema, or Chrome sync settings.
+- Storage health records actual bytes; quota and percentage are null when the
+  local byte quota is disabled. Chrome still reports its default QUOTA_BYTES
+  constant, so that constant alone cannot describe effective headroom.
+- Removed the 10 MB file-import and 10,000-note import caps so larger exports
+  remain restorable. Schema validation and pre-import recovery remain in place.
+- Available disk and memory still bound operation; importing/exporting currently
+  materializes JSON in memory. This change is not an unbounded-scale performance
+  claim. Measurement and packaging evidence are in RELEASE_1.1.1.md.
+
+- Final evidence: all ten packaged Chrome suites passed. A 12,962,201-byte local
+  notebook survived restart and its 12,962,433-byte exported file restored with
+  identical note hashes. Validation accepted 10,001 note records. Four unit
+  suites, syntax, build, and deterministic packaging passed.

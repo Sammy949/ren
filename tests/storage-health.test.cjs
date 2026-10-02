@@ -6,9 +6,9 @@ const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
 
-function loadStorage({ initial = {}, bytesInUse = 0, failBytes } = {}) {
+function loadStorage({ initial = {}, bytesInUse = 0, failBytes, unlimited = false } = {}) {
   const data = structuredClone(initial);
-  const runtime = { lastError: null };
+  const runtime = { lastError: null, getManifest: () => ({ permissions: unlimited ? ["storage", "unlimitedStorage"] : ["storage"] }) };
   let writes = 0;
   const local = {
     QUOTA_BYTES: 10 * 1024 * 1024,
@@ -151,4 +151,14 @@ test("storage health handles a malformed index and reports byte-read failures", 
     /byte count failed/,
   );
   assert.equal(failed.writes, 0);
+});
+
+test("unlimited storage reports bytes without a misleading finite quota", async () => {
+  const { storage } = loadStorage({ bytesInUse: 15 * 1024 * 1024, unlimited: true });
+  const info = plain(await storage.getStorageInfo());
+  assert.equal(info.bytesInUse, 15 * 1024 * 1024);
+  assert.equal(info.quota, null);
+  assert.equal(info.percentUsed, null);
+  assert.equal(info.unlimited, true);
+  assert.equal((await storage.getStorageHealth()).quotaBytes, null);
 });

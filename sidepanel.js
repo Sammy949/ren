@@ -2084,9 +2084,6 @@ Keep a backup of anything important.`,
     if (importData.notes.length === 0) {
       throw new Error("Invalid backup file: no notes found");
     }
-    if (importData.notes.length > 10_000) {
-      throw new Error("Invalid backup file: too many notes");
-    }
 
     const notes = [];
     const noteIds = new Set();
@@ -2152,9 +2149,6 @@ Keep a backup of anything important.`,
 
     let previousEditable;
     try {
-      if (typeof file.size === "number" && file.size > 10 * 1024 * 1024) {
-        throw new Error("Invalid backup file: file is larger than 10 MB");
-      }
       const text = await file.text();
       const importData = JSON.parse(text);
       const prepared = this.prepareImportedNotebook(importData);
