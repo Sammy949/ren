@@ -5,8 +5,11 @@ Rewritten on 1 October 2026 after repeated Settings-button reports.
 ## Ownership
 
 - `sidepanel.html` contains one static native `dialog` and its controls.
-- `settings.js` owns opening, closing, focus return, action bindings, theme save
-  state, and recovery metadata. Both pointer and shortcut entry use `open()`.
+- `src/ui/settings.js` owns action bindings, theme save state, folder backups,
+  and recovery metadata. Both pointer and shortcut entry use `open()`.
+- `src/ui/modals.js` owns opening, closing, focus return, and busy dialog state.
+  `src/ui/modals.css` owns shared dialog geometry and Settings styles.
+- `src/ui/backups.js` writes unique folder snapshots and verifies their contents.
 - The browser provides top-layer placement and inert background content. Tab
   wrapping keeps keyboard navigation inside the dialog. Escape, the close
   button, and a backdrop press/release all use the same close path.
@@ -18,8 +21,9 @@ Rewritten on 1 October 2026 after repeated Settings-button reports.
 - Recovery metadata is loaded on each open; stale results cannot update a later
   opening. Import/restore use existing validated storage operations and explicit
   confirmation. Export remains available during a notebook conflict.
-- Backup actions close the native modal before file picking, download, or
-  confirmation. Help opens after Settings closes; dialogs do not stack.
+- Import, download, and restore close Settings before their next surface opens.
+  Folder backup keeps Settings open with controls disabled until the chooser and
+  write settle; errors allow retry. Help replaces Settings; dialogs do not stack.
 
 ## Verified
 
@@ -50,5 +54,11 @@ remain on the roadmap. This package supersedes the earlier Settings-button ZIP.
 
 The shared lifecycle now lives in `modals.js`; `settings.js` retains theme and
 backup actions. Help, onboarding, rename, and delete use the same modal controller.
-See [RELEASE_1.1.0.md](RELEASE_1.1.0.md) for the current package and scope. Earlier
+See [RELEASE_1.1.0.md](RELEASE_1.1.0.md) for that historical package and scope. Earlier
 checksums in this document identify historical review builds.
+
+## 1.1.1 follow-up
+
+Current module paths and ownership are listed above. Icons are restored; routine
+success copy is removed. See [RELEASE_1.1.1.md](RELEASE_1.1.1.md) for folder-backup
+behavior, shortcut coverage, and remaining manual checks.

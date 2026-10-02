@@ -1,6 +1,6 @@
 # Ren rewrite roadmap
 
-Updated: 30 September 2026. Status: milestone 0 complete; reliability and editor milestones in progress.
+Updated: 2 October 2026. Status: milestone 0 complete; reliability and editor milestones in progress.
 
 ## Purpose and working memory
 
@@ -259,11 +259,12 @@ These do not block the first safeguard milestone.
 
 ## Next action
 
-Verify the packaged 1.1.0 Settings flow in Samuel’s existing installation, then
-reconcile the branch stack for release. Versioned JSON persistence and the remaining
-formatting/export/import matrix follow this scoped update. Measure performance before changing
-storage architecture. Finish native platform/accessibility checks before any release tag. The internal notes list
-overlays below the header at narrow widths and docks at wide widths.
+Review the packaged 1.1.1 Settings and folder-backup flow in Samuel's installation.
+The published `v1.1.0` tag identifies the earlier review build and remains unchanged.
+Confirm the native folder chooser and Chrome/OS shortcut routing, then reconcile
+the branch stack before Store submission. Versioned JSON persistence and measured
+performance work remain separate. Folder backups are explicit snapshots, not an
+automatic scheduler or a replacement for browser storage.
 
 ## Progress log
 
@@ -492,3 +493,20 @@ overlays below the header at narrow widths and docks at wide widths.
 - [MDN `execCommand()`](https://developer.mozilla.org/en-US/docs/Web/API/Document/execCommand): deprecated and inconsistent editing commands.
 - [Tiptap vanilla JavaScript setup](https://tiptap.dev/docs/editor/getting-started/install/vanilla-javascript), [StarterKit](https://tiptap.dev/docs/editor/extensions/functionality/starterkit), [task lists](https://tiptap.dev/docs/editor/extensions/nodes/task-list), and [JSON/HTML output](https://tiptap.dev/docs/guides/output-json-html): editor spike basis.
 - [MDN IndexedDB usage](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API/Using_IndexedDB): transactions and shutdown limits.
+
+### 2 October 2026: modal polish and folder backups
+
+- Restored Settings action/theme/close icons; removed the backup reminder and
+  successful-theme message. Empty status no longer reserves space. Buttons use
+  immediate filled keyboard focus instead of outlines; modal shells have no outline.
+- Added explicit folder backups: choose a folder, write a unique dated snapshot,
+  close and read back before reporting success. Include pending edits; cancel
+  quietly; keep older backups; keep download/import/recovery as fallbacks.
+- Grouped modal controllers and styles under `src/ui`, consolidating duplicate
+  Settings styles. The user's filesystem request means computer-folder backups,
+  not a broader repository restructure.
+- Found and fixed a real context-menu focus race: synchronous focus return now
+  allows immediate undo/redo after a menu action.
+- Nine packaged Chrome suites, four unit suites, build/syntax, and deterministic
+  packaging pass. OS chooser interaction and native browser/OS key routing remain
+  manual checks. See [RELEASE_1.1.1.md](RELEASE_1.1.1.md).
